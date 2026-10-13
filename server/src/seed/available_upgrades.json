@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Floor Venturi Expansion v4",
+    "cost": 9400000,
+    "perf_points": 16
+  },
+  {
+    "name": "Active Aero Front Wing v2",
+    "cost": 6500000,
+    "perf_points": 11
+  },
+  {
+    "name": "Low Drag Beam Wing Set",
+    "cost": 4800000,
+    "perf_points": 8
+  },
+  {
+    "name": "Undercut Sidepod Intake",
+    "cost": 7900000,
+    "perf_points": 13
+  },
+  {
+    "name": "Titanium Suspension Arms",
+    "cost": 4100000,
+    "perf_points": 7
+  },
+  {
+    "name": "Carbon Brake Duct Cooling",
+    "cost": 2700000,
+    "perf_points": 4
+  },
+  {
+    "name": "Diffuser Expansion Strakes",
+    "cost": 5700000,
+    "perf_points": 9
+  },
+  {
+    "name": "High-Efficiency Turbo Intake",
+    "cost": 2300000,
+    "perf_points": 3
+  }
+]

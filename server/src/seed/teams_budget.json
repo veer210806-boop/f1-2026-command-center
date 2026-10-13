@@ -1,0 +1,334 @@
+[
+  {
+    "team": "McLaren",
+    "full_name": "McLaren Formula 1 Team",
+    "short_code": "MCL",
+    "primary_color": "#FF8000",
+    "secondary_color": "#111116",
+    "team_principal": "Andrea Stella",
+    "power_unit": "Mercedes 2026 Spec",
+    "base_location": "Woking, United Kingdom",
+    "car_model": "MCL39",
+    "championships": 9,
+    "drivers": [
+      "NOR",
+      "PIA"
+    ],
+    "total_budget": 135000000,
+    "spent": 118400000,
+    "upgrades": [
+      {
+        "name": "Sidepod Undercut v4",
+        "cost": 8400000,
+        "perf_points": 14,
+        "purchased": true
+      },
+      {
+        "name": "Floor Edge Vortices",
+        "cost": 6200000,
+        "perf_points": 11,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/mclaren/2026mclarencarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/mclaren/2026mclarenlogo.webp"
+  },
+  {
+    "team": "Ferrari",
+    "full_name": "Scuderia Ferrari HP",
+    "short_code": "FER",
+    "primary_color": "#E8002D",
+    "secondary_color": "#FFF200",
+    "team_principal": "Fred Vasseur",
+    "power_unit": "Ferrari 2026 E-Turbo",
+    "base_location": "Maranello, Italy",
+    "car_model": "SF-26",
+    "championships": 16,
+    "drivers": [
+      "LEC",
+      "HAM"
+    ],
+    "total_budget": 135000000,
+    "spent": 121500000,
+    "upgrades": [
+      {
+        "name": "Front Wing Aero v5",
+        "cost": 7500000,
+        "perf_points": 12,
+        "purchased": true
+      },
+      {
+        "name": "Rear Beam Wing Set",
+        "cost": 5300000,
+        "perf_points": 9,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/ferrari/2026ferraricarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/ferrari/2026ferrarilogo.webp"
+  },
+  {
+    "team": "Red Bull Racing",
+    "full_name": "Oracle Red Bull Racing",
+    "short_code": "RBR",
+    "primary_color": "#1E41FF",
+    "secondary_color": "#FF1801",
+    "team_principal": "Laurent Mekies",
+    "power_unit": "Red Bull Ford Powertrains",
+    "base_location": "Milton Keynes, United Kingdom",
+    "car_model": "RB22",
+    "championships": 6,
+    "drivers": [
+      "VER",
+      "HAD"
+    ],
+    "total_budget": 135000000,
+    "spent": 123800000,
+    "upgrades": [
+      {
+        "name": "Floor Venturi Tunnels",
+        "cost": 8900000,
+        "perf_points": 15,
+        "purchased": true
+      },
+      {
+        "name": "Engine Cover Shark Fin",
+        "cost": 4200000,
+        "perf_points": 7,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/redbullracing/2026redbullracingcarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/redbullracing/2026redbullracinglogo.webp"
+  },
+  {
+    "team": "Mercedes",
+    "full_name": "Mercedes-AMG PETRONAS F1 Team",
+    "short_code": "MER",
+    "primary_color": "#00D2BE",
+    "secondary_color": "#C0C0C0",
+    "team_principal": "Toto Wolff",
+    "power_unit": "Mercedes 2026 Hybrid",
+    "base_location": "Brackley, United Kingdom",
+    "car_model": "W17",
+    "championships": 8,
+    "drivers": [
+      "RUS",
+      "ANT"
+    ],
+    "total_budget": 135000000,
+    "spent": 117200000,
+    "upgrades": [
+      {
+        "name": "Front Suspension Geometry",
+        "cost": 6700000,
+        "perf_points": 10,
+        "purchased": true
+      },
+      {
+        "name": "Low Drag Rear Wing",
+        "cost": 4900000,
+        "perf_points": 8,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/mercedes/2026mercedescarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/mercedes/2026mercedeslogowhite.webp"
+  },
+  {
+    "team": "Aston Martin",
+    "full_name": "Aston Martin Aramco F1 Team",
+    "short_code": "AMR",
+    "primary_color": "#229971",
+    "secondary_color": "#CEDC00",
+    "team_principal": "Adrian Newey",
+    "power_unit": "Honda 2026 Works Hybrid",
+    "base_location": "Silverstone, United Kingdom",
+    "car_model": "AMR26",
+    "championships": 0,
+    "drivers": [
+      "ALO",
+      "STR"
+    ],
+    "total_budget": 135000000,
+    "spent": 114600000,
+    "upgrades": [
+      {
+        "name": "Honda PU Cooling Pack",
+        "cost": 5800000,
+        "perf_points": 9,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/astonmartin/2026astonmartincarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/astonmartin/2026astonmartinlogowhite.webp"
+  },
+  {
+    "team": "Williams",
+    "full_name": "Williams Racing",
+    "short_code": "WIL",
+    "primary_color": "#00A0DE",
+    "secondary_color": "#041E42",
+    "team_principal": "James Vowles",
+    "power_unit": "Mercedes 2026 Customer",
+    "base_location": "Grove, United Kingdom",
+    "car_model": "FW48",
+    "championships": 9,
+    "drivers": [
+      "ALB",
+      "SAI"
+    ],
+    "total_budget": 135000000,
+    "spent": 109800000,
+    "upgrades": [
+      {
+        "name": "Lightweight Monocoque Mod",
+        "cost": 7100000,
+        "perf_points": 11,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/williams/2026williamscarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/williams/2026williamslogo.webp"
+  },
+  {
+    "team": "Alpine",
+    "full_name": "BWT Alpine Formula One Team",
+    "short_code": "ALP",
+    "primary_color": "#0090FF",
+    "secondary_color": "#FF87BC",
+    "team_principal": "Flavio Briatore / Steve Nielsen",
+    "power_unit": "Mercedes Customer Spec",
+    "base_location": "Enstone, United Kingdom",
+    "car_model": "A526",
+    "championships": 2,
+    "drivers": [
+      "GAS",
+      "COL"
+    ],
+    "total_budget": 135000000,
+    "spent": 106500000,
+    "upgrades": [
+      {
+        "name": "Brake Duct Carbon Upgrade",
+        "cost": 4300000,
+        "perf_points": 7,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/alpine/2026alpinecarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/alpine/2026alpinelogo.webp"
+  },
+  {
+    "team": "Haas",
+    "full_name": "MoneyGram Haas F1 Team",
+    "short_code": "HAA",
+    "primary_color": "#B6BABD",
+    "secondary_color": "#E10600",
+    "team_principal": "Ayao Komatsu",
+    "power_unit": "Ferrari 2026 Customer",
+    "base_location": "Kannapolis, United States",
+    "car_model": "VF-26",
+    "championships": 0,
+    "drivers": [
+      "OCO",
+      "BEA"
+    ],
+    "total_budget": 135000000,
+    "spent": 103200000,
+    "upgrades": [
+      {
+        "name": "Rear Floor Diffuser",
+        "cost": 5200000,
+        "perf_points": 8,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/haasf1team/2026haasf1teamcarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/haasf1team/2026haasf1teamlogo.webp"
+  },
+  {
+    "team": "RB",
+    "full_name": "Visa Cash App RB F1 Team",
+    "short_code": "RBF",
+    "primary_color": "#6692FF",
+    "secondary_color": "#FFFFFF",
+    "team_principal": "Alan Permane",
+    "power_unit": "Red Bull Ford Powertrains",
+    "base_location": "Faenza, Italy",
+    "car_model": "VCARB 03",
+    "championships": 0,
+    "drivers": [
+      "LAW",
+      "LIN"
+    ],
+    "total_budget": 135000000,
+    "spent": 105400000,
+    "upgrades": [
+      {
+        "name": "Front Wing Flap Revision",
+        "cost": 4100000,
+        "perf_points": 6,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/racingbulls/2026racingbullscarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/racingbulls/2026racingbullslogo.webp"
+  },
+  {
+    "team": "Audi",
+    "full_name": "Audi Revolut Formula 1 Team",
+    "short_code": "AUD",
+    "primary_color": "#E50027",
+    "secondary_color": "#1F1F1F",
+    "team_principal": "Mattia Binotto",
+    "power_unit": "Audi Works Powertrain 2026",
+    "base_location": "Hinwil, Switzerland",
+    "car_model": "R26",
+    "championships": 0,
+    "drivers": [
+      "HUL",
+      "BOR"
+    ],
+    "total_budget": 135000000,
+    "spent": 112000000,
+    "upgrades": [
+      {
+        "name": "Audi Factory Powertrain Mounts",
+        "cost": 7800000,
+        "perf_points": 12,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/audi/2026audicarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/audi/2026audilogowhite.webp"
+  },
+  {
+    "team": "Cadillac",
+    "full_name": "Cadillac Formula 1 Team",
+    "short_code": "CAD",
+    "primary_color": "#FFC72C",
+    "secondary_color": "#1C1C1C",
+    "team_principal": "Steve O'Rourke",
+    "power_unit": "Ferrari 2026 / Cadillac Turbo",
+    "base_location": "Fishers, Indiana, USA",
+    "car_model": "CAD-01",
+    "championships": 0,
+    "drivers": [
+      "PER",
+      "BOT"
+    ],
+    "total_budget": 135000000,
+    "spent": 108500000,
+    "upgrades": [
+      {
+        "name": "Inaugural Aero Package v1",
+        "cost": 8100000,
+        "perf_points": 13,
+        "purchased": true
+      }
+    ],
+    "car_image_url": "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2026:fallback:car:2026fallbackcarright.webp/v1740000001/common/f1/2026/cadillac/2026cadillaccarright.webp",
+    "logo_url": "https://media.formula1.com/image/upload/v1740000001/common/f1/2026/cadillac/2026cadillaclogowhite.webp"
+  }
+]

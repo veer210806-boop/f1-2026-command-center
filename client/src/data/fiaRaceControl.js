@@ -1,0 +1,111 @@
+// ============================================================
+// fiaRaceControl.js — Official FIA Race Control & Steward Bulletin
+// Modeled directly after FIA.com sporting directives & race control notices
+// ============================================================
+
+export const RACE_STATUS_FLAGS = {
+  GREEN: {
+    code: "GREEN",
+    label: "TRACK CLEAR",
+    color: "#00e676",
+    bg: "rgba(0,230,118,0.15)",
+    border: "rgba(0,230,118,0.45)",
+    icon: "🟢",
+    description: "All sectors clear. Active Aero & DRS enabled.",
+    speedReduction: 1.0,
+  },
+  YELLOW_S2: {
+    code: "YELLOW_S2",
+    label: "YELLOW (SEC 2)",
+    color: "#ffeb3b",
+    bg: "rgba(255,235,59,0.18)",
+    border: "rgba(255,235,59,0.5)",
+    icon: "🟡",
+    description: "Caution in Sector 2 (Debris Turn 9). No overtaking.",
+    speedReduction: 0.88,
+  },
+  VSC: {
+    code: "VSC",
+    label: "VIRTUAL SAFETY CAR",
+    color: "#ff9800",
+    bg: "rgba(255,152,0,0.2)",
+    border: "rgba(255,152,0,0.6)",
+    icon: "🟠",
+    description: "VSC Deployed. Drivers must maintain positive delta (+0.5s). Pit lane open (Pit loss: 13.5s).",
+    speedReduction: 0.65,
+  },
+  SC: {
+    code: "SC",
+    label: "SAFETY CAR DEPLOYED",
+    color: "#ffc107",
+    bg: "rgba(255,193,7,0.2)",
+    border: "rgba(255,193,7,0.6)",
+    icon: "⚪",
+    description: "Safety Car on track. Pack bunched up. Pit lane open (Cheap pit stop window).",
+    speedReduction: 0.55,
+  },
+  RED: {
+    code: "RED",
+    label: "RED FLAG (SUSPENDED)",
+    color: "#ff3b30",
+    bg: "rgba(255,59,48,0.22)",
+    border: "rgba(255,59,48,0.6)",
+    icon: "🔴",
+    description: "Session suspended. All cars proceed to pit lane immediately.",
+    speedReduction: 0.0,
+  },
+};
+
+export const INITIAL_FIA_BULLETINS = [
+  {
+    id: "fia-101",
+    lap: 34,
+    time: "15:47:12",
+    type: "TRACK_LIMITS",
+    title: "CAR 4 (NOR) - TRACK LIMITS TURN 4",
+    detail: "Strike 2 of 3 noted by Race Control at Turn 4 apex exit. Next violation will result in Black & White warning flag.",
+    severity: "warning",
+    car: "NOR #1",
+  },
+  {
+    id: "fia-102",
+    lap: 33,
+    time: "15:45:50",
+    type: "INVESTIGATION",
+    title: "INCIDENT INVOLVING CAR 1 (VER) AND CAR 4 (NOR)",
+    detail: "Noted by FIA Stewards: Alleged forcing another driver off track at Turn 1 on Lap 32. Under investigation.",
+    severity: "alert",
+    car: "VER & NOR",
+  },
+  {
+    id: "fia-103",
+    lap: 30,
+    time: "15:41:20",
+    type: "DECISION",
+    title: "CAR 16 (LEC) - 5-SECOND TIME PENALTY",
+    detail: "The Stewards have assessed a 5-second time penalty to Car 16 for leaving the track and gaining a lasting advantage at Turn 11.",
+    severity: "penalty",
+    car: "LEC #16",
+  },
+  {
+    id: "fia-104",
+    lap: 28,
+    time: "15:38:05",
+    type: "TECHNICAL_DIRECTIVE",
+    title: "FIA TECHNICAL DIRECTIVE TD026 (ACTIVE AERO)",
+    detail: "Telemetry check complete: All 22 cars compliant with 2026 Active Rear Wing (X/Z Mode) maximum flap deflection limits.",
+    severity: "info",
+    car: "ALL CARS",
+  },
+  {
+    id: "fia-105",
+    lap: 22,
+    time: "15:29:40",
+    type: "SAFETY",
+    title: "PIT LANE SPEED LIMIT VERIFIED",
+    detail: "Radar pit speed trap operational: 80 km/h max in force. Green light active at pit exit.",
+    severity: "info",
+    car: "PIT LANE",
+  },
+];
+

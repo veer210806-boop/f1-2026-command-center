@@ -1,0 +1,3159 @@
+{
+  "NOR_PIA": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "NOR",
+        "speed": 299,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 321,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -22,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 112,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 135,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -23,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 130,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 127,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 3,
+      "faster_driver": "NOR"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 125,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 143,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -18,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "NOR",
+        "speed": 301,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 303,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 149,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 119,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 30,
+      "faster_driver": "NOR"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 146,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 130,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 16,
+      "faster_driver": "NOR"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "NOR",
+        "speed": 305,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 306,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -1,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 118,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 120,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 114,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 127,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -13,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 151,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 145,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 6,
+      "faster_driver": "NOR"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "NOR",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 306,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 10,
+      "faster_driver": "NOR"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 122,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 148,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -26,
+      "faster_driver": "PIA"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "NOR",
+        "speed": 133,
+        "throttle": 69,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 115,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 18,
+      "faster_driver": "NOR"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "NOR",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "PIA",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 0,
+      "faster_driver": "NOR"
+    }
+  ],
+  "LEC_HAM": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "LEC",
+        "speed": 315,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 296,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 19,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 112,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 123,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -11,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 111,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 135,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -24,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 134,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 119,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": 15,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "LEC",
+        "speed": 325,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 322,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 3,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 151,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 131,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": 20,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 143,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 120,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": 23,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "LEC",
+        "speed": 320,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 304,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 16,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 133,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 152,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -19,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 119,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 136,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -17,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 118,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 123,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -5,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "LEC",
+        "speed": 320,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 296,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 24,
+      "faster_driver": "LEC"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 113,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 149,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -36,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "LEC",
+        "speed": 141,
+        "throttle": 64,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 143,
+        "throttle": 41,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "HAM"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "LEC",
+        "speed": 295,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAM",
+        "speed": 329,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -34,
+      "faster_driver": "HAM"
+    }
+  ],
+  "VER_LAW": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "VER",
+        "speed": 299,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -17,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 147,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 114,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 33,
+      "faster_driver": "VER"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 148,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 150,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 125,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 131,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -6,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "VER",
+        "speed": 304,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 297,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 7,
+      "faster_driver": "VER"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 134,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 122,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 12,
+      "faster_driver": "VER"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 128,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 119,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 9,
+      "faster_driver": "VER"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "VER",
+        "speed": 307,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 312,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -5,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 119,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 123,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -4,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 114,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 154,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -40,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 125,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 120,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 5,
+      "faster_driver": "VER"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "VER",
+        "speed": 300,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 317,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -17,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 142,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 121,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 21,
+      "faster_driver": "VER"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "VER",
+        "speed": 124,
+        "throttle": 57,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 125,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -1,
+      "faster_driver": "LAW"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "VER",
+        "speed": 319,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "LAW",
+        "speed": 299,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 20,
+      "faster_driver": "VER"
+    }
+  ],
+  "RUS_ANT": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "RUS",
+        "speed": 298,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 317,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -19,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 134,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 149,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -15,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 136,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 113,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 23,
+      "faster_driver": "RUS"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 129,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 110,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 19,
+      "faster_driver": "RUS"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "RUS",
+        "speed": 298,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 329,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -31,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 129,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 150,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -21,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 137,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 131,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 6,
+      "faster_driver": "RUS"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "RUS",
+        "speed": 324,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 315,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 9,
+      "faster_driver": "RUS"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 119,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 122,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -3,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 122,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 124,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 153,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 121,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 32,
+      "faster_driver": "RUS"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "RUS",
+        "speed": 303,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 319,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -16,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 138,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 119,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": 19,
+      "faster_driver": "RUS"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "RUS",
+        "speed": 132,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 133,
+        "throttle": 40,
+        "brake": 0
+      },
+      "speed_delta": -1,
+      "faster_driver": "ANT"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "RUS",
+        "speed": 301,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ANT",
+        "speed": 295,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 6,
+      "faster_driver": "RUS"
+    }
+  ],
+  "ALO_STR": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "ALO",
+        "speed": 299,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 325,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -26,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 112,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 149,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": -37,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 112,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 134,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": -22,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 148,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 128,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": 20,
+      "faster_driver": "ALO"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "ALO",
+        "speed": 301,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 328,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -27,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 140,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 124,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": 16,
+      "faster_driver": "ALO"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 111,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 130,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": -19,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "ALO",
+        "speed": 313,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 11,
+      "faster_driver": "ALO"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 137,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 123,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": 14,
+      "faster_driver": "ALO"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 110,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 119,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": -9,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 153,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 125,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": 28,
+      "faster_driver": "ALO"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "ALO",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 314,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -12,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 128,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 128,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": 0,
+      "faster_driver": "ALO"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "ALO",
+        "speed": 122,
+        "throttle": 49,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 149,
+        "throttle": 64,
+        "brake": 0
+      },
+      "speed_delta": -27,
+      "faster_driver": "STR"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "ALO",
+        "speed": 295,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "STR",
+        "speed": 310,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -15,
+      "faster_driver": "STR"
+    }
+  ],
+  "SAI_ALB": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "SAI",
+        "speed": 313,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 297,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 16,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 119,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 142,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -23,
+      "faster_driver": "ALB"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 132,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 122,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 10,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 111,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 131,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -20,
+      "faster_driver": "ALB"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "SAI",
+        "speed": 324,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 313,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 11,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 126,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 120,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 6,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 121,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 134,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -13,
+      "faster_driver": "ALB"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "SAI",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 307,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -5,
+      "faster_driver": "ALB"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 113,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 124,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -11,
+      "faster_driver": "ALB"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 119,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 148,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -29,
+      "faster_driver": "ALB"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 152,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 139,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 13,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "SAI",
+        "speed": 328,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 296,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 32,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 150,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 139,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 11,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "SAI",
+        "speed": 147,
+        "throttle": 43,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 125,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 22,
+      "faster_driver": "SAI"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "SAI",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "ALB",
+        "speed": 298,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 4,
+      "faster_driver": "SAI"
+    }
+  ],
+  "GAS_DOO": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "GAS",
+        "speed": 296,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 301,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -5,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 153,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 141,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": 12,
+      "faster_driver": "GAS"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 147,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 124,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": 23,
+      "faster_driver": "GAS"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 113,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 123,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": -10,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "GAS",
+        "speed": 310,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 322,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -12,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 150,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 150,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": 0,
+      "faster_driver": "GAS"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 122,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 150,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": -28,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "GAS",
+        "speed": 297,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 322,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -25,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 149,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 129,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": 20,
+      "faster_driver": "GAS"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 128,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 132,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": -4,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 133,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 142,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": -9,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "GAS",
+        "speed": 295,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 309,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -14,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 117,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 145,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": -28,
+      "faster_driver": "DOO"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "GAS",
+        "speed": 126,
+        "throttle": 46,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 121,
+        "throttle": 52,
+        "brake": 0
+      },
+      "speed_delta": 5,
+      "faster_driver": "GAS"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "GAS",
+        "speed": 320,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "DOO",
+        "speed": 310,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 10,
+      "faster_driver": "GAS"
+    }
+  ],
+  "OCO_BEA": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "OCO",
+        "speed": 323,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 329,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -6,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 121,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 111,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": 10,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 127,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 141,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": -14,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 124,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 152,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": -28,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "OCO",
+        "speed": 328,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 12,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 154,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 127,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": 27,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 110,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 112,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "OCO",
+        "speed": 323,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 300,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 23,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 138,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 134,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": 4,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 112,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 140,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": -28,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 126,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 135,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": -9,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "OCO",
+        "speed": 304,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 328,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -24,
+      "faster_driver": "BEA"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 130,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 130,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": 0,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "OCO",
+        "speed": 147,
+        "throttle": 62,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 110,
+        "throttle": 37,
+        "brake": 0
+      },
+      "speed_delta": 37,
+      "faster_driver": "OCO"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "OCO",
+        "speed": 329,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BEA",
+        "speed": 307,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 22,
+      "faster_driver": "OCO"
+    }
+  ],
+  "TSU_HAD": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "TSU",
+        "speed": 318,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 297,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 21,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 147,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 115,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": 32,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 122,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 124,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 121,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 127,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": -6,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "TSU",
+        "speed": 307,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 306,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 1,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 110,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 134,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": -24,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 139,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 146,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": -7,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "TSU",
+        "speed": 307,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -9,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 134,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 142,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": -8,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 147,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 143,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": 4,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 150,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 129,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": 21,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "TSU",
+        "speed": 305,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 314,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -9,
+      "faster_driver": "HAD"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 154,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 150,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": 4,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "TSU",
+        "speed": 120,
+        "throttle": 63,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 112,
+        "throttle": 67,
+        "brake": 0
+      },
+      "speed_delta": 8,
+      "faster_driver": "TSU"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "TSU",
+        "speed": 312,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HAD",
+        "speed": 306,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 6,
+      "faster_driver": "TSU"
+    }
+  ],
+  "HUL_BOR": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "HUL",
+        "speed": 322,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 308,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 14,
+      "faster_driver": "HUL"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 146,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 152,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -6,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 113,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 122,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -9,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 129,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 147,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -18,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "HUL",
+        "speed": 301,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 306,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -5,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 116,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 148,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -32,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 154,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 145,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 9,
+      "faster_driver": "HUL"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "HUL",
+        "speed": 329,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 317,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 12,
+      "faster_driver": "HUL"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 141,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 149,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -8,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 112,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 112,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 0,
+      "faster_driver": "HUL"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 117,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 145,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -28,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "HUL",
+        "speed": 318,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 306,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": 12,
+      "faster_driver": "HUL"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 144,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 131,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": 13,
+      "faster_driver": "HUL"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "HUL",
+        "speed": 124,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 152,
+        "throttle": 54,
+        "brake": 0
+      },
+      "speed_delta": -28,
+      "faster_driver": "BOR"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "HUL",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "BOR",
+        "speed": 325,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -23,
+      "faster_driver": "BOR"
+    }
+  ],
+  "PER_HER": [
+    {
+      "distance_m": 0,
+      "description": "Start / Finish Straight",
+      "is_corner": false,
+      "driver1": {
+        "code": "PER",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 326,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -24,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 400,
+      "description": "Turn 1 Heavy Braking",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 140,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 139,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 1,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 600,
+      "description": "Turn 1 Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 110,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 124,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -14,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 800,
+      "description": "Turn 2 Acceleration",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 117,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 141,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -24,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 1200,
+      "description": "Back Straight DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "PER",
+        "speed": 316,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 317,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -1,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 1700,
+      "description": "Turn 4 Braking Zone",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 142,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 131,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 11,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 2000,
+      "description": "Turn 4 Mid-Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 112,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 124,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": -12,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 2400,
+      "description": "DRS Zone 1",
+      "is_corner": false,
+      "driver1": {
+        "code": "PER",
+        "speed": 302,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 315,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -13,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 3000,
+      "description": "Turn 8 Infield",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 143,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 133,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 10,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 3500,
+      "description": "Hairpin Entry",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 129,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 111,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 18,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 3700,
+      "description": "Hairpin Apex",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 143,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 135,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 8,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 4000,
+      "description": "Main Blast DRS",
+      "is_corner": false,
+      "driver1": {
+        "code": "PER",
+        "speed": 300,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 322,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -22,
+      "faster_driver": "HER"
+    },
+    {
+      "distance_m": 4500,
+      "description": "Turn 13 High-Speed",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 147,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 123,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 24,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 5000,
+      "description": "Final Corner",
+      "is_corner": true,
+      "driver1": {
+        "code": "PER",
+        "speed": 135,
+        "throttle": 61,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 135,
+        "throttle": 36,
+        "brake": 0
+      },
+      "speed_delta": 0,
+      "faster_driver": "PER"
+    },
+    {
+      "distance_m": 5412,
+      "description": "Finish Line",
+      "is_corner": false,
+      "driver1": {
+        "code": "PER",
+        "speed": 313,
+        "throttle": 100,
+        "brake": 0
+      },
+      "driver2": {
+        "code": "HER",
+        "speed": 315,
+        "throttle": 100,
+        "brake": 0
+      },
+      "speed_delta": -2,
+      "faster_driver": "HER"
+    }
+  ]
+}
