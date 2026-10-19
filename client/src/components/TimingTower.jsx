@@ -2,7 +2,7 @@
 // TimingTower.jsx — Advanced F1 Pit Wall Command Center
 // Next-Gen 2026 Formula 1 Live Mission Control Dashboard
 // ============================================================
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import axios from "axios";
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine
@@ -651,7 +651,7 @@ function playF1OvertakeChime(muted = false) {
   } catch (_) {}
 }
 
-export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
+function TimingTower({ selectedCircuit, onGoToCalendar }) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
   const roundNum = selectedCircuit?.round || 1;
   const maxLaps = selectedCircuit?.laps || 58;
@@ -3208,3 +3208,5 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
     </div>
   );
 }
+
+export default memo(TimingTower);

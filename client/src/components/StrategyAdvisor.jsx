@@ -3,7 +3,7 @@
 // Non-Linear Thermal Degradation Curves, Pirelli Multi-Stint Gantt Timeline,
 // Real-Time Undercut Radar & Formula Dream Pit Strategy Radio
 // ============================================================
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import axios from "axios";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -768,7 +768,7 @@ export function PitReentryTrafficSandbox({
   );
 }
 
-export default function StrategyAdvisor({ selectedCircuit }) {
+function StrategyAdvisor({ selectedCircuit }) {
   const circuitName = selectedCircuit?.grand_prix_name || "Australian Grand Prix";
   const circuitId = selectedCircuit?.circuit_id || "australia";
   const totalRaceLaps = selectedCircuit?.laps || 58;
@@ -793,9 +793,9 @@ export default function StrategyAdvisor({ selectedCircuit }) {
     const allLaps = Array.from({ length: 50 }, (_, i) => ({ lap: i + 1 }));
     for (const c of selectedCompounds) {
       const data = generateRealisticDegData(c, basePace, tireWearLevel);
-      for (const lap of allLaps) {
-        const found = data.find((d) => d.lap === lap.lap);
-        lap[c] = found ? found.lap_time : null;
+      const dataMap = new Map(data.map(d => [d.lap, d.lap_time]));
+      for (let i = 0; i < 50; i++) {
+        allLaps[i][c] = dataMap.get(i + 1) || null;
       }
     }
     return allLaps;
@@ -1362,6 +1362,7 @@ export default function StrategyAdvisor({ selectedCircuit }) {
                   dot={false}
                   strokeWidth={2.6}
                   connectNulls
+                  isAnimationActive={false}
                 />
               ))}
             </LineChart>
@@ -2420,3 +2421,5 @@ export default function StrategyAdvisor({ selectedCircuit }) {
     </div>
   );
 }
+
+export default memo(StrategyAdvisor);

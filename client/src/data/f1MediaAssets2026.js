@@ -24,8 +24,8 @@ export const DRIVER_PHOTOS = {
   BOR: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/audi/gabbor01/2026audigabbor01right.webp",
   GAS: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/alpine/piegas01/2026alpinepiegas01right.webp",
   COL: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/alpine/fracol01/2026alpinefracol01right.webp",
-  PER: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/cadillac/serper01/2026cadillacserper01right.webp",
-  BOT: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/cadillac/valbot01/2026cadillacvalbot01right.webp",
+  PER: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/v1740000001/common/f1/2024/redbullracing/serper01/2024redbullracingserper01right.webp",
+  BOT: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/v1740000001/common/f1/2024/kicksauber/valbot01/2024kicksaubervalbot01right.webp",
 };
 
 // Automatic Cloudinary face-crop URLs (focuses tightly on head/face, removing body/suit)

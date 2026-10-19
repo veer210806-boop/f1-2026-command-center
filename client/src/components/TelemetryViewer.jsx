@@ -3,7 +3,7 @@
 // Multi-Channel Synced Speed & Throttle Traces, Dynamic Track Curves,
 // Real-Time Gauges, Apex Vmin Analysis & Formula Dream Team Radio Comms
 // ============================================================
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, BarChart, Bar, Cell, ReferenceLine
@@ -178,7 +178,7 @@ const generateCircuitProfile = (circuit) => {
   };
 };
 
-export default function TelemetryViewer({ selectedCircuit }) {
+function TelemetryViewer({ selectedCircuit }) {
   const [selectedPair, setSelectedPair] = useState(ALL_TEAMMATE_PAIRS[0]);
   const [activeChart, setActiveChart] = useState("synced"); // "synced" | "speed" | "throttle" | "delta" | "timedelta"
   const [scrubPos, setScrubPos] = useState(1320);
@@ -1357,3 +1357,5 @@ export default function TelemetryViewer({ selectedCircuit }) {
     </div>
   );
 }
+
+export default memo(TelemetryViewer);

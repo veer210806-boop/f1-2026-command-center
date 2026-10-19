@@ -2,7 +2,7 @@
 // TeamsPaddock.jsx — Official F1 2026 Teams & Drivers Showcase
 // Pixel-accurate recreation matching formula1.com/en/teams & formula1.com/en/drivers
 // ============================================================
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import { DRIVER_PHOTOS, TEAM_CARS, TEAM_LOGOS, getDriverFaceUrl, getTeamLogo } from "../data/f1MediaAssets2026";
@@ -393,7 +393,7 @@ function formatLapTime(seconds) {
   return `${mins}:${secs.padStart(6, '0')}`;
 }
 
-export default function TeamsPaddock() {
+function TeamsPaddock() {
   const [viewMode, setViewMode] = useState("teams"); // 'teams' | 'drivers' | 'dossier'
   const [teams, setTeams] = useState(STATIC_TEAMS);
   const [drivers, setDrivers] = useState(STATIC_DRIVERS);
@@ -1072,6 +1072,7 @@ export default function TeamsPaddock() {
               return (
                 <div
                   key={t.team}
+                  className="gpu-card"
                   onClick={() => {
                     setSelectedTeamCode(t.team);
                     setViewMode("dossier");
@@ -1588,6 +1589,7 @@ export default function TeamsPaddock() {
               return (
                 <div
                   key={d.code}
+                  className="gpu-card-tall"
                   onClick={() => {
                     setActiveDriverModal(d);
                   }}
@@ -1844,6 +1846,8 @@ export default function TeamsPaddock() {
                       <img
                         src={photoImg}
                         alt={d.name}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           width: "100%",
                           height: "235px",
@@ -1856,13 +1860,55 @@ export default function TeamsPaddock() {
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05) translateY(2px)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1) translateY(0)"; }}
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => {
+                          const alt = DRIVER_PHOTOS[d.code];
+                          if (alt && e.target.src !== alt) {
+                            e.target.src = alt;
+                          } else {
+                            e.target.style.display = 'none';
+                            const fbEl = e.target.parentElement?.querySelector('.driver-fallback-avatar');
+                            if (fbEl) fbEl.style.display = 'flex';
+                          }
+                        }}
                       />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3rem", color: color }}>
+                    ) : null}
+
+                    {/* High-Tech Fallback Avatar if image is loading or unavailable */}
+                    <div
+                      className="driver-fallback-avatar"
+                      style={{
+                        display: photoImg ? "none" : "flex",
+                        width: "100%",
+                        height: "235px",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "column",
+                        gap: "8px",
+                        position: "relative",
+                        zIndex: 2,
+                        background: `radial-gradient(circle at 50% 40%, ${color}25 0%, rgba(10,12,18,0.85) 75%)`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "68px",
+                          height: "68px",
+                          borderRadius: "50%",
+                          border: `2px solid ${color}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.8rem",
+                          boxShadow: `0 0 16px ${color}66`,
+                          background: "rgba(0,0,0,0.6)",
+                        }}
+                      >
                         🏎️
                       </div>
-                    )}
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.85rem", fontWeight: "900", color: "#ffffff" }}>
+                        #{d.number} {d.code}
+                      </span>
+                    </div>
 
                     {/* Smooth Bottom Vignette Fade into Card Dark Carbon */}
                     <div
@@ -3900,3 +3946,5 @@ export default function TeamsPaddock() {
     </div>
   );
 }
+
+export default memo(TeamsPaddock);

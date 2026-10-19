@@ -971,3 +971,36 @@ textarea:focus-visible,
 .radio-eq-bar:nth-child(3) { animation-delay: 0.4s; }
 .radio-eq-bar:nth-child(4) { animation-delay: 0.15s; }
 .radio-eq-bar:nth-child(5) { animation-delay: 0.35s; }
+
+/* ══════════════════════════════════════════════════════════════
+   HIGH-SPEED GPU HARDWARE ACCELERATION & VIRTUALIZATION ENGINE
+   ══════════════════════════════════════════════════════════════ */
+.gpu-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 380px;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.gpu-card-tall {
+  content-visibility: auto;
+  contain-intrinsic-size: 440px;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.gpu-circuit-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 355px;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Eliminate browser compositing stutter on animated elements */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

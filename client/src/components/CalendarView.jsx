@@ -3,7 +3,7 @@
 // Modeled directly after formula1.com/en/racing/2026
 // Featuring verified official race card background photography
 // ============================================================
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, memo } from "react";
 import { createPortal } from "react-dom";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { SEASON_2026_ROUNDS, PERIOD_CONFIG } from "../data/calendar2026";
@@ -244,7 +244,7 @@ function getCircuitHistoricWinners(circuitId) {
   ];
 }
 
-export default function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
+function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
   const initialRound = selectedCircuit?.round || 1;
   const [inspectedRoundNum, setInspectedRoundNum] = useState(initialRound);
   const [viewMode, setViewMode] = useState("cards"); // "cards" | "dossier" | "matrix"
@@ -644,6 +644,7 @@ export default function CalendarView({ selectedCircuit, onSelectCircuit, onLaunc
               return (
                 <div
                   key={race.round}
+                  className="gpu-circuit-card"
                   onClick={() => setActiveModalRace(race)}
                   style={{
                     minHeight: "355px",
@@ -655,11 +656,11 @@ export default function CalendarView({ selectedCircuit, onSelectCircuit, onLaunc
                     borderRight: "1px solid rgba(255,255,255,0.08)",
                     borderBottom: "1px solid rgba(255,255,255,0.08)",
                     borderLeft: "1px solid rgba(255,255,255,0.08)",
-                    background: `url('${bgImage}') center center / cover no-repeat`,
+                    background: "#0c0f1a",
                     boxShadow: isActive
                       ? "0 10px 28px rgba(0,204,68,0.3)"
                       : "0 8px 24px rgba(0,0,0,0.65)",
-                    transition: "all 0.2s ease",
+                    transition: "transform 0.2s ease, border-color 0.2s ease",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
@@ -681,6 +682,27 @@ export default function CalendarView({ selectedCircuit, onSelectCircuit, onLaunc
                       : "rgba(255,255,255,0.18)";
                   }}
                 >
+                  {/* High-Performance Lazy-Loaded Background Photography */}
+                  {bgImage && (
+                    <img
+                      src={bgImage}
+                      alt={`${race.grand_prix_name || race.circuit_id} circuit view`}
+                      loading="lazy"
+                      decoding="async"
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center center",
+                        pointerEvents: "none",
+                        zIndex: 0,
+                      }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
+
                   {/* Vibrant Edge-Only Contrast Vignette (Clear, bright photographic display) */}
                   <div
                     style={{
@@ -689,6 +711,7 @@ export default function CalendarView({ selectedCircuit, onSelectCircuit, onLaunc
                       background:
                         "linear-gradient(180deg, rgba(8,10,18,0.5) 0%, rgba(8,10,18,0.08) 18%, transparent 28%, transparent 64%, rgba(6,7,12,0.8) 88%, rgba(6,7,12,0.96) 100%)",
                       pointerEvents: "none",
+                      zIndex: 1,
                     }}
                   />
 
@@ -2453,3 +2476,5 @@ export default function CalendarView({ selectedCircuit, onSelectCircuit, onLaunc
     </div>
   );
 }
+
+export default memo(CalendarView);

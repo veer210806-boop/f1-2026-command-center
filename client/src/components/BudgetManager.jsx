@@ -3,7 +3,7 @@
 // Broadcast-Grade Financial Telemetry, ATR Testing Regulations,
 // Virtual Showroom Stage & Knapsack Auto-Optimizer
 // ============================================================
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine
@@ -280,7 +280,7 @@ const fmt$ = (n) => {
   return `$${n.toLocaleString()}`;
 };
 
-export default function BudgetManager() {
+function BudgetManager() {
   const [teams, setTeams] = useState(OFFICIAL_11_TEAMS);
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0);
   const [notification, setNotification] = useState(null);
@@ -1656,3 +1656,5 @@ export default function BudgetManager() {
     </div>
   );
 }
+
+export default memo(BudgetManager);

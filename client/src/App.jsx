@@ -1,7 +1,7 @@
 // ============================================================
 // App.jsx — GP-Command F1 2026 Season Command Center
 // ============================================================
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "./index.css";
 import { SEASON_2026_ROUNDS } from "./data/calendar2026";
@@ -69,11 +69,10 @@ function CommandLoader({ label }) {
   );
 }
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState("timing");
-  const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
-  const [selectedCircuit, setSelectedCircuit] = useState(SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT);
-  const [timeStr, setTimeStr] = useState(() => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+function FiaClock() {
+  const [timeStr, setTimeStr] = useState(() =>
+    new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -81,6 +80,49 @@ export default function App() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  return (
+    <div
+      style={{
+        background: "linear-gradient(135deg, rgba(18,20,32,0.95) 0%, rgba(10,12,18,0.9) 100%)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: "8px",
+        padding: "6px 16px",
+        textAlign: "right",
+        minWidth: "150px",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+        <span style={{ fontSize: "0.6rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--neon-green)", boxShadow: "0 0 6px var(--neon-green)" }} />
+          GPS SYNC
+        </span>
+        <span style={{ fontSize: "0.62rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Orbitron', monospace" }}>
+          FIA TIMING
+        </span>
+      </div>
+      <div
+        style={{
+          fontFamily: "'Orbitron', monospace",
+          fontSize: "1.25rem",
+          fontWeight: "900",
+          color: "#ffffff",
+          marginTop: "2px",
+          letterSpacing: "0.06em",
+          textShadow: "0 0 10px rgba(255,255,255,0.3)",
+        }}
+      >
+        {timeStr}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState("timing");
+  const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
+  const [selectedCircuit, setSelectedCircuit] = useState(SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT);
 
   useEffect(() => {
     axios.get(`${API}/circuits`)
@@ -107,12 +149,25 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
-  const handleCircuitChange = (circuitId) => {
+  const handleCircuitChange = useCallback((circuitId) => {
     const found = circuits.find((c) => c.circuit_id === circuitId);
     if (found) {
       setSelectedCircuit(found);
     }
-  };
+  }, [circuits]);
+
+  const handleGoToCalendar = useCallback(() => {
+    setActiveTab("calendar");
+  }, []);
+
+  const handleSelectCircuit = useCallback((c) => {
+    setSelectedCircuit(c);
+  }, []);
+
+  const handleLaunchPitWall = useCallback((c) => {
+    setSelectedCircuit(c);
+    setActiveTab("timing");
+  }, []);
 
   const totalLaps = selectedCircuit?.laps || 58;
   const currentLapNum = 34;
@@ -340,40 +395,7 @@ export default function App() {
         </div>
 
         {/* Right: FIA Race Control Digital Clock Capsule */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, rgba(18,20,32,0.95) 0%, rgba(10,12,18,0.9) 100%)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: "8px",
-            padding: "6px 16px",
-            textAlign: "right",
-            minWidth: "150px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "0.6rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--neon-green)", boxShadow: "0 0 6px var(--neon-green)" }} />
-              GPS SYNC
-            </span>
-            <span style={{ fontSize: "0.62rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Orbitron', monospace" }}>
-              FIA TIMING
-            </span>
-          </div>
-          <div
-            style={{
-              fontFamily: "'Orbitron', monospace",
-              fontSize: "1.25rem",
-              fontWeight: "900",
-              color: "#ffffff",
-              marginTop: "2px",
-              letterSpacing: "0.06em",
-              textShadow: "0 0 10px rgba(255,255,255,0.3)",
-            }}
-          >
-            {timeStr}
-          </div>
-        </div>
+        <FiaClock />
       </header>
 
       {/* ── Navigation Tabs (Two-Tier Cockpit Deck) ── */}
@@ -400,15 +422,12 @@ export default function App() {
           <kbd>Alt + {TABS.indexOf(activeTabMeta) + 1}</kbd>
         </div>
         <Suspense fallback={<CommandLoader label={activeTabMeta.subtitle} />}>
-          {activeTab === "timing"    && <TimingTower selectedCircuit={selectedCircuit} onGoToCalendar={() => setActiveTab("calendar")} />}
+          {activeTab === "timing"    && <TimingTower selectedCircuit={selectedCircuit} onGoToCalendar={handleGoToCalendar} />}
           {activeTab === "calendar"  && (
             <CalendarView
               selectedCircuit={selectedCircuit}
-              onSelectCircuit={(c) => setSelectedCircuit(c)}
-              onLaunchPitWall={(c) => {
-                setSelectedCircuit(c);
-                setActiveTab("timing");
-              }}
+              onSelectCircuit={handleSelectCircuit}
+              onLaunchPitWall={handleLaunchPitWall}
             />
           )}
           {activeTab === "paddock"   && <TeamsPaddock />}
