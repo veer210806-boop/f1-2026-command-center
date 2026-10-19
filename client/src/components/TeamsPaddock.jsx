@@ -227,6 +227,24 @@ const STATIC_DRIVERS = [
   { name: "Valtteri Bottas",   code: "BOT", number: 77, team: "Cadillac",        nationality: "Finnish",      flag: "🇫🇮", base_pace: 84.3, tire_mgmt_rating: 88, wins: 10,  podiums: 67, points: 1797, championships: 0, photo_url: DRIVER_PHOTOS["BOT"] },
 ];
 
+const NATIONALITY_TO_FIA = {
+  "British": "GBR",
+  "Australian": "AUS",
+  "Monegasque": "MON",
+  "Dutch": "NLD",
+  "French": "FRA",
+  "Italian": "ITA",
+  "Spanish": "ESP",
+  "Canadian": "CAN",
+  "Thai": "THA",
+  "New Zealander": "NZL",
+  "German": "GER",
+  "Brazilian": "BRA",
+  "Mexican": "MEX",
+  "Finnish": "FIN",
+  "Argentine": "ARG",
+};
+
 const CONSTRUCTOR_RANK_ORDER = {
   "McLaren": 1,
   "Ferrari": 2,
@@ -565,21 +583,21 @@ export default function TeamsPaddock() {
           100% { transform: scale(1); opacity: 1; }
         }
       `}</style>
-      {/* ════════ TIER 1: UNIFIED PADDOCK MISSION GANTRY DECK (46px) ════════ */}
+      {/* ════════ TIER 1: UNIFIED PADDOCK MISSION GANTRY DECK ════════ */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: "10px",
-          background: "linear-gradient(180deg, rgba(16, 20, 32, 0.98) 0%, rgba(9, 12, 19, 0.98) 100%)",
+          gap: "12px",
+          background: "linear-gradient(180deg, rgba(20, 24, 38, 0.98) 0%, rgba(10, 13, 22, 0.98) 100%)",
           border: "1px solid rgba(255, 255, 255, 0.12)",
-          borderTop: "2px solid var(--neon-red)",
-          borderRadius: "8px",
-          padding: "6px 14px",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.65)",
+          borderTop: "3px solid var(--neon-red)",
+          borderRadius: "10px",
+          padding: "8px 16px",
+          boxShadow: "0 6px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(232, 0, 45, 0.15)",
           flexWrap: "wrap",
-          minHeight: "46px",
+          minHeight: "50px",
           boxSizing: "border-box",
         }}
       >
@@ -589,46 +607,48 @@ export default function TeamsPaddock() {
             style={{
               background: "linear-gradient(135deg, var(--neon-red), #b3001e)",
               color: "#ffffff",
-              padding: "3px 8px",
-              borderRadius: "4px",
+              padding: "4px 10px",
+              borderRadius: "5px",
               fontFamily: "'Orbitron', monospace",
-              fontSize: "0.68rem",
+              fontSize: "0.70rem",
               fontWeight: "900",
               letterSpacing: "0.08em",
-              boxShadow: "0 0 10px rgba(232, 0, 45, 0.5)",
+              boxShadow: "0 0 12px rgba(232, 0, 45, 0.6)",
               display: "inline-flex",
               alignItems: "center",
-              gap: "5px",
+              gap: "6px",
             }}
           >
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff", animation: "pulseBeacon 2s infinite" }} />
             FIA F1 2026
           </div>
 
-          <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
             <span
               style={{
                 fontFamily: "'Orbitron', monospace",
-                fontSize: "0.92rem",
+                fontSize: "1.02rem",
                 fontWeight: "900",
                 color: "#ffffff",
-                letterSpacing: "0.06em",
+                letterSpacing: "0.05em",
+                textShadow: "0 0 12px rgba(255, 255, 255, 0.2)",
               }}
             >
-              PADDOCK GRID
+              PADDOCK & CONSTRUCTORS
             </span>
             <span
               style={{
-                fontSize: "0.62rem",
+                fontSize: "0.64rem",
                 fontFamily: "'Orbitron', monospace",
-                color: "var(--text-dim)",
-                background: "rgba(255,255,255,0.06)",
-                padding: "2px 6px",
-                borderRadius: "3px",
-                border: "1px solid rgba(255,255,255,0.08)",
+                color: "var(--neon-cyan)",
+                background: "rgba(0, 210, 190, 0.12)",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                border: "1px solid rgba(0, 210, 190, 0.3)",
+                fontWeight: "800",
               }}
             >
-              11 CONSTRUCTORS · 22 DRIVERS
+              11 TEAMS · 22 DRIVERS
             </span>
           </div>
 
@@ -640,16 +660,18 @@ export default function TeamsPaddock() {
               gap: "6px",
               fontSize: "0.62rem",
               fontFamily: "'Orbitron', monospace",
-              color: "var(--neon-cyan)",
-              background: "rgba(0, 210, 190, 0.08)",
-              border: "1px solid rgba(0, 210, 190, 0.25)",
-              padding: "2px 8px",
-              borderRadius: "4px",
+              color: "#d0d6e6",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              padding: "3px 10px",
+              borderRadius: "5px",
             }}
           >
-            <span>⚡ 350kW HYBRID · ACTIVE AERO</span>
+            <span style={{ color: "var(--neon-cyan)" }}>⚡ 350kW MGU-K</span>
             <span>·</span>
-            <span style={{ color: "var(--neon-green)", fontWeight: "700" }}>💰 $135.0M CAP</span>
+            <span style={{ color: "#38bdf8" }}>🌀 ACTIVE AERO</span>
+            <span>·</span>
+            <span style={{ color: "var(--neon-green)", fontWeight: "800" }}>💰 $135.0M COST CAP</span>
           </div>
         </div>
 
@@ -657,17 +679,17 @@ export default function TeamsPaddock() {
         <div
           style={{
             display: "flex",
-            background: "rgba(0, 0, 0, 0.4)",
-            padding: "2px",
-            borderRadius: "6px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            gap: "2px",
+            background: "rgba(0, 0, 0, 0.5)",
+            padding: "3px",
+            borderRadius: "7px",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            gap: "3px",
           }}
         >
           {[
-            { id: "teams", icon: "🏎️", label: "11 TEAMS" },
+            { id: "teams", icon: "🏎️", label: "3D SHOWROOM" },
             { id: "drivers", icon: "👤", label: "22 DRIVERS" },
-            { id: "ratings", icon: "📊", label: "2026 RATINGS" },
+            { id: "ratings", icon: "📊", label: "TECH RATINGS" },
             { id: "dossier", icon: "🛠️", label: "PIT DOSSIER" },
           ].map((tab) => {
             const isActive = viewMode === tab.id;
@@ -679,21 +701,21 @@ export default function TeamsPaddock() {
                 aria-label={`Open ${tab.label} view`}
                 style={{
                   background: isActive
-                    ? "linear-gradient(135deg, rgba(232,0,45,0.9) 0%, rgba(180,0,30,0.95) 100%)"
+                    ? "linear-gradient(135deg, rgba(232,0,45,0.95) 0%, rgba(180,0,30,0.98) 100%)"
                     : "transparent",
                   color: isActive ? "#ffffff" : "var(--text-secondary)",
                   border: "none",
-                  padding: "4px 10px",
-                  borderRadius: "4px",
+                  padding: "5px 12px",
+                  borderRadius: "5px",
                   fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.66rem",
+                  fontSize: "0.68rem",
                   fontWeight: "800",
                   cursor: "pointer",
-                  boxShadow: isActive ? "0 0 10px rgba(232,0,45,0.35)" : "none",
+                  boxShadow: isActive ? "0 0 14px rgba(232,0,45,0.5)" : "none",
                   transition: "all 0.15s ease",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
+                  gap: "6px",
                 }}
               >
                 <span>{tab.icon}</span>
@@ -1018,9 +1040,27 @@ export default function TeamsPaddock() {
               const tech = TEAM_TECH_DATA[t.team] || {};
               const perf = TEAM_PERFORMANCE_2026[t.team] || {};
               const officialRank = tech.rank || CONSTRUCTOR_RANK_ORDER[t.team] || 99;
-              const teamDriverList = drivers.filter(
+              // Ensure we always have the 2 official drivers for this team
+              const rawDriverList = drivers.filter(
                 (d) => (t.drivers && t.drivers.includes(d.code)) || d.team.toLowerCase() === t.team.toLowerCase()
               );
+              const teamDriverList = rawDriverList.length >= 2 ? rawDriverList : (
+                (t.drivers || []).map(code => {
+                  const found = STATIC_DRIVERS.find(sd => sd.code === code);
+                  if (found) return found;
+                  const prof = DRIVER_PROFILES_2026[code];
+                  return {
+                    code,
+                    name: prof?.full_name || code,
+                    number: prof?.number || 0,
+                    points: prof?.career_points || 0,
+                    nationality: prof?.nationality || "FIA",
+                    flag: prof?.country_code || "🏁",
+                    photo_url: DRIVER_PHOTOS[code] || "",
+                  };
+                })
+              );
+
               const totalBudget = t.total_budget || 135000000;
               const spentBudget = t.spent || 110000000;
               const spentPct = Math.min(100, Math.round((spentBudget / totalBudget) * 100));
@@ -1037,34 +1077,33 @@ export default function TeamsPaddock() {
                     setViewMode("dossier");
                   }}
                   style={{
-                    background: "var(--bg-card)",
-                    borderTop: `4px solid ${color}`,
+                    background: "linear-gradient(180deg, rgba(18, 22, 36, 0.96) 0%, rgba(9, 12, 19, 0.98) 100%)",
+                    borderTop: `3px solid ${color}`,
                     borderRight: "1px solid rgba(255,255,255,0.08)",
                     borderBottom: "1px solid rgba(255,255,255,0.08)",
                     borderLeft: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "14px",
-                    padding: "16px 18px",
+                    borderRadius: "12px",
+                    padding: "14px 16px 12px 16px",
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between",
-                    minHeight: "400px",
+                    gap: "10px",
                     position: "relative",
                     overflow: "hidden",
-                    transition: "all 0.25s ease",
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                    transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = color;
-                    e.currentTarget.style.boxShadow = `0 16px 36px ${color}33`;
-                    e.currentTarget.style.transform = "translateY(-5px)";
+                    e.currentTarget.style.boxShadow = `0 14px 36px ${color}33, 0 0 20px ${color}1a`;
+                    e.currentTarget.style.transform = "translateY(-4px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderTopColor = color;
                     e.currentTarget.style.borderRightColor = "rgba(255,255,255,0.08)";
                     e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.08)";
                     e.currentTarget.style.borderLeftColor = "rgba(255,255,255,0.08)";
-                    e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.55)";
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
@@ -1073,7 +1112,7 @@ export default function TeamsPaddock() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: `radial-gradient(circle at 70% 30%, ${color}15 0%, transparent 60%)`,
+                      background: `radial-gradient(circle at 85% 15%, ${color}14 0%, transparent 65%)`,
                       pointerEvents: "none",
                     }}
                   />
@@ -1083,11 +1122,11 @@ export default function TeamsPaddock() {
                     style={{
                       position: "absolute",
                       right: "12px",
-                      top: "-10px",
+                      top: "-8px",
                       fontFamily: "'Orbitron', monospace",
-                      fontSize: "6.5rem",
+                      fontSize: "5.5rem",
                       fontWeight: "900",
-                      opacity: "0.04",
+                      opacity: "0.035",
                       color: "#fff",
                       pointerEvents: "none",
                       lineHeight: 1,
@@ -1096,23 +1135,23 @@ export default function TeamsPaddock() {
                     #{String(officialRank).padStart(2, "0")}
                   </div>
 
-                  {/* ── CARD HEADER: Rank, Full Name & Constructor Crest ── */}
+                  {/* ── CARD HEADER: Rank, Title, Chassis, Engine & Crest ── */}
                   <div style={{ position: "relative", zIndex: 2 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                      <div>
-                        {/* Rank & 2026 Chassis Badges */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* Rank & Chassis Badges */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", flexWrap: "wrap" }}>
                           <span
                             style={{
                               fontFamily: "'Orbitron', monospace",
-                              fontSize: "0.72rem",
+                              fontSize: "0.68rem",
                               fontWeight: "800",
                               color: isChampion ? "var(--neon-yellow)" : isPodiumTeam ? "#ffffff" : color,
-                              background: isChampion ? "rgba(255,221,0,0.18)" : `${color}22`,
+                              background: isChampion ? "rgba(255,221,0,0.18)" : `${color}20`,
                               border: `1px solid ${isChampion ? "rgba(255,221,0,0.5)" : color + "55"}`,
-                              padding: "2px 8px",
+                              padding: "2px 7px",
                               borderRadius: "4px",
-                              letterSpacing: "0.06em",
+                              letterSpacing: "0.04em",
                             }}
                           >
                             {isChampion ? "👑 #01 CHAMPION" : `#${String(officialRank).padStart(2, "0")} CONSTRUCTOR`}
@@ -1120,13 +1159,13 @@ export default function TeamsPaddock() {
 
                           <span
                             style={{
-                              fontSize: "0.7rem",
+                              fontSize: "0.66rem",
                               fontFamily: "'Orbitron', monospace",
                               fontWeight: "700",
                               background: "rgba(255,255,255,0.06)",
                               border: "1px solid rgba(255,255,255,0.12)",
-                              color: "#ffffff",
-                              padding: "2px 8px",
+                              color: "#e2e8f0",
+                              padding: "2px 6px",
                               borderRadius: "4px",
                             }}
                           >
@@ -1136,7 +1175,7 @@ export default function TeamsPaddock() {
                           {tech.isNewEntry && (
                             <span
                               style={{
-                                fontSize: "0.68rem",
+                                fontSize: "0.64rem",
                                 fontFamily: "'Orbitron', monospace",
                                 fontWeight: "800",
                                 background: "rgba(255,199,44,0.18)",
@@ -1155,153 +1194,152 @@ export default function TeamsPaddock() {
                         <h3
                           style={{
                             fontFamily: "'Orbitron', monospace",
-                            fontSize: "1.3rem",
+                            fontSize: "1.15rem",
                             fontWeight: "900",
                             color: "#ffffff",
-                            letterSpacing: "0.03em",
+                            letterSpacing: "0.02em",
                             margin: 0,
                             lineHeight: 1.2,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
                           {t.full_name || t.team}
                         </h3>
 
-                        {/* Location & Team Principal */}
-                        <div style={{ display: "flex", gap: "10px", color: "var(--text-secondary)", fontSize: "0.75rem", marginTop: "5px", flexWrap: "wrap" }}>
-                          <span>{tech.flag || "📍"} {t.base_location || tech.headquarters || "Europe"}</span>
+                        {/* Location & Power Unit Architecture */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-secondary)", fontSize: "0.70rem", marginTop: "4px", flexWrap: "wrap" }}>
+                          <span style={{ color: "var(--text-dim)" }}>📍 {t.base_location || tech.headquarters || "Europe"}</span>
                           <span>·</span>
-                          <span>👔 {t.team_principal || "Team Principal"}</span>
+                          <span style={{ color: "#ffffff", fontWeight: "600" }}>⚡ {t.power_unit || "Works Turbo Hybrid"}</span>
                         </div>
                       </div>
 
-                      {/* Official Constructor Crest */}
-                      {logoImg ? (
-                        <div
-                          style={{
-                            width: "56px",
-                            height: "56px",
-                            padding: "6px",
-                            background: "rgba(0,0,0,0.4)",
-                            borderRadius: "10px",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
-                          }}
-                        >
-                          <img
-                            src={logoImg}
-                            alt={`${t.team} logo`}
-                            referrerPolicy="no-referrer"
-                            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                        </div>
-                      ) : (
-                        <div style={{ width: "48px", height: "48px", borderRadius: "8px", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontWeight: "900", fontSize: "1rem", color: "#fff" }}>
-                          {t.short_code || t.team.slice(0, 3)}
-                        </div>
-                      )}
+                      {/* Official Constructor Crest + Rating Pill */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0 }}>
+                        {logoImg ? (
+                          <div
+                            style={{
+                              width: "48px",
+                              height: "48px",
+                              padding: "5px",
+                              background: "rgba(0,0,0,0.45)",
+                              borderRadius: "8px",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
+                            }}
+                          >
+                            <img
+                              src={logoImg}
+                              alt={`${t.team} logo`}
+                              referrerPolicy="no-referrer"
+                              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{ width: "42px", height: "42px", borderRadius: "8px", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontWeight: "900", fontSize: "0.9rem", color: "#fff" }}>
+                            {t.short_code || t.team.slice(0, 3)}
+                          </div>
+                        )}
+
+                        {perf && perf.overallScore && (
+                          <span
+                            style={{
+                              fontFamily: "'Orbitron', monospace",
+                              fontSize: "0.62rem",
+                              fontWeight: "800",
+                              color: isChampion ? "var(--neon-yellow)" : "var(--neon-cyan)",
+                              background: "rgba(0,0,0,0.4)",
+                              border: `1px solid ${color}44`,
+                              padding: "1px 5px",
+                              borderRadius: "3px",
+                            }}
+                          >
+                            INDEX {perf.overallScore}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* ── 2026 TECH REGULATIONS SPEC BAR (Zero Car Overlap) ── */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "4px",
-                      marginTop: "10px",
-                      marginBottom: "6px",
-                      padding: "4px 8px",
-                      background: "rgba(0, 0, 0, 0.55)",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.60rem",
-                        fontFamily: "'Orbitron', monospace",
-                        fontWeight: "700",
-                        color: "#ffffff",
-                        whiteSpace: "nowrap",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px",
-                      }}
-                    >
-                      ⚡ 350kW MGU-K
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "0.60rem",
-                        fontFamily: "'Orbitron', monospace",
-                        fontWeight: "700",
-                        color: "var(--neon-cyan)",
-                        whiteSpace: "nowrap",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px",
-                      }}
-                    >
-                      🌀 ACTIVE AERO
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "0.60rem",
-                        fontFamily: "'Orbitron', monospace",
-                        fontWeight: "700",
-                        color: "var(--neon-green)",
-                        whiteSpace: "nowrap",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px",
-                      }}
-                    >
-                      🌱 BIO-E-FUEL
-                    </span>
-                  </div>
-
-                  {/* ── 2026 CAR SHOWROOM FLOOR (With 3D Grid & Underglow) ── */}
+                  {/* ── 2026 CAR HYPER-SHOWROOM STAGE (Pedestal & Underglow) ── */}
                   <div
                     style={{
                       position: "relative",
                       width: "100%",
-                      height: "135px",
-                      marginTop: "4px",
+                      height: "115px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      background: "radial-gradient(ellipse at 50% 65%, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.3) 70%)",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      overflow: "hidden",
                     }}
                   >
-                    {/* Perspective 3D Reflection Grid Floor */}
+                    {/* Micro Tech HUD corner tags */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        left: "8px",
+                        fontSize: "0.56rem",
+                        fontFamily: "'Orbitron', monospace",
+                        color: "var(--neon-cyan)",
+                        fontWeight: "700",
+                        letterSpacing: "0.06em",
+                        opacity: 0.85,
+                        zIndex: 3,
+                      }}
+                    >
+                      🌀 ACTIVE AERO [X/Z-MODE]
+                    </div>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        right: "8px",
+                        fontSize: "0.56rem",
+                        fontFamily: "'Orbitron', monospace",
+                        color: "var(--neon-green)",
+                        fontWeight: "700",
+                        letterSpacing: "0.06em",
+                        opacity: 0.85,
+                        zIndex: 3,
+                      }}
+                    >
+                      ⚡ 350kW MGU-K · 100% BIO-FUEL
+                    </div>
+
+                    {/* Perspective 3D Elliptical Glow Turntable Floor */}
                     <div
                       style={{
                         position: "absolute",
                         bottom: "6px",
-                        left: "5%",
-                        right: "5%",
-                        height: "55px",
-                        background: `radial-gradient(ellipse at center, ${color}35 0%, transparent 75%)`,
+                        left: "8%",
+                        right: "8%",
+                        height: "46px",
+                        background: `radial-gradient(ellipse at center, ${color}55 0%, ${color}15 50%, transparent 75%)`,
                         borderRadius: "50%",
-                        filter: "blur(6px)",
+                        filter: "blur(4px)",
                         pointerEvents: "none",
                       }}
                     />
 
-                    {/* Ground reflection line grid */}
+                    {/* Laser Horizon Floor Line */}
                     <div
                       style={{
                         position: "absolute",
-                        bottom: "12px",
-                        width: "85%",
+                        bottom: "16px",
+                        width: "82%",
                         height: "1px",
-                        background: `linear-gradient(90deg, transparent, ${color}99, transparent)`,
-                        boxShadow: `0 0 10px ${color}`,
+                        background: `linear-gradient(90deg, transparent, ${color}aa, transparent)`,
+                        boxShadow: `0 0 8px ${color}`,
                         pointerEvents: "none",
                       }}
                     />
@@ -1313,217 +1351,173 @@ export default function TeamsPaddock() {
                         alt={`${t.team} 2026 Car`}
                         style={{
                           maxWidth: "96%",
-                          maxHeight: "145px",
+                          maxHeight: "105px",
                           objectFit: "contain",
-                          filter: `drop-shadow(0 14px 20px ${color}44)`,
+                          filter: `drop-shadow(0 10px 16px ${color}55)`,
                           transition: "all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)",
                           position: "relative",
                           zIndex: 2,
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "scale(1.08) translateY(-4px)";
-                          e.currentTarget.style.filter = `drop-shadow(0 18px 28px ${color}66)`;
+                          e.currentTarget.style.transform = "scale(1.06) translateY(-3px)";
+                          e.currentTarget.style.filter = `drop-shadow(0 14px 22px ${color}88)`;
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = "scale(1) translateY(0)";
-                          e.currentTarget.style.filter = `drop-shadow(0 14px 20px ${color}44)`;
+                          e.currentTarget.style.filter = `drop-shadow(0 10px 16px ${color}55)`;
                         }}
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
                     ) : (
-                      <div style={{ color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace", fontSize: "0.8rem" }}>
-                        🏎️ 2026 Car Model Specification
+                      <div style={{ color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace", fontSize: "0.75rem" }}>
+                        🏎️ 2026 Regulation Specification Model
                       </div>
                     )}
                   </div>
 
-                  {/* ── TECHNICAL SPECS & POWER UNIT HUD ── */}
-                  <div
-                    style={{
-                      background: "rgba(0,0,0,0.35)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: "8px",
-                      padding: "8px 12px",
-                      marginTop: "6px",
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "8px",
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: "0.64rem", color: "var(--text-dim)", textTransform: "uppercase" }}>
-                        Power Unit & Architecture
-                      </div>
-                      <div style={{ fontSize: "0.78rem", fontWeight: "700", color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: "2px" }}>
-                        🔧 {t.power_unit || "Works Turbo Hybrid"}
-                      </div>
-                    </div>
+                  {/* ── HERO PILOTS COCKPIT BAR (Driver Duo On Card Face) ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    {teamDriverList.map((dr) => {
+                      const faceUrl = getDriverFaceUrl(dr.code, dr.photo_url);
+                      const drProfile = DRIVER_PROFILES_2026[dr.code] || {};
+                      const drCountry = NATIONALITY_TO_FIA[dr.nationality] || drProfile.country_code || (dr.nationality ? dr.nationality.slice(0, 3).toUpperCase() : "FIA");
+                      const surname = (dr.name || drProfile.full_name || dr.code).split(" ").slice(-1)[0].toUpperCase();
 
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.64rem", color: "var(--text-dim)", textTransform: "uppercase" }}>
-                        Combined Output & Titles
-                      </div>
-                      <div style={{ fontSize: "0.78rem", fontFamily: "'Orbitron', monospace", fontWeight: "700", color: color, marginTop: "2px" }}>
-                        {tech.powerOutput || "1,040+ HP"} · 🏆 {t.championships || 0} WCC
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── 2026 RATING INDEX BENCHMARK CAPSULE ── */}
-                  {perf && perf.overallScore && (
-                    <div
-                      style={{
-                        background: "rgba(0,0,0,0.45)",
-                        border: `1px solid ${color}33`,
-                        borderRadius: "8px",
-                        padding: "8px 12px",
-                        marginTop: "8px",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                        <span style={{ fontSize: "0.62rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-cyan)", fontWeight: "700" }}>
-                          2026 RATING INDEX
-                        </span>
-                        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.78rem", fontWeight: "900", color: "#ffffff", background: "rgba(255,255,255,0.08)", padding: "1px 6px", borderRadius: "3px" }}>
-                          {perf.overallScore} / 100
-                        </span>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", textAlign: "center", fontSize: "0.62rem", fontFamily: "'Orbitron', monospace" }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", padding: "4px 2px", borderRadius: "4px" }}>
-                          <div style={{ color: "var(--text-dim)", fontSize: "0.54rem" }}>AERO</div>
-                          <div style={{ color: "var(--neon-cyan)", fontWeight: "800", marginTop: "1px" }}>{perf.aeroEfficiency}%</div>
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", padding: "4px 2px", borderRadius: "4px" }}>
-                          <div style={{ color: "var(--text-dim)", fontSize: "0.54rem" }}>350kW PU</div>
-                          <div style={{ color: "var(--neon-green)", fontWeight: "800", marginTop: "1px" }}>{perf.powerUnitDeployment}%</div>
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", padding: "4px 2px", borderRadius: "4px" }}>
-                          <div style={{ color: "var(--text-dim)", fontSize: "0.54rem" }}>PIT STOP</div>
-                          <div style={{ color: "#ffaa00", fontWeight: "800", marginTop: "1px" }}>#{perf.pitRank} ({perf.avgPitTime})</div>
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", padding: "4px 2px", borderRadius: "4px" }}>
-                          <div style={{ color: "var(--text-dim)", fontSize: "0.54rem" }}>V-MAX</div>
-                          <div style={{ color: "#ffffff", fontWeight: "800", marginTop: "1px" }}>{perf.topSpeedKmh}k</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── COST CAP FINANCIAL TELEMETRY BAR ── */}
-                  <div style={{ marginTop: "10px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: "0.72rem", marginBottom: "4px" }}>
-                      <span style={{ color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace" }}>
-                        COST CAP SPENT
-                      </span>
-                      <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: "700", color: "#ffffff" }}>
-                        ${(spentBudget / 1000000).toFixed(1)}M / $135.0M <span style={{ color: "var(--neon-green)" }}>(${remainingBudget}M HEADROOM)</span>
-                      </span>
-                    </div>
-
-                    <div style={{ width: "100%", height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden" }}>
-                      <div
-                        style={{
-                          width: `${spentPct}%`,
-                          height: "100%",
-                          background: `linear-gradient(90deg, ${color}, var(--neon-cyan))`,
-                          borderRadius: "3px",
-                          boxShadow: `0 0 8px ${color}88`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* ── DRIVER LINEUP INTERACTIVE DUO CARDS ── */}
-                  <div style={{ marginTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <span style={{ fontSize: "0.7rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", letterSpacing: "0.08em" }}>
-                        OFFICIAL 2026 PILOTS:
-                      </span>
-                      <span style={{ fontSize: "0.68rem", color: color, fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
-                        CLICK PILOT FOR DOSSIER
-                      </span>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                      {teamDriverList.map((dr) => {
-                        const faceUrl = getDriverFaceUrl(dr.code, dr.photo_url);
-                        return (
+                      return (
+                        <div
+                          key={dr.code}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDriverModal(dr);
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            background: "rgba(0,0,0,0.5)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            borderRadius: "6px",
+                            padding: "5px 8px",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = color;
+                            e.currentTarget.style.background = `${color}22`;
+                            e.currentTarget.style.transform = "translateY(-1px)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                            e.currentTarget.style.background = "rgba(0,0,0,0.5)";
+                            e.currentTarget.style.transform = "translateY(0)";
+                          }}
+                        >
+                          {/* Circular Driver Avatar */}
                           <div
-                            key={dr.code}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDriverModal(dr);
-                            }}
                             style={{
+                              width: "30px",
+                              height: "30px",
+                              borderRadius: "50%",
+                              overflow: "hidden",
+                              background: `${color}33`,
+                              border: `1.5px solid ${color}`,
                               display: "flex",
                               alignItems: "center",
-                              gap: "8px",
-                              background: "rgba(0,0,0,0.5)",
-                              border: "1px solid rgba(255,255,255,0.08)",
-                              borderRadius: "8px",
-                              padding: "6px 8px",
-                              cursor: "pointer",
-                              transition: "all 0.15s ease",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = color;
-                              e.currentTarget.style.background = `${color}20`;
-                              e.currentTarget.style.transform = "translateY(-2px)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                              e.currentTarget.style.background = "rgba(0,0,0,0.5)";
-                              e.currentTarget.style.transform = "translateY(0)";
+                              justifyContent: "center",
+                              flexShrink: 0,
+                              boxShadow: `0 0 6px ${color}44`,
                             }}
                           >
-                            {/* Circular Face Container */}
-                            <div
-                              style={{
-                                width: "32px",
-                                height: "32px",
-                                borderRadius: "50%",
-                                overflow: "hidden",
-                                background: `${color}33`,
-                                border: `1.5px solid ${color}`,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0,
-                                boxShadow: `0 0 6px ${color}55`,
-                              }}
-                            >
-                              {faceUrl ? (
-                                <img
-                                  src={faceUrl}
-                                  alt={dr.name}
-                                  referrerPolicy="no-referrer"
-                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                  onError={(e) => {
-                                    const fb = dr.photo_url || getDriverPhoto(dr.code);
-                                    if (e.target.src !== fb) e.target.src = fb;
-                                  }}
-                                />
-                              ) : (
-                                <span>🏎️</span>
-                              )}
-                            </div>
+                            {faceUrl ? (
+                              <img
+                                src={faceUrl}
+                                alt={dr.name}
+                                referrerPolicy="no-referrer"
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                onError={(e) => {
+                                  const fb = dr.photo_url || getDriverPhoto(dr.code);
+                                  if (e.target.src !== fb) e.target.src = fb;
+                                }}
+                              />
+                            ) : (
+                              <span style={{ fontSize: "0.8rem" }}>🏎️</span>
+                            )}
+                          </div>
 
-                            <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                              <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.75rem", color: color, fontWeight: "900" }}>
-                                  #{dr.number}
-                                </span>
-                                <span style={{ fontSize: "0.82rem", fontWeight: "800", color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {dr.name.split(" ").slice(-1)[0]}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace" }}>
-                                {dr.points || 0} PTS · <span style={{ color: "var(--neon-yellow)", fontWeight: "800" }}>{dr.nationality ? dr.nationality.slice(0, 3).toUpperCase() : (dr.country ? dr.country.slice(0, 3).toUpperCase() : "FIA")}</span>
-                              </div>
+                          {/* Driver Number & Surname */}
+                          <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                              <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.72rem", color: color, fontWeight: "900" }}>
+                                #{dr.number}
+                              </span>
+                              <span style={{ fontSize: "0.78rem", fontWeight: "800", color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {surname}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "0.62rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace", display: "flex", gap: "4px", alignItems: "center" }}>
+                              <span style={{ color: "var(--neon-yellow)", fontWeight: "800" }}>{drCountry}</span>
+                              <span>·</span>
+                              <span>{dr.points || drProfile.career_points || 0} PTS</span>
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* ── INTEGRATED TELEMETRY HUD & COST CAP CAPSULE ── */}
+                  <div
+                    style={{
+                      background: "rgba(0,0,0,0.4)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: "6px",
+                      padding: "6px 8px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
+                    }}
+                  >
+                    {/* 4 Telemetry Metrics */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "4px", textAlign: "center", fontSize: "0.60rem", fontFamily: "'Orbitron', monospace" }}>
+                      <div style={{ background: "rgba(255,255,255,0.03)", padding: "3px 2px", borderRadius: "3px" }}>
+                        <div style={{ color: "var(--text-dim)", fontSize: "0.52rem" }}>AERO</div>
+                        <div style={{ color: "var(--neon-cyan)", fontWeight: "800", marginTop: "1px" }}>{perf.aeroEfficiency || 90}%</div>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.03)", padding: "3px 2px", borderRadius: "3px" }}>
+                        <div style={{ color: "var(--text-dim)", fontSize: "0.52rem" }}>350kW PU</div>
+                        <div style={{ color: "var(--neon-green)", fontWeight: "800", marginTop: "1px" }}>{perf.powerUnitDeployment || 90}%</div>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.03)", padding: "3px 2px", borderRadius: "3px" }}>
+                        <div style={{ color: "var(--text-dim)", fontSize: "0.52rem" }}>PIT STOP</div>
+                        <div style={{ color: "#ffaa00", fontWeight: "800", marginTop: "1px" }}>#{perf.pitRank || 5} ({perf.avgPitTime || "2.3s"})</div>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.03)", padding: "3px 2px", borderRadius: "3px" }}>
+                        <div style={{ color: "var(--text-dim)", fontSize: "0.52rem" }}>V-MAX</div>
+                        <div style={{ color: "#ffffff", fontWeight: "800", marginTop: "1px" }}>{perf.topSpeedKmh || 340}k</div>
+                      </div>
+                    </div>
+
+                    {/* Cost Cap Financial Telemetry Bar */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: "0.62rem", marginBottom: "3px", fontFamily: "'Orbitron', monospace" }}>
+                        <span style={{ color: "var(--text-dim)" }}>
+                          COST CAP: ${(spentBudget / 1000000).toFixed(1)}M / $135M
+                        </span>
+                        <span style={{ color: "var(--neon-green)", fontWeight: "700" }}>
+                          +${remainingBudget}M HEADROOM
+                        </span>
+                      </div>
+                      <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", overflow: "hidden" }}>
+                        <div
+                          style={{
+                            width: `${spentPct}%`,
+                            height: "100%",
+                            background: `linear-gradient(90deg, ${color}, var(--neon-cyan))`,
+                            borderRadius: "2px",
+                            boxShadow: `0 0 6px ${color}88`,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1533,24 +1527,23 @@ export default function TeamsPaddock() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      borderTop: "1px solid rgba(255,255,255,0.08)",
-                      paddingTop: "12px",
-                      marginTop: "12px",
+                      borderTop: "1px solid rgba(255,255,255,0.06)",
+                      paddingTop: "6px",
                     }}
                   >
-                    <span style={{ fontSize: "0.72rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
-                      TECHNICAL DOSSIER & TELEMETRY
+                    <span style={{ fontSize: "0.64rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
+                      🏆 {t.championships || 0} WCC TITLES · {tech.powerOutput || "1,040+ HP"}
                     </span>
                     <span
                       style={{
                         fontFamily: "'Orbitron', monospace",
-                        fontSize: "0.75rem",
+                        fontSize: "0.68rem",
                         fontWeight: "800",
                         color: color,
                         display: "flex",
                         alignItems: "center",
-                        gap: "4px",
-                        letterSpacing: "0.06em",
+                        gap: "3px",
+                        letterSpacing: "0.05em",
                       }}
                     >
                       OPEN DOSSIER →
@@ -1699,7 +1692,7 @@ export default function TeamsPaddock() {
 
                         <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,210,190,0.12)", padding: "2px 8px", borderRadius: "4px", border: "1px solid rgba(0,210,190,0.35)" }}>
                           <span style={{ fontSize: "0.72rem", color: "var(--neon-cyan)", fontFamily: "'Orbitron', monospace", fontWeight: "900", letterSpacing: "0.06em" }}>
-                            {d.nationality ? d.nationality.slice(0, 3).toUpperCase() : (d.country ? d.country.slice(0, 3).toUpperCase() : "FIA")}
+                            {NATIONALITY_TO_FIA[d.nationality] || (d.nationality ? d.nationality.slice(0, 3).toUpperCase() : (d.country ? d.country.slice(0, 3).toUpperCase() : "FIA"))}
                           </span>
                         </div>
                       </div>
@@ -3391,7 +3384,7 @@ export default function TeamsPaddock() {
                       </span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", color: "#fff", background: "rgba(255,255,255,0.06)", padding: "3px 8px", borderRadius: "4px" }}>
                         <span style={{ color: "var(--neon-yellow)", fontWeight: "900", fontFamily: "'Orbitron', monospace", background: "rgba(255,215,0,0.12)", border: "1px solid rgba(255,215,0,0.3)", padding: "1px 5px", borderRadius: "3px" }}>
-                          {(profile.country || profile.nationality || driverObj.nationality || "FIA").slice(0, 3).toUpperCase()}
+                          {NATIONALITY_TO_FIA[profile.country || profile.nationality || driverObj.nationality] || (profile.country || profile.nationality || driverObj.nationality || "FIA").slice(0, 3).toUpperCase()}
                         </span>
                         <span>{profile.country || profile.nationality || driverObj.nationality}</span>
                       </span>
