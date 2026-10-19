@@ -14,6 +14,7 @@ import { getDriverRadio, getCircuitRadio, TEAM_RADIO_ARCHIVE } from "../data/tea
 import TeamRadioModal from "./TeamRadioModal";
 import FiaRaceControlModal from "./FiaRaceControlModal";
 import LiveRaceMapTracker from "./LiveRaceMapTracker";
+import StatsF1LapMatrix from "./StatsF1LapMatrix";
 import { RACE_STATUS_FLAGS, INITIAL_FIA_BULLETINS } from "../data/fiaRaceControl";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -608,6 +609,43 @@ function formatDriverSurname(name) {
   return parts.slice(1).join(" ");
 }
 
+// ── Authentic F1 TV Broadcast Overtake Audio Chime ─────────────────────────────
+function playF1OvertakeChime(muted = false) {
+  if (muted) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(659.25, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+    gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start();
+    osc1.stop(ctx.currentTime + 0.12);
+
+    setTimeout(() => {
+      try {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(1174.66, ctx.currentTime);
+        osc2.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.12);
+        gain2.gain.setValueAtTime(0.09, ctx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.15);
+      } catch (_) {}
+    }, 90);
+  } catch (_) {}
+}
+
 export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
   const roundNum = selectedCircuit?.round || 1;
@@ -636,12 +674,15 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
   const [momBoostActive, setMomBoostActive] = useState(false);
   const [momCooldown, setMomCooldown] = useState(0);
   const [overtakeEvent, setOvertakeEvent] = useState(null);
+  const [activeOvertake, setActiveOvertake] = useState(null);
+  const [isSoundMuted, setIsSoundMuted] = useState(false);
+  const [lapHistory, setLapHistory] = useState([]);
 
   // Real-time Session Flag Status: "GREEN", "SC", "VSC", "RED"
   const [sessionFlag, setSessionFlag] = useState("GREEN");
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [isFiaModalOpen, setIsFiaModalOpen] = useState(false);
-  // Pit Wall Operational View: "tower" (Matrix Timing Grid) by default, or "map" (3D Satellite Tracker)
+  // Pit Wall Operational View: "tower" (Matrix Timing Grid) by default, "lapMatrix" (StatsF1 Tour-par-tour), or "map" (3D Satellite Tracker)
   const [activePitWallTab, setActivePitWallTab] = useState("tower");
   // Timing Matrix Density Mode: "broadcast" (roomy, rich) vs "compact" (fits all 22 drivers without scroll)
   const [tableDensity, setTableDensity] = useState("broadcast");
@@ -655,6 +696,60 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
     setMomCooldown(4);
     setRadioMsg(`[MOM 350kW ENGAGED] Max electric deployment active for #${currentDriver.num} ${currentDriver.code}. Push to overtake!`);
     setOvertakeEvent(`⚡ MOM 350kW BOOST: #${currentDriver.num} ${currentDriver.code} deployed full electrical override!`);
+  };
+
+  // Realistic Interactive Overtake Duel Simulator
+  const handleTriggerDuelOvertake = () => {
+    setDrivers((prevDrivers) => {
+      if (prevDrivers.length < 2) return prevDrivers;
+      let targetIdx = selectedDriverIdx > 0 ? selectedDriverIdx - 1 : 0;
+      let attackerIdx = targetIdx + 1;
+
+      const carAhead = prevDrivers[targetIdx];
+      const carBehind = prevDrivers[attackerIdx];
+
+      const updated = [...prevDrivers];
+      updated[targetIdx] = { ...carBehind, pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
+      updated[attackerIdx] = { ...carAhead, pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
+
+      setSelectedDriverIdx(targetIdx);
+
+      const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
+      setActiveOvertake({
+        winnerCode: carBehind.code,
+        winnerNum: carBehind.num,
+        winnerTeam: carBehind.team,
+        loserCode: carAhead.code,
+        loserNum: carAhead.num,
+        loserTeam: carAhead.team,
+        toPos: targetIdx + 1,
+        fromPos: attackerIdx + 1,
+        lap: currentLap,
+        reason: boostReason,
+        timestamp: Date.now(),
+      });
+      playF1OvertakeChime(isSoundMuted);
+
+      setOvertakeEvent(`⚔️ P${targetIdx + 1} OVERTAKE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} ${boostReason}!`);
+
+      setTimeout(() => {
+        setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
+      }, 4000);
+
+      // Recompute gaps smoothly
+      let accumulatedGap = 0;
+      return updated.map((d, idx) => {
+        if (idx === 0) return { ...d, pos: 1, gap: "LEADER", interval: "1:28.412" };
+        const gapStep = +(0.8 + idx * 0.12).toFixed(3);
+        accumulatedGap += gapStep;
+        return {
+          ...d,
+          pos: idx + 1,
+          gap: `+${accumulatedGap.toFixed(3)}s`,
+          interval: `+${gapStep.toFixed(3)}s`,
+        };
+      });
+    });
   };
 
   // Active Aero toggle
@@ -835,10 +930,24 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
             const carBehind = updated[i + 1];
 
             if (carAhead.pitState === "IN PIT" && carBehind.pitState !== "IN PIT") {
-              updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", overtaken: true };
-              updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1" };
+              updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", arrow: "up", overtaken: true };
+              updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "down" };
               overtakeOccurred = true;
               newAlert = `⚔️ P${i + 1} ADVANCE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} as they Box!`;
+              setActiveOvertake({
+                winnerCode: carBehind.code,
+                winnerNum: carBehind.num,
+                winnerTeam: carBehind.team,
+                loserCode: carAhead.code,
+                loserNum: carAhead.num,
+                loserTeam: carAhead.team,
+                toPos: i + 1,
+                fromPos: i + 2,
+                lap: nextLap,
+                reason: "Pit Lane Delta Advantage",
+                timestamp: Date.now(),
+              });
+              playF1OvertakeChime(isSoundMuted);
               break;
             }
 
@@ -851,11 +960,26 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
               const behindScore = (100 - carBehind.wear) * 0.4 + (carBehind.soc * 0.2) + behindMomBonus - behindSlickPenalty;
 
               if (behindScore > aheadScore + 10 && Math.random() > 0.45) {
-                updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", arrow: "down", overtaken: true };
-                updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "up" };
+                updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", arrow: "up", overtaken: true };
+                updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "down" };
                 overtakeOccurred = true;
                 const boostStr = behindMomBonus > 0 ? " with MOM 350kW Boost" : "";
                 newAlert = `⚔️ P${i + 1} OVERTAKE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} into Turn 4${boostStr}!`;
+
+                setActiveOvertake({
+                  winnerCode: carBehind.code,
+                  winnerNum: carBehind.num,
+                  winnerTeam: carBehind.team,
+                  loserCode: carAhead.code,
+                  loserNum: carAhead.num,
+                  loserTeam: carAhead.team,
+                  toPos: i + 1,
+                  fromPos: i + 2,
+                  lap: nextLap,
+                  reason: `Turn 4 ${boostStr || "DRS Pass"}`,
+                  timestamp: Date.now(),
+                });
+                playF1OvertakeChime(isSoundMuted);
                 break;
               }
             }
@@ -863,6 +987,9 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
 
           if (overtakeOccurred && newAlert) {
             setOvertakeEvent(newAlert);
+            setTimeout(() => {
+              setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
+            }, 4000);
           }
 
           // 3. Dynamic intervals
@@ -937,6 +1064,37 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
           0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5)); }
           50% { filter: drop-shadow(0 0 9px rgba(255, 215, 0, 0.9)); }
         }
+        @keyframes f1PulseOvertakeGreen {
+          0%, 100% {
+            background-color: rgba(0, 230, 118, 0.22);
+            box-shadow: 0 0 16px rgba(0, 230, 118, 0.55), inset 0 0 8px rgba(0, 230, 118, 0.3);
+          }
+          50% {
+            background-color: rgba(0, 230, 118, 0.38);
+            box-shadow: 0 0 28px rgba(0, 230, 118, 0.85), inset 0 0 14px rgba(0, 230, 118, 0.5);
+          }
+        }
+        @keyframes f1PulseOvertakeRed {
+          0%, 100% {
+            background-color: rgba(255, 24, 1, 0.20);
+            box-shadow: 0 0 14px rgba(255, 24, 1, 0.4);
+          }
+          50% {
+            background-color: rgba(255, 24, 1, 0.36);
+            box-shadow: 0 0 24px rgba(255, 24, 1, 0.7);
+          }
+        }
+        @keyframes f1PillPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.18); filter: drop-shadow(0 0 5px currentColor); }
+        }
+        @keyframes f1BroadcastBannerIn {
+          0% { transform: translateY(-16px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        .f1-timing-row {
+          transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.35s ease, border-left 0.3s ease, box-shadow 0.35s ease;
+        }
       `}</style>
 
       {/* ════════ UNIFIED F1 PIT WALL MISSION CONTROL GANTRY DECK ════════ */}
@@ -980,6 +1138,44 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
           >
             <span>📊</span>
             <span>TIMING MATRIX</span>
+          </button>
+
+          <button
+            onClick={() => setActivePitWallTab("lapMatrix")}
+            style={{
+              background: activePitWallTab === "lapMatrix"
+                ? "linear-gradient(135deg, rgba(23, 106, 199, 0.4) 0%, rgba(0, 210, 190, 0.25) 100%)"
+                : "rgba(255, 255, 255, 0.04)",
+              border: activePitWallTab === "lapMatrix" ? "1px solid #176ac7" : "1px solid rgba(255, 255, 255, 0.1)",
+              color: activePitWallTab === "lapMatrix" ? "#ffffff" : "var(--text-secondary)",
+              padding: "4px 12px",
+              borderRadius: "5px",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.70rem",
+              fontWeight: "900",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: activePitWallTab === "lapMatrix" ? "0 0 14px rgba(23, 106, 199, 0.5)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span>📈</span>
+            <span>STATSF1 LAP CHART</span>
+            <span
+              style={{
+                fontSize: "0.56rem",
+                background: "rgba(23, 106, 199, 0.3)",
+                border: "1px solid #176ac7",
+                color: "#66b3ff",
+                padding: "1px 4px",
+                borderRadius: "3px",
+                fontWeight: "800",
+              }}
+            >
+              TOUR PAR TOUR
+            </span>
           </button>
 
           <button
@@ -1278,6 +1474,19 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
           maxLaps={maxLaps}
           sessionFlag={sessionFlag}
           onCloseToTower={() => setActivePitWallTab("tower")}
+        />
+      ) : activePitWallTab === "lapMatrix" ? (
+        <StatsF1LapMatrix
+          drivers={drivers}
+          currentLap={currentLap}
+          maxLaps={maxLaps}
+          circuitName={selectedCircuit?.grand_prix_name || "Singapore Grand Prix"}
+          lapHistory={lapHistory}
+          selectedDriverCode={currentDriver.code}
+          onSelectDriver={(d) => {
+            const idx = drivers.findIndex((x) => x.code === d.code);
+            if (idx >= 0) setSelectedDriverIdx(idx);
+          }}
         />
       ) : (
         <>
@@ -1716,10 +1925,75 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
               </span>
             </div>
 
-            {/* Density Mode Switcher Controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", letterSpacing: "0.05em" }}>
-                GRID DENSITY:
+            {/* Action & Density Mode Switcher Controls */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              {/* Interactive Overtake Duel Simulator Button */}
+              <button
+                onClick={handleTriggerDuelOvertake}
+                title="Trigger realistic F1 overtake battle with row swapping animation & TV graphics"
+                style={{
+                  background: "linear-gradient(135deg, rgba(0, 230, 118, 0.28) 0%, rgba(0, 210, 190, 0.16) 100%)",
+                  border: "1px solid #00e676",
+                  color: "#00e676",
+                  borderRadius: "4px",
+                  padding: "3px 9px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.62rem",
+                  fontWeight: "900",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  boxShadow: "0 0 12px rgba(0, 230, 118, 0.4)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>⚔️</span>
+                <span>TRIGGER OVERTAKE</span>
+              </button>
+
+              {/* Sound Toggle */}
+              <button
+                onClick={() => setIsSoundMuted(!isSoundMuted)}
+                title={isSoundMuted ? "Unmute F1 broadcast chime" : "Mute broadcast sound"}
+                style={{
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  color: isSoundMuted ? "#ff4444" : "#ffffff",
+                  borderRadius: "4px",
+                  padding: "3px 6px",
+                  fontSize: "0.68rem",
+                  cursor: "pointer",
+                }}
+              >
+                {isSoundMuted ? "🔇" : "🔊"}
+              </button>
+
+              {/* Switch to StatsF1 view */}
+              <button
+                onClick={() => setActivePitWallTab("lapMatrix")}
+                title="Open authentic StatsF1 Tour-par-tour lap chart"
+                style={{
+                  background: "rgba(23, 106, 199, 0.25)",
+                  border: "1px solid #176ac7",
+                  color: "#66b3ff",
+                  borderRadius: "4px",
+                  padding: "3px 8px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.62rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <span>📈</span>
+                <span>STATSF1 CHART</span>
+              </button>
+
+              <span style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", letterSpacing: "0.05em", marginLeft: "4px" }}>
+                DENSITY:
               </span>
               <button
                 onClick={() => setTableDensity("broadcast")}
@@ -1767,6 +2041,114 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
               </button>
             </div>
           </div>
+
+          {/* ── AUTHENTIC F1 TV BROADCAST OVERTAKE LOWER-THIRD BANNER ── */}
+          {activeOvertake && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(90deg, #090e1a 0%, #141c2c 50%, #090e1a 100%)",
+                border: "2px solid #00e676",
+                borderLeft: "8px solid #00e676",
+                borderRadius: "6px",
+                padding: "8px 14px",
+                boxShadow: "0 0 24px rgba(0, 230, 118, 0.5), 0 8px 32px rgba(0,0,0,0.8)",
+                animation: "f1BroadcastBannerIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+                margin: "4px 0 6px 0",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    background: "#e10600",
+                    color: "#ffffff",
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontWeight: "900",
+                    fontSize: "0.66rem",
+                    padding: "3px 7px",
+                    borderRadius: "3px",
+                    letterSpacing: "0.08em",
+                    boxShadow: "0 0 8px rgba(225, 6, 0, 0.6)",
+                  }}
+                >
+                  F1 TV LIVE
+                </span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "1.1rem" }}>⚔️</span>
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.82rem",
+                      fontWeight: "900",
+                      color: "#ffffff",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    OVERTAKE · LAP {activeOvertake.lap}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span
+                    style={{
+                      background: "rgba(0, 230, 118, 0.22)",
+                      border: "1px solid #00e676",
+                      color: "#00e676",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: "900",
+                      fontSize: "0.78rem",
+                      boxShadow: "0 0 8px rgba(0, 230, 118, 0.4)",
+                    }}
+                  >
+                    #{activeOvertake.winnerNum} {activeOvertake.winnerCode} ▲ P{activeOvertake.toPos}
+                  </span>
+
+                  <span style={{ color: "#d0d5e5", fontSize: "0.75rem", fontWeight: "700" }}>
+                    passes
+                  </span>
+
+                  <span
+                    style={{
+                      background: "rgba(255, 24, 1, 0.22)",
+                      border: "1px solid #ff1801",
+                      color: "#ff6b6b",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: "900",
+                      fontSize: "0.78rem",
+                    }}
+                  >
+                    #{activeOvertake.loserNum} {activeOvertake.loserCode} ▼ P{activeOvertake.fromPos}
+                  </span>
+
+                  <span style={{ color: "var(--neon-cyan)", fontSize: "0.72rem", fontFamily: "'Rajdhani', sans-serif", fontWeight: "700" }}>
+                    · {activeOvertake.reason}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setActiveOvertake(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#a0a5b8",
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                  fontWeight: "700",
+                  padding: "2px 6px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Unified Table with Sticky Header */}
           <div
@@ -1857,37 +2239,110 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
                     border: "1px solid rgba(255, 255, 255, 0.06)",
                   };
 
+                  const isOvertakeWinner = activeOvertake?.winnerCode === d.code;
+                  const isOvertakeLoser = activeOvertake?.loserCode === d.code;
+
                   return (
                     <tr
                       key={d.num}
                       onClick={() => setSelectedDriverIdx(index)}
+                      className={`f1-timing-row ${isOvertakeWinner ? "f1-row-overtake-winner" : ""} ${isOvertakeLoser ? "f1-row-overtake-loser" : ""}`}
                       style={{
-                        background: isSelected
+                        background: isOvertakeWinner
+                          ? "linear-gradient(90deg, rgba(0, 230, 118, 0.32) 0%, rgba(0, 230, 118, 0.08) 100%)"
+                          : isOvertakeLoser
+                          ? "linear-gradient(90deg, rgba(255, 24, 1, 0.28) 0%, rgba(255, 24, 1, 0.06) 100%)"
+                          : isSelected
                           ? "rgba(0, 210, 190, 0.16)"
                           : index % 2 === 0
                           ? "rgba(255, 255, 255, 0.02)"
                           : "transparent",
-                        boxShadow: isSelected ? "inset 3px 0 0 #00d2be, 0 0 12px rgba(0,210,190,0.14)" : "none",
+                        borderLeft: isOvertakeWinner
+                          ? "5px solid #00e676"
+                          : isOvertakeLoser
+                          ? "5px solid #ff1801"
+                          : isSelected
+                          ? "3px solid #00d2be"
+                          : "3px solid transparent",
+                        boxShadow: isOvertakeWinner
+                          ? "0 0 20px rgba(0, 230, 118, 0.6), inset 0 0 10px rgba(0, 230, 118, 0.3)"
+                          : isOvertakeLoser
+                          ? "0 0 16px rgba(255, 24, 1, 0.45)"
+                          : isSelected
+                          ? "inset 3px 0 0 #00d2be, 0 0 12px rgba(0,210,190,0.14)"
+                          : "none",
                         cursor: "pointer",
-                        transition: "all 0.12s ease",
+                        transition: "all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                        animation: isOvertakeWinner
+                          ? "f1PulseOvertakeGreen 1.5s infinite"
+                          : isOvertakeLoser
+                          ? "f1PulseOvertakeRed 1.5s infinite"
+                          : "none",
                       }}
                     >
                       {/* Position */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
-                        <span
-                          style={{
-                            fontFamily: "'Orbitron', monospace",
-                            fontSize: isCompact ? "0.70rem" : "0.76rem",
-                            fontWeight: "900",
-                            padding: isCompact ? "1px 5px" : "2px 6px",
-                            borderRadius: "3px",
-                            display: "inline-block",
-                            minWidth: "20px",
-                            ...posBadgeStyle,
-                          }}
-                        >
-                          {d.pos}
-                        </span>
+                        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "3px" }}>
+                          <span
+                            style={{
+                              fontFamily: "'Orbitron', monospace",
+                              fontSize: isCompact ? "0.70rem" : "0.76rem",
+                              fontWeight: "900",
+                              padding: isCompact ? "1px 5px" : "2px 6px",
+                              borderRadius: "3px",
+                              display: "inline-block",
+                              minWidth: "20px",
+                              ...posBadgeStyle,
+                              boxShadow: isOvertakeWinner
+                                ? "0 0 12px #00e676"
+                                : isOvertakeLoser
+                                ? "0 0 10px #ff1801"
+                                : posBadgeStyle.boxShadow,
+                            }}
+                          >
+                            {d.pos}
+                          </span>
+
+                          {/* Overtake Gain / Loss Broadcast Pill */}
+                          {isOvertakeWinner && (
+                            <span
+                              style={{
+                                fontSize: "0.58rem",
+                                color: "#00e676",
+                                fontWeight: "900",
+                                fontFamily: "'Orbitron', monospace",
+                                animation: "f1PillPulse 1s infinite",
+                                background: "rgba(0, 230, 118, 0.2)",
+                                padding: "1px 3px",
+                                borderRadius: "3px",
+                                border: "1px solid #00e676",
+                                lineHeight: 1,
+                              }}
+                              title="Gained position (Overtake)"
+                            >
+                              ▲+1
+                            </span>
+                          )}
+                          {isOvertakeLoser && (
+                            <span
+                              style={{
+                                fontSize: "0.58rem",
+                                color: "#ff4444",
+                                fontWeight: "900",
+                                fontFamily: "'Orbitron', monospace",
+                                animation: "f1PillPulse 1s infinite",
+                                background: "rgba(255, 24, 1, 0.2)",
+                                padding: "1px 3px",
+                                borderRadius: "3px",
+                                border: "1px solid #ff1801",
+                                lineHeight: 1,
+                              }}
+                              title="Lost position"
+                            >
+                              ▼-1
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Car Number */}
