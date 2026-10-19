@@ -1,9 +1,16 @@
 // ============================================================
 // StatsF1LapMatrix.jsx — Authentic StatsF1 "Tour par Tour" (Lap-by-Lap) Matrix
 // Inspired by official StatsF1 Singapore & Grand Prix Lap Charts
+// Features: Dynamic Qualifying Grids, Lap 1 Start Scramble Overtakes,
+// Multi-Circuit Support, Interactive Driver Highlighting, and Trajectory Lines.
 // ============================================================
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { DRIVER_IOC_MAP } from "./TimingTower";
+import {
+  generateRaceWeekendData,
+  DRIVER_META,
+  getGrandPrixConfig,
+} from "../data/raceWeekendGrids2026";
 
 // Team colors matching authentic 2026 liveries
 const TEAM_COLORS = {
@@ -25,7 +32,8 @@ export default function StatsF1LapMatrix({
   drivers = [],
   currentLap = 34,
   maxLaps = 58,
-  circuitName = "Albert Park Circuit",
+  circuitName = "Australian Grand Prix",
+  circuitId = "australia",
   lapHistory = [],
   onSelectDriver,
   selectedDriverCode,
@@ -49,134 +57,56 @@ export default function StatsF1LapMatrix({
     }
   }, [selectedDriverCode]);
 
-  // Generate complete lap history from Lap 0 (Starting Grid) to currentLap
+  // Circuit configuration metadata (pole time, pole driver, laps)
+  const circuitConfig = useMemo(() => {
+    return getGrandPrixConfig(circuitId || circuitName);
+  }, [circuitId, circuitName]);
+
+  // Generate or use complete lap history from Lap 0 (Starting Grid) through race
   const completeLapData = useMemo(() => {
     if (lapHistory && lapHistory.length > 0) return lapHistory;
 
-    // Realistic baseline starting grid order
-    const startingGrid = [
-      "NOR", "VER", "RUS", "LEC", "HAM", "PIA", "SAI", "ANT", "ALO", "ALB",
-      "PER", "HAD", "HUL", "STR", "GAS", "OCO", "LAW", "BEA", "BOT", "BOR",
-      "COL", "LIN"
-    ];
+    // Authentic circuit-specific race weekend progression
+    const generated = generateRaceWeekendData(circuitId || circuitName, maxLaps);
+    return generated.lapHistory;
+  }, [lapHistory, circuitId, circuitName, maxLaps]);
 
-    const generated = [];
-
-    // Lap 0: Starting Grid
-    generated.push({
-      lap: 0,
-      label: "GRID",
-      order: [...startingGrid],
-      overtakes: [],
-      pits: [],
-      leader: "NOR",
+  // Driver details helper (with fallback to 22 DRIVER_META entries)
+  const driverMap = useMemo(() => {
+    const map = {};
+    Object.keys(DRIVER_META).forEach((code) => {
+      const meta = DRIVER_META[code];
+      map[code] = {
+        code,
+        name: meta.name,
+        num: meta.num,
+        team: meta.team,
+        flag: meta.flag,
+        ioc: meta.ioc,
+      };
     });
-
-    let currentOrder = [...startingGrid];
-
-    // Build lap by lap progression up to currentLap
-    for (let lap = 1; lap <= currentLap; lap++) {
-      const overtakesThisLap = [];
-      const pitsThisLap = [];
-
-      // Authentic race key moments (pit windows, safety cars, overtakes)
-      if (lap === 3) {
-        // VER passes NOR
-        const idxNOR = currentOrder.indexOf("NOR");
-        const idxVER = currentOrder.indexOf("VER");
-        if (idxNOR >= 0 && idxVER >= 0 && idxVER > idxNOR) {
-          currentOrder[idxNOR] = "VER";
-          currentOrder[idxVER] = "NOR";
-          overtakesThisLap.push({ winner: "VER", loser: "NOR", pos: 1 });
+    if (drivers && drivers.length > 0) {
+      drivers.forEach((d) => {
+        if (d.code) {
+          map[d.code] = { ...map[d.code], ...d };
         }
-      } else if (lap === 8) {
-        // HAM passes LEC
-        const idxLEC = currentOrder.indexOf("LEC");
-        const idxHAM = currentOrder.indexOf("HAM");
-        if (idxLEC >= 0 && idxHAM >= 0 && idxHAM > idxLEC) {
-          currentOrder[idxLEC] = "HAM";
-          currentOrder[idxHAM] = "LEC";
-          overtakesThisLap.push({ winner: "HAM", loser: "LEC", pos: 4 });
-        }
-      } else if (lap === 14) {
-        // PIA passes HAM
-        const idxHAM = currentOrder.indexOf("HAM");
-        const idxPIA = currentOrder.indexOf("PIA");
-        if (idxHAM >= 0 && idxPIA >= 0 && idxPIA > idxHAM) {
-          currentOrder[idxHAM] = "PIA";
-          currentOrder[idxPIA] = "HAM";
-          overtakesThisLap.push({ winner: "PIA", loser: "HAM", pos: 4 });
-        }
-      } else if (lap === 18) {
-        // Pit stops window begins (Softs pit)
-        pitsThisLap.push({ driver: "PIA", compound: "M" });
-        pitsThisLap.push({ driver: "BEA", compound: "H" });
-        pitsThisLap.push({ driver: "LIN", compound: "H" });
-      } else if (lap === 21) {
-        // VER pits from P1
-        pitsThisLap.push({ driver: "VER", compound: "H" });
-        pitsThisLap.push({ driver: "RUS", compound: "H" });
-        // NOR inherits P1
-        const idxNOR = currentOrder.indexOf("NOR");
-        const idxVER = currentOrder.indexOf("VER");
-        if (idxNOR >= 0 && idxVER >= 0 && idxNOR > idxVER) {
-          currentOrder[idxVER] = "NOR";
-          currentOrder[idxNOR] = "VER";
-          overtakesThisLap.push({ winner: "NOR", loser: "VER", pos: 1 });
-        }
-      } else if (lap === 24) {
-        // NOR pits and rejoins ahead
-        pitsThisLap.push({ driver: "NOR", compound: "H" });
-        pitsThisLap.push({ driver: "LEC", compound: "H" });
-      } else if (lap === 29) {
-        // SAI passes ANT
-        const idxANT = currentOrder.indexOf("ANT");
-        const idxSAI = currentOrder.indexOf("SAI");
-        if (idxANT >= 0 && idxSAI >= 0 && idxSAI > idxANT) {
-          currentOrder[idxANT] = "SAI";
-          currentOrder[idxSAI] = "ANT";
-          overtakesThisLap.push({ winner: "SAI", loser: "ANT", pos: 7 });
-        }
-      } else if (lap === 34) {
-        // NOR passes VER with MOM 350kW boost
-        const idxNOR = currentOrder.indexOf("NOR");
-        const idxVER = currentOrder.indexOf("VER");
-        if (idxNOR >= 0 && idxVER >= 0 && idxNOR > idxVER) {
-          currentOrder[idxVER] = "NOR";
-          currentOrder[idxNOR] = "VER";
-          overtakesThisLap.push({ winner: "NOR", loser: "VER", pos: 1, mom: true });
-        }
-      } else if (lap > 34 && Math.random() > 0.65) {
-        // Dynamic late race overtakes
-        const randPos = Math.floor(Math.random() * (currentOrder.length - 1));
-        const carAhead = currentOrder[randPos];
-        const carBehind = currentOrder[randPos + 1];
-        currentOrder[randPos] = carBehind;
-        currentOrder[randPos + 1] = carAhead;
-        overtakesThisLap.push({ winner: carBehind, loser: carAhead, pos: randPos + 1 });
-      }
-
-      generated.push({
-        lap,
-        label: `L${lap}`,
-        order: [...currentOrder],
-        overtakes: overtakesThisLap,
-        pits: pitsThisLap,
-        leader: currentOrder[0],
       });
     }
+    return map;
+  }, [drivers]);
 
-    return generated;
-  }, [lapHistory, currentLap]);
+  // Extract Lap 1 Start Scramble overtakes
+  const lap1Entry = completeLapData.find((l) => l.lap === 1);
+  const lap1Overtakes = lap1Entry?.overtakes || [];
 
-  // Compute total overtakes and lead changes in race
+  // Compute total overtakes, lead changes, and biggest mover
   const raceStats = useMemo(() => {
     let totalOvertakes = 0;
     let leadChanges = 0;
     let lastLeader = null;
 
     completeLapData.forEach((entry) => {
-      totalOvertakes += entry.overtakes.length;
+      totalOvertakes += entry.overtakes?.length || 0;
       if (entry.lap > 0) {
         if (lastLeader && entry.leader !== lastLeader) {
           leadChanges++;
@@ -185,12 +115,11 @@ export default function StatsF1LapMatrix({
       }
     });
 
-    // Biggest mover from starting grid
     const gridOrder = completeLapData[0]?.order || [];
     const latestOrder = completeLapData[completeLapData.length - 1]?.order || [];
 
     let biggestGain = -999;
-    let topMover = "NOR";
+    let topMover = gridOrder[0] || "NOR";
 
     gridOrder.forEach((code, startIdx) => {
       const endIdx = latestOrder.indexOf(code);
@@ -203,16 +132,29 @@ export default function StatsF1LapMatrix({
       }
     });
 
-    return { totalOvertakes, leadChanges, topMover, biggestGain: Math.max(0, biggestGain) };
-  }, [completeLapData]);
+    return {
+      totalOvertakes,
+      leadChanges,
+      topMover,
+      biggestGain: Math.max(0, biggestGain),
+      poleDriver: circuitConfig?.poleDriver || gridOrder[0] || "NOR",
+      poleTime: circuitConfig?.poleTime || "1:16.732",
+    };
+  }, [completeLapData, circuitConfig]);
 
-  // Driver details helper
-  const driverMap = useMemo(() => {
-    const map = {};
-    drivers.forEach((d) => {
-      map[d.code] = d;
+  // Drivers list for SVG trajectory lines
+  const allDriversList = useMemo(() => {
+    if (drivers && drivers.length >= 20) return drivers;
+    return Object.keys(DRIVER_META).map((code) => {
+      const meta = DRIVER_META[code];
+      return {
+        code,
+        name: meta.name,
+        num: meta.num,
+        team: meta.team,
+        flag: meta.flag,
+      };
     });
-    return map;
   }, [drivers]);
 
   // Handle cell click
@@ -226,6 +168,10 @@ export default function StatsF1LapMatrix({
     const prevPos = prevLapOrder ? prevLapOrder.indexOf(driverCode) + 1 : pos;
     const delta = prevPos - pos;
 
+    // Check if an overtake happened on this lap for this driver
+    const lapData = completeLapData.find((l) => l.lap === lapNum);
+    const ovMove = lapData?.overtakes?.find((o) => o.winner === driverCode);
+
     setSelectedCell({
       code: driverCode,
       name: driverMap[driverCode]?.name || driverCode,
@@ -234,6 +180,7 @@ export default function StatsF1LapMatrix({
       pos,
       prevPos,
       delta,
+      reason: ovMove?.reason || null,
       tire: driverMap[driverCode]?.tire || "M",
     });
   };
@@ -271,8 +218,8 @@ export default function StatsF1LapMatrix({
           border: 1px solid #ffffff !important;
         }
         .statsf1-cell.dimmed {
-          opacity: 0.18 !important;
-          filter: grayscale(80%);
+          opacity: 0.16 !important;
+          filter: grayscale(85%);
         }
         .statsf1-btn {
           background: rgba(255, 255, 255, 0.05);
@@ -303,6 +250,10 @@ export default function StatsF1LapMatrix({
         @keyframes pulseOvertakeGlow {
           0%, 100% { box-shadow: 0 0 6px rgba(0, 230, 118, 0.6); }
           50% { box-shadow: 0 0 16px rgba(0, 230, 118, 1); }
+        }
+        @keyframes pulseGoldGlow {
+          0%, 100% { box-shadow: 0 0 4px rgba(255, 215, 0, 0.4); }
+          50% { box-shadow: 0 0 12px rgba(255, 215, 0, 0.8); }
         }
       `}</style>
 
@@ -338,16 +289,31 @@ export default function StatsF1LapMatrix({
             <div
               style={{
                 fontFamily: "'Orbitron', monospace",
-                fontSize: "0.86rem",
+                fontSize: "0.95rem",
                 fontWeight: "900",
                 color: "#ffffff",
-                letterSpacing: "0.06em",
+                letterSpacing: "0.05em",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              TOUR PAR TOUR · LAP-BY-LAP POSITION MATRIX
+              <span>TOUR PAR TOUR (LAP-BY-LAP MATRIX)</span>
+              <span
+                style={{
+                  fontSize: "0.64rem",
+                  color: "#ffd700",
+                  border: "1px solid rgba(255, 215, 0, 0.4)",
+                  padding: "1px 6px",
+                  borderRadius: "3px",
+                  background: "rgba(255, 215, 0, 0.1)",
+                }}
+              >
+                {circuitConfig?.name || circuitName} · R{String(circuitConfig?.round || 1).padStart(2, "0")}
+              </span>
             </div>
-            <div style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif" }}>
-              Authentic F1 Grand Prix Lap Chart · {circuitName} · Lap {currentLap} of {maxLaps}
+            <div style={{ fontSize: "0.68rem", color: "var(--text-dim)", marginTop: "2px" }}>
+              Authentic F1 Lap Chart · Pole: {raceStats.poleDriver} ({raceStats.poleTime}) · Lap {currentLap} of {maxLaps}
             </div>
           </div>
         </div>
@@ -385,7 +351,7 @@ export default function StatsF1LapMatrix({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
           gap: "8px",
           background: "rgba(0, 0, 0, 0.45)",
           padding: "8px 12px",
@@ -394,13 +360,37 @@ export default function StatsF1LapMatrix({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "1.2rem" }}>⏱️</span>
+          <div>
+            <div style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
+              QUALIFYING POLE
+            </div>
+            <div style={{ fontSize: "0.85rem", fontWeight: "900", color: "#ffd700", fontFamily: "'Orbitron', monospace" }}>
+              #{driverMap[raceStats.poleDriver]?.num || 1} {raceStats.poleDriver} ({raceStats.poleTime})
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "1.2rem" }}>⚔️</span>
           <div>
             <div style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
               TOTAL OVERTAKES
             </div>
-            <div style={{ fontSize: "0.92rem", fontWeight: "900", color: "#00e676", fontFamily: "'Orbitron', monospace" }}>
+            <div style={{ fontSize: "0.88rem", fontWeight: "900", color: "#00e676", fontFamily: "'Orbitron', monospace" }}>
               {raceStats.totalOvertakes} POSITIONS SWAPPED
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "1.2rem" }}>🏁</span>
+          <div>
+            <div style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
+              LAP 1 SCRAMBLE
+            </div>
+            <div style={{ fontSize: "0.88rem", fontWeight: "900", color: "#00d2be", fontFamily: "'Orbitron', monospace" }}>
+              {lap1Overtakes.length} T1 MOVES
             </div>
           </div>
         </div>
@@ -411,7 +401,7 @@ export default function StatsF1LapMatrix({
             <div style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
               LEAD CHANGES
             </div>
-            <div style={{ fontSize: "0.92rem", fontWeight: "900", color: "#ffd700", fontFamily: "'Orbitron', monospace" }}>
+            <div style={{ fontSize: "0.88rem", fontWeight: "900", color: "#ff8700", fontFamily: "'Orbitron', monospace" }}>
               {raceStats.leadChanges} LEAD SWAPS
             </div>
           </div>
@@ -421,26 +411,80 @@ export default function StatsF1LapMatrix({
           <span style={{ fontSize: "1.2rem" }}>🚀</span>
           <div>
             <div style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
-              BIGGEST MOVER (P1)
+              BIGGEST MOVER
             </div>
-            <div style={{ fontSize: "0.92rem", fontWeight: "900", color: "#00d2be", fontFamily: "'Orbitron', monospace" }}>
+            <div style={{ fontSize: "0.88rem", fontWeight: "900", color: "#3671e8", fontFamily: "'Orbitron', monospace" }}>
               {raceStats.topMover} (+{raceStats.biggestGain} POS)
             </div>
           </div>
         </div>
+      </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "1.2rem" }}>🅿️</span>
-          <div>
-            <div style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
-              RACE LEADER (NOW)
+      {/* ── LAP 1 LIGHTS OUT START SCRAMBLE BREAKDOWN ── */}
+      {lap1Overtakes.length > 0 && (
+        <div
+          style={{
+            background: "linear-gradient(90deg, rgba(0, 230, 118, 0.12) 0%, rgba(0, 210, 190, 0.05) 100%)",
+            border: "1px solid rgba(0, 230, 118, 0.35)",
+            borderRadius: "6px",
+            padding: "6px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "5px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "0.85rem" }}>🚦</span>
+              <span
+                style={{
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.70rem",
+                  fontWeight: "900",
+                  color: "#00e676",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                LIGHTS OUT · LAP 1 START SCRAMBLE ({lap1Overtakes.length} TURN 1/TURN 2 OVERTAKES):
+              </span>
             </div>
-            <div style={{ fontSize: "0.92rem", fontWeight: "900", color: "#ffffff", fontFamily: "'Orbitron', monospace" }}>
-              P1 {completeLapData[completeLapData.length - 1]?.leader}
-            </div>
+            <span style={{ fontSize: "0.62rem", color: "var(--text-secondary)" }}>
+              Click any battle to highlight driver's race trajectory
+            </span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
+            {lap1Overtakes.map((ov, i) => (
+              <button
+                key={i}
+                onClick={() => setHighlightedDriver(ov.winner)}
+                style={{
+                  background: highlightedDriver === ov.winner ? "rgba(0, 230, 118, 0.35)" : "rgba(0, 0, 0, 0.45)",
+                  border: `1px solid ${highlightedDriver === ov.winner ? "#00e676" : "rgba(0, 230, 118, 0.25)"}`,
+                  color: "#ffffff",
+                  borderRadius: "4px",
+                  padding: "2px 7px",
+                  fontSize: "0.62rem",
+                  fontFamily: "'Orbitron', monospace",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  flexShrink: 0,
+                  transition: "all 0.15s ease",
+                }}
+                title={ov.reason}
+              >
+                <span style={{ color: "#00e676" }}>▲ P{ov.pos}</span>
+                <span>#{ov.winnerNum} {ov.winner}</span>
+                <span style={{ color: "#8888aa", fontSize: "0.55rem" }}>passes</span>
+                <span style={{ color: "#ff6b6b" }}>{ov.loser}</span>
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── DRIVER QUICK-FILTER CHIPS BAR ── */}
       <div
@@ -455,7 +499,7 @@ export default function StatsF1LapMatrix({
         <span style={{ fontSize: "0.62rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", flexShrink: 0 }}>
           HIGHLIGHT:
         </span>
-        {drivers.slice(0, 14).map((d) => {
+        {allDriversList.slice(0, 16).map((d) => {
           const teamCol = TEAM_COLORS[d.team] || { primary: "#888" };
           const isSelected = highlightedDriver === d.code;
           return (
@@ -499,24 +543,16 @@ export default function StatsF1LapMatrix({
         >
           <table
             style={{
-              borderCollapse: "separate",
-              borderSpacing: "2px 2px",
               width: "100%",
-              minWidth: `${completeLapData.length * 48 + 80}px`,
+              borderCollapse: "separate",
+              borderSpacing: "0",
+              fontSize: "0.70rem",
             }}
           >
-            {/* Header: Lap Numbers L1, L2, L3... */}
-            <thead
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 30,
-                background: "#0d101c",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.8)",
-              }}
-            >
-              <tr>
-                {/* Sticky Left POS Header */}
+            {/* Table Header: Sticky Left POS + Lap Columns */}
+            <thead>
+              <tr style={{ background: "#0e111d", position: "sticky", top: 0, zIndex: 30 }}>
+                {/* Sticky Left POS Column Header */}
                 <th
                   style={{
                     position: "sticky",
@@ -536,24 +572,55 @@ export default function StatsF1LapMatrix({
                 </th>
 
                 {/* Lap Columns */}
-                {completeLapData.map((lapEntry) => (
-                  <th
-                    key={lapEntry.lap}
-                    style={{
-                      padding: "6px 4px",
-                      fontFamily: "'Orbitron', monospace",
-                      fontSize: "0.64rem",
-                      fontWeight: "800",
-                      color: lapEntry.lap === currentLap ? "var(--neon-green)" : "#8888aa",
-                      background: lapEntry.lap === currentLap ? "rgba(0, 230, 118, 0.12)" : "transparent",
-                      textAlign: "center",
-                      minWidth: "44px",
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                    }}
-                  >
-                    {lapEntry.label}
-                  </th>
-                ))}
+                {completeLapData.map((lapEntry) => {
+                  const isGrid = lapEntry.lap === 0;
+                  const isL1 = lapEntry.lap === 1;
+                  const isCurrent = lapEntry.lap === currentLap;
+
+                  return (
+                    <th
+                      key={lapEntry.lap}
+                      style={{
+                        padding: "6px 4px",
+                        fontFamily: "'Orbitron', monospace",
+                        fontSize: "0.64rem",
+                        fontWeight: "800",
+                        color: isGrid
+                          ? "#ffd700"
+                          : isL1
+                          ? "#00e676"
+                          : isCurrent
+                          ? "var(--neon-green)"
+                          : "#8888aa",
+                        background: isGrid
+                          ? "rgba(255, 215, 0, 0.10)"
+                          : isL1
+                          ? "rgba(0, 230, 118, 0.12)"
+                          : isCurrent
+                          ? "rgba(0, 230, 118, 0.08)"
+                          : "transparent",
+                        textAlign: "center",
+                        minWidth: isGrid ? "52px" : "44px",
+                        borderBottom: isGrid
+                          ? "2px solid #ffd700"
+                          : isL1
+                          ? "2px solid #00e676"
+                          : "1px solid rgba(255, 255, 255, 0.1)",
+                      }}
+                      title={
+                        isGrid
+                          ? `Qualifying Starting Grid (${circuitConfig?.name || circuitName})`
+                          : isL1
+                          ? `Lap 1 Start Scramble (${lap1Overtakes.length} Turn 1/Turn 2 Overtakes)`
+                          : `Lap ${lapEntry.lap}`
+                      }
+                    >
+                      <div>{lapEntry.label}</div>
+                      {isGrid && <div style={{ fontSize: "0.48rem", color: "#ffd700", fontWeight: "700" }}>QUAL</div>}
+                      {isL1 && <div style={{ fontSize: "0.48rem", color: "#00e676", fontWeight: "700" }}>START</div>}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
 
@@ -618,9 +685,21 @@ export default function StatsF1LapMatrix({
                       const teamColor = TEAM_COLORS[driverObj.team] || { primary: "#333", text: "#fff" };
 
                       // Check if an overtake happened at this position on this lap
-                      const overtake = lapEntry.overtakes.find((o) => o.pos === pos);
+                      const overtake = lapEntry.overtakes?.find((o) => o.pos === pos);
                       // Check if this driver pitted on this lap
-                      const pit = lapEntry.pits.find((p) => p.driver === driverCode);
+                      const pit = lapEntry.pits?.find((p) => p.driver === driverCode);
+
+                      // For Lap 1: Calculate delta compared to Starting Grid (Lap 0)
+                      let lap1Gain = null;
+                      if (lapEntry.lap === 1) {
+                        const gridPos = completeLapData[0]?.order?.indexOf(driverCode) + 1;
+                        if (gridPos) {
+                          const net = gridPos - pos; // positive means gained positions on Lap 1
+                          if (net !== 0) {
+                            lap1Gain = net;
+                          }
+                        }
+                      }
 
                       const isHighlighted = highlightedDriver === driverCode;
                       const isDimmed = highlightedDriver && !isHighlighted;
@@ -637,7 +716,7 @@ export default function StatsF1LapMatrix({
                           <div
                             className={`statsf1-cell ${isHighlighted ? "active-driver" : ""} ${isDimmed ? "dimmed" : ""}`}
                             onClick={() => handleCellClick(driverCode, lapEntry.lap, pos)}
-                            title={`Lap ${lapEntry.lap} · P${pos}: ${driverCode} (${driverObj.team})`}
+                            title={`Lap ${lapEntry.lap} · P${pos}: ${driverCode} (${driverObj.team})${overtake ? ` · ${overtake.reason || "Overtake"}` : ""}`}
                             style={{
                               background: teamColor.primary,
                               color: teamColor.text || "#ffffff",
@@ -658,8 +737,22 @@ export default function StatsF1LapMatrix({
                           >
                             <span>{driverCode}</span>
 
-                            {/* Overtake Indicator Icon */}
-                            {overtake && (
+                            {/* Lap 1 Start Gain / Loss Badges */}
+                            {lapEntry.lap === 1 && lap1Gain !== null && (
+                              <span
+                                style={{
+                                  fontSize: "0.55rem",
+                                  color: lap1Gain > 0 ? "#00e676" : "#ff4444",
+                                  fontWeight: "900",
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {lap1Gain > 0 ? `▲+${lap1Gain}` : `▼${lap1Gain}`}
+                              </span>
+                            )}
+
+                            {/* Overtake Indicator Icon on subsequent laps */}
+                            {lapEntry.lap > 1 && overtake && (
                               <span
                                 style={{
                                   fontSize: "0.55rem",
@@ -707,7 +800,7 @@ export default function StatsF1LapMatrix({
       {viewMode === "chart" && (
         <div
           style={{
-            background: "#080a14",
+            background: "#080a12",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             borderRadius: "6px",
             padding: "12px",
@@ -753,7 +846,7 @@ export default function StatsF1LapMatrix({
             })}
 
             {/* Connecting Polyline for each Driver */}
-            {drivers.map((d) => {
+            {allDriversList.map((d) => {
               const teamCol = TEAM_COLORS[d.team] || { primary: "#ffffff" };
               const isSelected = highlightedDriver === d.code;
               const isDimmed = highlightedDriver && !isSelected;
@@ -826,7 +919,7 @@ export default function StatsF1LapMatrix({
             color: "#ffffff",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <span
               style={{
                 fontFamily: "'Orbitron', monospace",
@@ -835,7 +928,7 @@ export default function StatsF1LapMatrix({
                 color: "var(--neon-cyan)",
               }}
             >
-              LAP {selectedCell.lap}
+              LAP {selectedCell.lap === 0 ? "GRID" : selectedCell.lap}
             </span>
             <span>·</span>
             <span style={{ fontWeight: "700" }}>{selectedCell.name} ({selectedCell.code})</span>
@@ -853,6 +946,11 @@ export default function StatsF1LapMatrix({
             {selectedCell.delta < 0 && (
               <span style={{ color: "#ff1801", fontWeight: "800", fontFamily: "'Orbitron', monospace" }}>
                 ▼ {selectedCell.delta} (LOST POS)
+              </span>
+            )}
+            {selectedCell.reason && (
+              <span style={{ color: "#ffd700", fontWeight: "700", fontFamily: "'Rajdhani', sans-serif" }}>
+                · {selectedCell.reason}
               </span>
             )}
           </div>

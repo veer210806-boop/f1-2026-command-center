@@ -16,6 +16,11 @@ import FiaRaceControlModal from "./FiaRaceControlModal";
 import LiveRaceMapTracker from "./LiveRaceMapTracker";
 import StatsF1LapMatrix from "./StatsF1LapMatrix";
 import { RACE_STATUS_FLAGS, INITIAL_FIA_BULLETINS } from "../data/fiaRaceControl";
+import {
+  generateRaceWeekendData,
+  buildTimingTowerGridForCircuit,
+  getGrandPrixConfig,
+} from "../data/raceWeekendGrids2026";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -660,10 +665,15 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
     return getCircuitWeather(activeCircuitId);
   }, [selectedCircuit, activeCircuitId]);
 
+  // Grand Prix configuration & Qualifying blueprint
+  const gpConfig = useMemo(() => {
+    return getGrandPrixConfig(activeCircuitId);
+  }, [activeCircuitId]);
+
   const [currentLap, setCurrentLap] = useState(34);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedDriverIdx, setSelectedDriverIdx] = useState(0);
-  const [drivers, setDrivers] = useState(DEFAULT_22_GRID);
+  const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit("australia", 34));
   const [radioMsg, setRadioMsg] = useState("Box this lap for Hard compounds. Push hard on in-lap.");
   const [radioFeedIdx, setRadioFeedIdx] = useState(0);
 
@@ -676,7 +686,16 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
   const [overtakeEvent, setOvertakeEvent] = useState(null);
   const [activeOvertake, setActiveOvertake] = useState(null);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
-  const [lapHistory, setLapHistory] = useState([]);
+  const [lapHistory, setLapHistory] = useState(() => generateRaceWeekendData("australia", 58).lapHistory);
+
+  // Switch to Grand Prix's unique starting grid and lap matrix progression whenever selected circuit changes
+  useEffect(() => {
+    const raceWeekend = generateRaceWeekendData(activeCircuitId, maxLaps);
+    setLapHistory(raceWeekend.lapHistory);
+    const newGrid = buildTimingTowerGridForCircuit(activeCircuitId, currentLap);
+    setDrivers(newGrid);
+    setSelectedDriverIdx(0);
+  }, [activeCircuitId, maxLaps]);
 
   // Real-time Session Flag Status: "GREEN", "SC", "VSC", "RED"
   const [sessionFlag, setSessionFlag] = useState("GREEN");
@@ -735,6 +754,30 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
       setTimeout(() => {
         setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
       }, 4000);
+
+      // Synchronize live overtake into lapHistory
+      setLapHistory((prev) => {
+        if (!prev || prev.length === 0) return prev;
+        const copy = [...prev];
+        const lastIdx = copy.length - 1;
+        const currentEntry = copy[lastIdx];
+        const newOrder = updated.map((d) => d.code);
+        const newOvertake = {
+          winner: carBehind.code,
+          loser: carAhead.code,
+          winnerNum: carBehind.num,
+          loserNum: carAhead.num,
+          pos: targetIdx + 1,
+          fromPos: attackerIdx + 1,
+          reason: boostReason,
+        };
+        copy[lastIdx] = {
+          ...currentEntry,
+          order: newOrder,
+          overtakes: [...(currentEntry.overtakes || []), newOvertake],
+        };
+        return copy;
+      });
 
       // Recompute gaps smoothly
       let accumulatedGap = 0;
@@ -1480,7 +1523,8 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
           drivers={drivers}
           currentLap={currentLap}
           maxLaps={maxLaps}
-          circuitName={selectedCircuit?.grand_prix_name || "Singapore Grand Prix"}
+          circuitName={selectedCircuit?.grand_prix_name || gpConfig?.name || "Singapore Grand Prix"}
+          circuitId={activeCircuitId}
           lapHistory={lapHistory}
           selectedDriverCode={currentDriver.code}
           onSelectDriver={(d) => {
@@ -1916,12 +1960,27 @@ export default function TimingTower({ selectedCircuit, onGoToCalendar }) {
         >
           {/* Timing Header Status Bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexWrap: "wrap", gap: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.80rem", fontWeight: "900", color: "#ffffff", letterSpacing: "0.08em" }}>
                 2026 LIVE TIMING TOWER
               </span>
               <span style={{ fontSize: "0.62rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-green)", background: "rgba(0,204,68,0.12)", border: "1px solid rgba(0,204,68,0.3)", padding: "2px 7px", borderRadius: "3px", fontWeight: "800" }}>
                 ● 22 CARS LIVE
+              </span>
+              <span
+                style={{
+                  fontSize: "0.62rem",
+                  fontFamily: "'Orbitron', monospace",
+                  color: "#ffd700",
+                  background: "rgba(255,215,0,0.12)",
+                  border: "1px solid rgba(255,215,0,0.35)",
+                  padding: "2px 7px",
+                  borderRadius: "3px",
+                  fontWeight: "800",
+                }}
+                title={`Qualifying Pole Time for ${gpConfig?.name}: ${gpConfig?.poleTime}`}
+              >
+                ⏱️ POLE: {gpConfig?.poleDriver} ({gpConfig?.poleTime})
               </span>
             </div>
 

@@ -4,6 +4,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import axios from "axios";
 import "./index.css";
+import { SEASON_2026_ROUNDS } from "./data/calendar2026";
 
 const TimingTower = lazy(() => import("./components/TimingTower"));
 const CalendarView = lazy(() => import("./components/CalendarView"));
@@ -70,8 +71,8 @@ function CommandLoader({ label }) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("timing");
-  const [circuits, setCircuits] = useState([]);
-  const [selectedCircuit, setSelectedCircuit] = useState(DEFAULT_CIRCUIT);
+  const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
+  const [selectedCircuit, setSelectedCircuit] = useState(SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT);
   const [timeStr, setTimeStr] = useState(() => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
 
   useEffect(() => {
