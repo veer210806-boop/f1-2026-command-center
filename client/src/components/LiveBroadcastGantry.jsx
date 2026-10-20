@@ -2,6 +2,8 @@
 // LiveBroadcastGantry.jsx — FIA Formula 1 Live Race Control & Audio Deck
 // Interactive Simulation controls, Web Audio Team Radio Comms player,
 // AWS Battle Predictor HUD, and Steward Incident Ticker.
+// Supports both a sleek 38px Compact Streamline Bar and an
+// Expanded Multi-Tier Cockpit Deck for zero visual clutter.
 // ============================================================
 import React, { useState, useEffect } from "react";
 import { f1Audio } from "../utils/f1AudioEngine";
@@ -27,11 +29,12 @@ export default function LiveBroadcastGantry({
   onTriggerOvertake,
   onFlagChange,
   activeFlag = "GREEN",
+  defaultExpanded = false,
 }) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [selectedRadio, setSelectedRadio] = useState(AUTHENTIC_RADIO_QUOTES[0]);
   const [isPlayingRadio, setIsPlayingRadio] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [activeBattleProb, setActiveBattleProb] = useState(84);
   const [incidentTicker, setIncidentTicker] = useState("FIA RACE CONTROL: TRACK ALL CLEAR · DRS ZONES ENABLED");
 
   useEffect(() => {
@@ -72,24 +75,50 @@ export default function LiveBroadcastGantry({
     if (onTriggerOvertake) onTriggerOvertake();
   };
 
+  const lapPct = Math.round((currentLap / maxLaps) * 100);
+
   return (
     <div
       style={{
-        background: "linear-gradient(180deg, rgba(16, 20, 32, 0.98) 0%, rgba(10, 13, 20, 0.98) 100%)",
-        border: "1px solid rgba(0, 240, 255, 0.28)",
+        background: "linear-gradient(180deg, rgba(16, 20, 32, 0.95) 0%, rgba(10, 13, 20, 0.95) 100%)",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+        borderLeft: "3px solid var(--neon-cyan)",
         borderRadius: "10px",
-        padding: "10px 16px",
-        margin: "0 24px 14px 24px",
-        boxShadow: "0 8px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 240, 255, 0.12)",
+        padding: isExpanded ? "12px 16px" : "7px 14px",
+        margin: "0 24px 12px 24px",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 240, 255, 0.08)",
+        backdropFilter: "blur(14px)",
+        transition: "all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
         position: "relative",
         zIndex: 40,
       }}
     >
-      {/* ── Top Row: Simulation Engine Bar, Flag Switcher & Sound Toggle ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "10px" }}>
+      {/* ── Compact Streamline Bar (Always Visible) ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
         
-        {/* Left: Simulation Engine Trigger */}
+        {/* Left: Lap Progress + Simulation Quick Trigger */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          {/* Micro Lap Pill */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              padding: "4px 9px",
+              borderRadius: "6px",
+            }}
+          >
+            <span style={{ fontSize: "0.68rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: "#ffffff" }}>
+              LAP {currentLap}/{maxLaps}
+            </span>
+            <span style={{ fontSize: "0.65rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-green)", fontWeight: "700" }}>
+              {lapPct}%
+            </span>
+          </div>
+
+          {/* Auto-Race Play / Stop Button */}
           <button
             onClick={onToggleSim}
             style={{
@@ -98,113 +127,32 @@ export default function LiveBroadcastGantry({
                 : "linear-gradient(135deg, #00e676 0%, #00a854 100%)",
               color: isAutoSimulating ? "#ffffff" : "#07080b",
               border: "none",
-              padding: "6px 14px",
+              padding: "5px 12px",
               borderRadius: "5px",
               fontFamily: "'Orbitron', monospace",
-              fontSize: "0.74rem",
+              fontSize: "0.70rem",
               fontWeight: "900",
               letterSpacing: "0.06em",
               cursor: "pointer",
-              boxShadow: isAutoSimulating ? "0 0 14px rgba(255, 23, 68, 0.6)" : "0 0 14px rgba(0, 230, 118, 0.5)",
+              boxShadow: isAutoSimulating ? "0 0 12px rgba(255, 23, 68, 0.5)" : "0 0 10px rgba(0, 230, 118, 0.4)",
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "5px",
               transition: "all 0.2s ease",
             }}
           >
-            <span>{isAutoSimulating ? "⏹ STOP RACE SIM" : "▶ START AUTO-RACE"}</span>
-            <span style={{ fontSize: "0.64rem", opacity: 0.85 }}>({currentLap}/{maxLaps})</span>
+            <span>{isAutoSimulating ? "⏹ STOP SIM" : "▶ LIVE SIM"}</span>
           </button>
-
-          {/* Speed Selectors */}
-          <div style={{ display: "flex", gap: "4px", background: "rgba(0,0,0,0.4)", padding: "3px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
-            {[1, 2, 5].map((spd) => (
-              <button
-                key={spd}
-                onClick={() => handleSimSpeedClick(spd)}
-                style={{
-                  background: simSpeed === spd ? "rgba(0, 240, 255, 0.25)" : "transparent",
-                  color: simSpeed === spd ? "var(--neon-cyan)" : "var(--text-secondary)",
-                  border: simSpeed === spd ? "1px solid var(--neon-cyan)" : "none",
-                  borderRadius: "3px",
-                  padding: "3px 8px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.64rem",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                }}
-              >
-                {spd}x
-              </button>
-            ))}
-          </div>
 
           {/* Instant Overtake Trigger Button */}
           <button
             onClick={handleTriggerBattleOvertake}
             style={{
-              background: "linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 240, 255, 0.05) 100%)",
+              background: "rgba(0, 240, 255, 0.12)",
               border: "1px solid var(--neon-cyan)",
               color: "var(--neon-cyan)",
-              padding: "5px 12px",
-              borderRadius: "5px",
-              fontFamily: "'Orbitron', monospace",
-              fontSize: "0.70rem",
-              fontWeight: "800",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              boxShadow: "0 0 10px rgba(0, 240, 255, 0.2)",
-            }}
-          >
-            <span>⚔️ TRIGGER OVERTAKE</span>
-          </button>
-        </div>
-
-        {/* Center: FIA Race Flag Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "0.64rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", marginRight: "2px" }}>
-            FLAG:
-          </span>
-          {[
-            { id: "GREEN", label: "🟢 CLEAR", color: "var(--neon-green)", bg: "rgba(0, 230, 118, 0.15)" },
-            { id: "VSC", label: "🟡 VSC", color: "var(--neon-amber)", bg: "rgba(255, 183, 0, 0.15)" },
-            { id: "SC", label: "🟡 SAFETY CAR", color: "var(--neon-amber)", bg: "rgba(255, 183, 0, 0.15)" },
-            { id: "RED", label: "🔴 RED FLAG", color: "var(--neon-red)", bg: "rgba(255, 23, 68, 0.15)" },
-          ].map((fl) => (
-            <button
-              key={fl.id}
-              onClick={() => handleFlagClick(fl.id)}
-              style={{
-                background: activeFlag === fl.id ? fl.bg : "rgba(255,255,255,0.03)",
-                color: activeFlag === fl.id ? fl.color : "var(--text-secondary)",
-                border: activeFlag === fl.id ? `1px solid ${fl.color}` : "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "4px",
-                padding: "3px 8px",
-                fontFamily: "'Orbitron', monospace",
-                fontSize: "0.64rem",
-                fontWeight: "800",
-                cursor: "pointer",
-                boxShadow: activeFlag === fl.id ? `0 0 10px ${fl.color}55` : "none",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {fl.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right: Audio Synthesizer Mute Toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button
-            onClick={() => setIsAudioMuted(!isAudioMuted)}
-            style={{
-              background: isAudioMuted ? "rgba(255,23,68,0.12)" : "rgba(0, 240, 255, 0.12)",
-              border: isAudioMuted ? "1px solid var(--neon-red)" : "1px solid var(--neon-cyan)",
-              color: isAudioMuted ? "var(--neon-red)" : "var(--neon-cyan)",
               padding: "4px 10px",
-              borderRadius: "4px",
+              borderRadius: "5px",
               fontFamily: "'Orbitron', monospace",
               fontSize: "0.68rem",
               fontWeight: "800",
@@ -212,122 +160,237 @@ export default function LiveBroadcastGantry({
               display: "inline-flex",
               alignItems: "center",
               gap: "5px",
+              boxShadow: "0 0 8px rgba(0, 240, 255, 0.2)",
+              transition: "all 0.15s ease",
+            }}
+            title="Trigger dynamic lead overtake and audio telemetry fanfare"
+          >
+            <span>⚔️ OVERTAKE</span>
+          </button>
+
+          {/* Current Flag Capsule */}
+          <div
+            style={{
+              background: activeFlag === "GREEN" ? "rgba(0, 230, 118, 0.14)" : activeFlag === "RED" ? "rgba(255, 23, 68, 0.16)" : "rgba(255, 183, 0, 0.16)",
+              border: `1px solid ${activeFlag === "GREEN" ? "var(--neon-green)" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-amber)"}`,
+              color: activeFlag === "GREEN" ? "var(--neon-green)" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-amber)",
+              borderRadius: "5px",
+              padding: "3px 8px",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.65rem",
+              fontWeight: "900",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
             }}
           >
-            <span>{isAudioMuted ? "🔇 SOUND MUTED" : "🔊 F1 AUDIO FX ON"}</span>
+            <span>{activeFlag === "GREEN" ? "🟢 TRACK CLEAR" : activeFlag === "SC" ? "🟡 SAFETY CAR" : activeFlag === "VSC" ? "🟡 VSC" : "🔴 RED FLAG"}</span>
+          </div>
+        </div>
+
+        {/* Center: Live Radio Transcript Ticker (Clean) */}
+        <div style={{ flex: 1, minWidth: "220px", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+          <button
+            onClick={() => handlePlayRadio()}
+            style={{
+              all: "unset",
+              cursor: "pointer",
+              background: "rgba(255,255,255,0.06)",
+              padding: "3px 8px",
+              borderRadius: "4px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              flexShrink: 0,
+            }}
+            title="Listen to driver radio transmission"
+          >
+            <span style={{ fontSize: "0.68rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-cyan)", fontWeight: "800" }}>
+              📻 #{selectedRadio.num} {selectedRadio.code}
+            </span>
+          </button>
+          
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: "0.74rem", fontFamily: "'Exo 2', sans-serif", color: isPlayingRadio ? "var(--neon-green)" : "var(--text-secondary)", fontStyle: "italic" }}>
+              "{selectedRadio.quote}"
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Audio FX Toggle + Expand/Collapse Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button
+            onClick={() => setIsAudioMuted(!isAudioMuted)}
+            style={{
+              background: isAudioMuted ? "rgba(255,23,68,0.12)" : "rgba(0, 240, 255, 0.12)",
+              border: isAudioMuted ? "1px solid var(--neon-red)" : "1px solid var(--neon-cyan)",
+              color: isAudioMuted ? "var(--neon-red)" : "var(--neon-cyan)",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.65rem",
+              fontWeight: "800",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+            title="Toggle Web Audio engine sound effects"
+          >
+            <span>{isAudioMuted ? "🔇 MUTED" : "🔊 AUDIO FX"}</span>
+          </button>
+
+          {/* Expand/Collapse Toggle Button */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: isExpanded ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: "#ffffff",
+              padding: "4px 9px",
+              borderRadius: "4px",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.65rem",
+              fontWeight: "800",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <span>{isExpanded ? "▲ LESS" : "▼ CONTROLS"}</span>
           </button>
         </div>
       </div>
 
-      {/* ── Middle Row: Live Team Radio Comms Deck ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: "rgba(0, 0, 0, 0.4)",
-          borderRadius: "8px",
-          padding: "6px 12px",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
-          gap: "12px",
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Left: Driver Selector Pills */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", overflowX: "auto" }}>
-          <span style={{ fontSize: "0.64rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-cyan)", fontWeight: "800", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            📻 TEAM RADIO:
-          </span>
-          {AUTHENTIC_RADIO_QUOTES.map((d) => {
-            const isSel = selectedRadio.code === d.code;
-            return (
-              <button
-                key={d.code}
-                onClick={() => {
-                  setSelectedRadio(d);
-                  handlePlayRadio(d);
-                }}
-                style={{
-                  background: isSel ? "rgba(0, 240, 255, 0.22)" : "rgba(255,255,255,0.04)",
-                  color: isSel ? "#ffffff" : "var(--text-secondary)",
-                  border: isSel ? "1px solid var(--neon-cyan)" : "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "3px",
-                  padding: "2px 7px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.64rem",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                #{d.num} {d.code}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Center: Radio Transcript & Waveform Animation */}
-        <div style={{ flex: 1, minWidth: "240px", display: "flex", alignItems: "center", gap: "10px" }}>
-          {isPlayingRadio && (
-            <div style={{ display: "flex", alignItems: "center", gap: "2px", height: "14px" }}>
-              <span style={{ width: "3px", height: "14px", background: "var(--neon-green)", animation: "pulseBeacon 0.4s infinite alternate" }} />
-              <span style={{ width: "3px", height: "8px", background: "var(--neon-green)", animation: "pulseBeacon 0.6s infinite alternate" }} />
-              <span style={{ width: "3px", height: "16px", background: "var(--neon-green)", animation: "pulseBeacon 0.3s infinite alternate" }} />
-              <span style={{ width: "3px", height: "10px", background: "var(--neon-green)", animation: "pulseBeacon 0.5s infinite alternate" }} />
+      {/* ── Expanded Drawer: Full Simulation, Flag & Radio Station Controls ── */}
+      {isExpanded && (
+        <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: "8px" }}>
+          
+          {/* Top Row: Speed Selectors + All Race Flags */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+            {/* Speed Selectors */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "0.64rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
+                SPEED:
+              </span>
+              <div style={{ display: "flex", gap: "3px", background: "rgba(0,0,0,0.3)", padding: "2px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                {[1, 2, 5].map((spd) => (
+                  <button
+                    key={spd}
+                    onClick={() => handleSimSpeedClick(spd)}
+                    style={{
+                      background: simSpeed === spd ? "rgba(0, 240, 255, 0.25)" : "transparent",
+                      color: simSpeed === spd ? "var(--neon-cyan)" : "var(--text-secondary)",
+                      border: simSpeed === spd ? "1px solid var(--neon-cyan)" : "none",
+                      borderRadius: "3px",
+                      padding: "2px 7px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.64rem",
+                      fontWeight: "800",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {spd}x
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-          <span style={{ fontSize: "0.75rem", fontFamily: "'Exo 2', sans-serif", color: isPlayingRadio ? "var(--neon-green)" : "#e2e8f0", fontStyle: "italic" }}>
-            "{selectedRadio.quote}"
-          </span>
+
+            {/* FIA Flag Controls */}
+            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+              <span style={{ fontSize: "0.64rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", marginRight: "2px" }}>
+                FLAGS:
+              </span>
+              {[
+                { id: "GREEN", label: "🟢 GREEN", color: "var(--neon-green)", bg: "rgba(0, 230, 118, 0.15)" },
+                { id: "VSC", label: "🟡 VSC", color: "var(--neon-amber)", bg: "rgba(255, 183, 0, 0.15)" },
+                { id: "SC", label: "🟡 SC", color: "var(--neon-amber)", bg: "rgba(255, 183, 0, 0.15)" },
+                { id: "RED", label: "🔴 RED", color: "var(--neon-red)", bg: "rgba(255, 23, 68, 0.15)" },
+              ].map((fl) => (
+                <button
+                  key={fl.id}
+                  onClick={() => handleFlagClick(fl.id)}
+                  style={{
+                    background: activeFlag === fl.id ? fl.bg : "rgba(255,255,255,0.03)",
+                    color: activeFlag === fl.id ? fl.color : "var(--text-secondary)",
+                    border: activeFlag === fl.id ? `1px solid ${fl.color}` : "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "4px",
+                    padding: "2px 7px",
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: "0.64rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                    boxShadow: activeFlag === fl.id ? `0 0 8px ${fl.color}44` : "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {fl.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Middle Row: Driver Radio Selector Pills */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
+            <span style={{ fontSize: "0.64rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-cyan)", fontWeight: "800", flexShrink: 0 }}>
+              SELECT RADIO:
+            </span>
+            {AUTHENTIC_RADIO_QUOTES.map((d) => {
+              const isSel = selectedRadio.code === d.code;
+              return (
+                <button
+                  key={d.code}
+                  onClick={() => {
+                    setSelectedRadio(d);
+                    handlePlayRadio(d);
+                  }}
+                  style={{
+                    background: isSel ? "rgba(0, 240, 255, 0.22)" : "rgba(255,255,255,0.04)",
+                    color: isSel ? "#ffffff" : "var(--text-secondary)",
+                    border: isSel ? "1px solid var(--neon-cyan)" : "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "4px",
+                    padding: "2px 7px",
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: "0.64rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  #{d.num} {d.code}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Bottom Row: Official FIA Bulletin Ticker */}
+          <div
+            style={{
+              background: "rgba(0,0,0,0.5)",
+              borderRadius: "4px",
+              padding: "4px 8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              borderLeft: "3px solid var(--neon-amber)",
+              fontSize: "0.68rem",
+              fontFamily: "'Orbitron', monospace",
+              color: "var(--neon-amber)",
+              overflow: "hidden",
+            }}
+          >
+            <span style={{ fontWeight: "900", color: "#ffffff", background: "rgba(255,183,0,0.2)", padding: "1px 5px", borderRadius: "2px" }}>
+              FIA BULLETIN
+            </span>
+            <span style={{ color: "#e2e8f0", letterSpacing: "0.04em" }}>
+              {incidentTicker}
+            </span>
+          </div>
         </div>
-
-        {/* Right: Broadcast Radio Action Button */}
-        <button
-          onClick={() => handlePlayRadio()}
-          style={{
-            background: "linear-gradient(135deg, rgba(232, 0, 45, 0.2) 0%, rgba(232, 0, 45, 0.05) 100%)",
-            border: "1px solid var(--neon-red)",
-            color: "#ffffff",
-            padding: "4px 12px",
-            borderRadius: "4px",
-            fontFamily: "'Orbitron', monospace",
-            fontSize: "0.66rem",
-            fontWeight: "800",
-            cursor: "pointer",
-            boxShadow: "0 0 10px rgba(232,0,45,0.3)",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "5px",
-          }}
-        >
-          <span>🎙️ LISTEN RADIO</span>
-        </button>
-      </div>
-
-      {/* ── Bottom Row: Scrolling FIA Steward Ticker Bar ── */}
-      <div
-        style={{
-          marginTop: "8px",
-          background: "rgba(0,0,0,0.6)",
-          borderRadius: "4px",
-          padding: "3px 10px",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          borderLeft: "3px solid var(--neon-amber)",
-          fontSize: "0.70rem",
-          fontFamily: "'Orbitron', monospace",
-          color: "var(--neon-amber)",
-          overflow: "hidden",
-        }}
-      >
-        <span style={{ fontWeight: "900", color: "#ffffff", background: "rgba(255,183,0,0.2)", padding: "1px 5px", borderRadius: "2px" }}>
-          FIA BULLETIN
-        </span>
-        <span style={{ color: "#e2e8f0", letterSpacing: "0.04em" }}>
-          {incidentTicker}
-        </span>
-      </div>
+      )}
     </div>
   );
 }
