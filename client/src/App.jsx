@@ -461,6 +461,7 @@ export default function App() {
               onGoToCalendar={handleGoToCalendar}
               controlledLap={currentLapNum}
               controlledFlag={activeFlag}
+              triggerOvertakeSignal={overtakeTriggerCount}
             />
           )}
           {activeTab === "calendar"  && (

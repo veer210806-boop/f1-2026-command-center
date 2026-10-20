@@ -651,7 +651,13 @@ function playF1OvertakeChime(muted = false) {
   } catch (_) {}
 }
 
-function TimingTower({ selectedCircuit, onGoToCalendar, controlledLap, controlledFlag }) {
+function TimingTower({
+  selectedCircuit,
+  onGoToCalendar,
+  controlledLap,
+  controlledFlag,
+  triggerOvertakeSignal,
+}) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
   const roundNum = selectedCircuit?.round || 1;
   const maxLaps = selectedCircuit?.laps || 58;
@@ -702,10 +708,85 @@ function TimingTower({ selectedCircuit, onGoToCalendar, controlledLap, controlle
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [isFiaModalOpen, setIsFiaModalOpen] = useState(false);
 
+  // Listen to external overtake triggers from LiveBroadcastGantry
+  useEffect(() => {
+    if (triggerOvertakeSignal) {
+      handleTriggerDuelOvertake();
+    }
+  }, [triggerOvertakeSignal]);
+
+  // Dynamic Lap Progression & Auto-Overtakes Simulation
   useEffect(() => {
     if (controlledLap && controlledLap !== currentLap) {
       setCurrentLap(controlledLap);
-      setDrivers(buildTimingTowerGridForCircuit(activeCircuitId, controlledLap));
+
+      setDrivers((prevDrivers) => {
+        if (!prevDrivers || prevDrivers.length < 2) {
+          return buildTimingTowerGridForCircuit(activeCircuitId, controlledLap);
+        }
+
+        // Dynamically alternate overtakes: battle for lead, podium fight, and midfield
+        const duelIndex = (controlledLap % 4 === 1) ? 0
+                        : (controlledLap % 4 === 2) ? 2
+                        : (controlledLap % 4 === 3) ? 4
+                        : 1;
+
+        const targetIdx = duelIndex;
+        const attackerIdx = targetIdx + 1;
+        const carAhead = prevDrivers[targetIdx];
+        const carBehind = prevDrivers[attackerIdx];
+
+        if (!carAhead || !carBehind) return prevDrivers;
+
+        const updated = [...prevDrivers];
+        updated[targetIdx] = { ...carBehind, pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
+        updated[attackerIdx] = { ...carAhead, pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
+
+        let accum = 0;
+        const reordered = updated.map((d, i) => {
+          const isLead = i === 0;
+          const step = +(0.52 + (i % 4) * 0.28).toFixed(3);
+          if (!isLead) accum += step;
+          return {
+            ...d,
+            pos: i + 1,
+            tireAge: (d.tireAge || 12) + 1,
+            gap: isLead ? "LEADER" : `+${accum.toFixed(3)}s`,
+            interval: isLead ? d.bestLap : `+${step.toFixed(3)}s`,
+          };
+        });
+
+        const duelReasons = [
+          "into Turn 1 DRS Zone",
+          "via Slipstream on Back Straight",
+          "with 350kW MGU-K Boost Cutback",
+          "outbraking at the Hairpin",
+        ];
+        const reason = duelReasons[controlledLap % duelReasons.length];
+
+        setActiveOvertake({
+          winnerCode: carBehind.code,
+          winnerNum: carBehind.num,
+          winnerTeam: carBehind.team,
+          loserCode: carAhead.code,
+          loserNum: carAhead.num,
+          loserTeam: carAhead.team,
+          toPos: targetIdx + 1,
+          fromPos: attackerIdx + 1,
+          lap: controlledLap,
+          reason,
+          timestamp: Date.now(),
+        });
+        playF1OvertakeChime(isSoundMuted);
+
+        setOvertakeEvent(`⚔️ LAP ${controlledLap}: ${carBehind.code} passes ${carAhead.code} for P${targetIdx + 1} (${reason})`);
+
+        setTimeout(() => {
+          setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 2800 ? null : curr));
+        }, 3000);
+
+        return reordered;
+      });
     }
   }, [controlledLap, activeCircuitId]);
 
@@ -744,6 +825,20 @@ function TimingTower({ selectedCircuit, onGoToCalendar, controlledLap, controlle
       updated[targetIdx] = { ...carBehind, pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
       updated[attackerIdx] = { ...carAhead, pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
 
+      // Recalculate gaps
+      let accum = 0;
+      const finalDrivers = updated.map((d, i) => {
+        const isLead = i === 0;
+        const step = +(0.55 + (i % 3) * 0.22).toFixed(3);
+        if (!isLead) accum += step;
+        return {
+          ...d,
+          pos: i + 1,
+          gap: isLead ? "LEADER" : `+${accum.toFixed(3)}s`,
+          interval: isLead ? d.bestLap : `+${step.toFixed(3)}s`,
+        };
+      });
+
       setSelectedDriverIdx(targetIdx);
 
       const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
@@ -768,43 +863,7 @@ function TimingTower({ selectedCircuit, onGoToCalendar, controlledLap, controlle
         setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
       }, 4000);
 
-      // Synchronize live overtake into lapHistory
-      setLapHistory((prev) => {
-        if (!prev || prev.length === 0) return prev;
-        const copy = [...prev];
-        const lastIdx = copy.length - 1;
-        const currentEntry = copy[lastIdx];
-        const newOrder = updated.map((d) => d.code);
-        const newOvertake = {
-          winner: carBehind.code,
-          loser: carAhead.code,
-          winnerNum: carBehind.num,
-          loserNum: carAhead.num,
-          pos: targetIdx + 1,
-          fromPos: attackerIdx + 1,
-          reason: boostReason,
-        };
-        copy[lastIdx] = {
-          ...currentEntry,
-          order: newOrder,
-          overtakes: [...(currentEntry.overtakes || []), newOvertake],
-        };
-        return copy;
-      });
-
-      // Recompute gaps smoothly
-      let accumulatedGap = 0;
-      return updated.map((d, idx) => {
-        if (idx === 0) return { ...d, pos: 1, gap: "LEADER", interval: "1:28.412" };
-        const gapStep = +(0.8 + idx * 0.12).toFixed(3);
-        accumulatedGap += gapStep;
-        return {
-          ...d,
-          pos: idx + 1,
-          gap: `+${accumulatedGap.toFixed(3)}s`,
-          interval: `+${gapStep.toFixed(3)}s`,
-        };
-      });
+      return finalDrivers;
     });
   };
 
