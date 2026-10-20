@@ -12,6 +12,7 @@ const TeamsPaddock = lazy(() => import("./components/TeamsPaddock"));
 const StrategyAdvisor = lazy(() => import("./components/StrategyAdvisor"));
 const TelemetryViewer = lazy(() => import("./components/TelemetryViewer"));
 const BudgetManager = lazy(() => import("./components/BudgetManager"));
+import LiveBroadcastGantry from "./components/LiveBroadcastGantry";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -170,7 +171,24 @@ export default function App() {
   }, []);
 
   const totalLaps = selectedCircuit?.laps || 58;
-  const currentLapNum = 34;
+  const [currentLapNum, setCurrentLapNum] = useState(34);
+  const [isAutoSimulating, setIsAutoSimulating] = useState(false);
+  const [simSpeed, setSimSpeed] = useState(1);
+  const [activeFlag, setActiveFlag] = useState("GREEN");
+  const [overtakeTriggerCount, setOvertakeTriggerCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAutoSimulating) return;
+    const intervalMs = simSpeed === 5 ? 800 : simSpeed === 2 ? 1800 : 3500;
+    const timer = setInterval(() => {
+      setCurrentLapNum((prev) => {
+        const next = prev + 1;
+        return next > totalLaps ? 1 : next;
+      });
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [isAutoSimulating, simSpeed, totalLaps]);
+
   const lapProgressPct = Math.round((currentLapNum / totalLaps) * 100);
   const activeTabMeta = TABS.find((tab) => tab.id === activeTab) || TABS[0];
 
@@ -414,6 +432,21 @@ export default function App() {
         ))}
       </nav>
 
+      {/* ── Official 2026 Live Race Control & Simulation Gantry ── */}
+      <LiveBroadcastGantry
+        currentLap={currentLapNum}
+        maxLaps={totalLaps}
+        isAutoSimulating={isAutoSimulating}
+        onToggleSim={() => setIsAutoSimulating((s) => !s)}
+        simSpeed={simSpeed}
+        onChangeSimSpeed={(spd) => setSimSpeed(spd)}
+        onTriggerOvertake={() => {
+          setOvertakeTriggerCount((c) => c + 1);
+        }}
+        onFlagChange={(flag) => setActiveFlag(flag)}
+        activeFlag={activeFlag}
+      />
+
       {/* ── Main Content ── */}
       <main id="command-main" className="main-content" tabIndex="-1">
         <div className="context-bar" aria-live="polite">
@@ -422,7 +455,14 @@ export default function App() {
           <kbd>Alt + {TABS.indexOf(activeTabMeta) + 1}</kbd>
         </div>
         <Suspense fallback={<CommandLoader label={activeTabMeta.subtitle} />}>
-          {activeTab === "timing"    && <TimingTower selectedCircuit={selectedCircuit} onGoToCalendar={handleGoToCalendar} />}
+          {activeTab === "timing"    && (
+            <TimingTower
+              selectedCircuit={selectedCircuit}
+              onGoToCalendar={handleGoToCalendar}
+              controlledLap={currentLapNum}
+              controlledFlag={activeFlag}
+            />
+          )}
           {activeTab === "calendar"  && (
             <CalendarView
               selectedCircuit={selectedCircuit}

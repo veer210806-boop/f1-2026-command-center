@@ -651,7 +651,7 @@ function playF1OvertakeChime(muted = false) {
   } catch (_) {}
 }
 
-function TimingTower({ selectedCircuit, onGoToCalendar }) {
+function TimingTower({ selectedCircuit, onGoToCalendar, controlledLap, controlledFlag }) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
   const roundNum = selectedCircuit?.round || 1;
   const maxLaps = selectedCircuit?.laps || 58;
@@ -698,9 +698,22 @@ function TimingTower({ selectedCircuit, onGoToCalendar }) {
   }, [activeCircuitId, maxLaps]);
 
   // Real-time Session Flag Status: "GREEN", "SC", "VSC", "RED"
-  const [sessionFlag, setSessionFlag] = useState("GREEN");
+  const [sessionFlag, setSessionFlag] = useState(controlledFlag || "GREEN");
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [isFiaModalOpen, setIsFiaModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (controlledLap && controlledLap !== currentLap) {
+      setCurrentLap(controlledLap);
+      setDrivers(buildTimingTowerGridForCircuit(activeCircuitId, controlledLap));
+    }
+  }, [controlledLap, activeCircuitId]);
+
+  useEffect(() => {
+    if (controlledFlag && controlledFlag !== sessionFlag) {
+      setSessionFlag(controlledFlag);
+    }
+  }, [controlledFlag]);
   // Pit Wall Operational View: "tower" (Matrix Timing Grid) by default, "lapMatrix" (StatsF1 Tour-par-tour), or "map" (3D Satellite Tracker)
   const [activePitWallTab, setActivePitWallTab] = useState("tower");
   // Timing Matrix Density Mode: "broadcast" (roomy, rich) vs "compact" (fits all 22 drivers without scroll)
