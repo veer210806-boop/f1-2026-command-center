@@ -1350,6 +1350,8 @@ function TeamsPaddock() {
                       <img
                         src={carImg}
                         alt={`${t.team} 2026 Car`}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           maxWidth: "96%",
                           maxHeight: "105px",
@@ -1367,7 +1369,10 @@ function TeamsPaddock() {
                           e.currentTarget.style.transform = "scale(1) translateY(0)";
                           e.currentTarget.style.filter = `drop-shadow(0 10px 16px ${color}55)`;
                         }}
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100"><path d="M30 72 L60 72 L75 55 L140 50 L190 35 L240 35 L280 48 L330 52 L370 70 L380 72 Z" fill="${encodeURIComponent(color)}" opacity="0.35"/><path d="M20 72 L380 72 M50 72 C50 60 70 60 70 72 M310 72 C310 58 335 58 335 72 M160 50 L220 38 L260 48 M20 58 L50 70 M350 48 L380 72" stroke="${encodeURIComponent(color)}" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="60" cy="72" r="10" stroke="${encodeURIComponent(color)}" stroke-width="2" fill="%230d1017"/><circle cx="322" cy="72" r="11" stroke="${encodeURIComponent(color)}" stroke-width="2" fill="%230d1017"/><text x="200" y="88" fill="%2394a3b8" font-size="9" font-family="monospace" text-anchor="middle" letter-spacing="2">2026 FIA HYBRID SPEC</text></svg>`;
+                        }}
                       />
                     ) : (
                       <div style={{ color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace", fontSize: "0.75rem" }}>

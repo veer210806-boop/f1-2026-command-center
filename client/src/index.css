@@ -1004,3 +1004,69 @@ textarea:focus-visible,
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   UIUX PRO MAX — BROADCAST TELEMETRY & DESIGN SYSTEM TOKENS
+   ══════════════════════════════════════════════════════════════ */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.glass-panel {
+  background: rgba(14, 18, 28, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.glass-panel-cyan {
+  border: 1px solid rgba(0, 240, 255, 0.28);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 240, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.hud-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.55);
+}
+
+.hud-glow-green {
+  text-shadow: 0 0 10px rgba(0, 230, 118, 0.55);
+}
+
+.hud-glow-purple {
+  text-shadow: 0 0 12px rgba(176, 38, 255, 0.65);
+}
+
+.hud-glow-red {
+  text-shadow: 0 0 10px rgba(232, 0, 45, 0.6);
+}
+
+.cyber-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scanline-overlay {
+  position: relative;
+}
+.scanline-overlay::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 20;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
