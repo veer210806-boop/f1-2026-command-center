@@ -24,8 +24,8 @@ export const DRIVER_PHOTOS = {
   BOR: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/audi/gabbor01/2026audigabbor01right.webp",
   GAS: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/alpine/piegas01/2026alpinepiegas01right.webp",
   COL: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp/v1740000001/common/f1/2026/alpine/fracol01/2026alpinefracol01right.webp",
-  PER: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/v1740000001/common/f1/2024/redbullracing/serper01/2024redbullracingserper01right.webp",
-  BOT: "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/v1740000001/common/f1/2024/kicksauber/valbot01/2024kicksaubervalbot01right.webp",
+  PER: "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png",
+  BOT: "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png",
 };
 
 // Automatic Cloudinary face-crop URLs (focuses tightly on head/face, removing body/suit)

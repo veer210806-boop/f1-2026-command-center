@@ -726,238 +726,388 @@ function TeamsPaddock() {
         </div>
       </div>
 
-      {/* ════════ TIER 2: CONTEXTUAL CONTROL & FILTER DECK (40px) ════════ */}
+      {/* ════════ TIER 2: CONTEXTUAL CONTROL & FILTER DECK ════════ */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          flexDirection: "column",
           gap: "10px",
-          background: "rgba(12, 15, 24, 0.95)",
+          background: "linear-gradient(180deg, rgba(14, 18, 30, 0.95) 0%, rgba(9, 12, 20, 0.98) 100%)",
           border: "1px solid rgba(255, 255, 255, 0.08)",
-          borderRadius: "6px",
-          padding: "5px 12px",
-          flexWrap: "wrap",
-          minHeight: "40px",
+          borderRadius: "10px",
+          padding: "10px 14px",
+          boxShadow: "0 6px 20px rgba(0, 0, 0, 0.4)",
           boxSizing: "border-box",
         }}
       >
         {/* VIEW 1: TEAMS CONTROLS */}
         {viewMode === "teams" && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 240px" }}>
-              <input
-                type="text"
-                value={teamSearch}
-                onChange={(e) => setTeamSearch(e.target.value)}
-                aria-label="Search Formula 1 constructors"
-                placeholder="🔍 Search 11 Constructors by name, engine, base, principal..."
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {/* Upper Deck: Search + Constructor Counter */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
                 style={{
-                  width: "100%",
-                  background: "rgba(0,0,0,0.45)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "4px",
-                  padding: "4px 10px",
-                  color: "#fff",
-                  fontSize: "0.78rem",
-                  fontFamily: "'Rajdhani', sans-serif",
-                  outline: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: "rgba(0, 0, 0, 0.5)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "8px",
+                  padding: "6px 12px",
+                  flex: "1 1 280px",
+                  maxWidth: "460px",
                 }}
-              />
-              {teamSearch && (
-                <button
-                  onClick={() => setTeamSearch("")}
-                  aria-label="Clear constructor search"
-                  style={{ background: "transparent", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: "0.85rem" }}
-                >
-                  ✕
-                </button>
-              )}
+              >
+                <span style={{ fontSize: "0.85rem", opacity: 0.7 }}>🔍</span>
+                <input
+                  type="text"
+                  value={teamSearch}
+                  onChange={(e) => setTeamSearch(e.target.value)}
+                  aria-label="Search Formula 1 constructors"
+                  placeholder="Search 11 constructors by name, engine, base, principal..."
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: "none",
+                    color: "#ffffff",
+                    fontSize: "0.80rem",
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontWeight: "600",
+                    outline: "none",
+                  }}
+                />
+                {teamSearch && (
+                  <button
+                    onClick={() => setTeamSearch("")}
+                    aria-label="Clear constructor search"
+                    style={{ background: "transparent", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: "0.85rem", padding: "0 4px" }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "0.64rem",
+                  fontFamily: "'Orbitron', monospace",
+                  color: "var(--neon-green)",
+                  background: "rgba(0, 204, 68, 0.12)",
+                  border: "1px solid rgba(0, 204, 68, 0.3)",
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  fontWeight: "800",
+                }}
+              >
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--neon-green)", boxShadow: "0 0 8px var(--neon-green)" }} />
+                <span>{processedTeams.length} CONSTRUCTORS</span>
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", marginRight: "2px" }}>
-                PU:
-              </span>
-              {[
-                { id: "all", label: "ALL (11)" },
-                { id: "mercedes", label: "MERCEDES (4)" },
-                { id: "ferrari", label: "FERRARI (3)" },
-                { id: "redbull", label: "RB-FORD (2)" },
-                { id: "honda", label: "HONDA (1)" },
-                { id: "audi", label: "AUDI (1)" },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setTeamFilterPU(f.id)}
-                  aria-pressed={teamFilterPU === f.id}
-                  style={{
-                    background: teamFilterPU === f.id ? "rgba(232,0,45,0.25)" : "rgba(255,255,255,0.04)",
-                    color: teamFilterPU === f.id ? "var(--neon-red)" : "var(--text-secondary)",
-                    border: `1px solid ${teamFilterPU === f.id ? "var(--neon-red)" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: "3px",
-                    padding: "3px 8px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    transition: "all 0.12s ease",
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            {/* Lower Deck: Power Unit Supplier Chips & Sort Chips */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+                borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                paddingTop: "8px",
+              }}
+            >
+              <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
+                  POWER UNIT:
+                </span>
+                {[
+                  { id: "all", label: "ALL (11)" },
+                  { id: "mercedes", label: "MERCEDES (4)" },
+                  { id: "ferrari", label: "FERRARI (3)" },
+                  { id: "redbull", label: "RB-FORD (2)" },
+                  { id: "honda", label: "HONDA (1)" },
+                  { id: "audi", label: "AUDI (1)" },
+                ].map((f) => {
+                  const isAct = teamFilterPU === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setTeamFilterPU(f.id)}
+                      aria-pressed={isAct}
+                      style={{
+                        background: isAct ? "rgba(232,0,45,0.25)" : "rgba(255,255,255,0.04)",
+                        color: isAct ? "var(--neon-red)" : "var(--text-secondary)",
+                        border: `1px solid ${isAct ? "var(--neon-red)" : "rgba(255,255,255,0.08)"}`,
+                        borderRadius: "5px",
+                        padding: "3px 8px",
+                        fontFamily: "'Orbitron', monospace",
+                        fontSize: "0.64rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.12s ease",
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", marginRight: "2px" }}>
-                SORT:
-              </span>
-              {[
-                { id: "rank", label: "🏆 RANK" },
-                { id: "budget", label: "💰 BUDGET" },
-                { id: "alpha", label: "🔤 A-Z" },
-              ].map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setTeamSortMode(s.id)}
-                  aria-pressed={teamSortMode === s.id}
-                  style={{
-                    background: teamSortMode === s.id ? "rgba(0,210,190,0.18)" : "rgba(255,255,255,0.04)",
-                    color: teamSortMode === s.id ? "var(--neon-cyan)" : "var(--text-secondary)",
-                    border: `1px solid ${teamSortMode === s.id ? "var(--neon-cyan)" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: "3px",
-                    padding: "3px 8px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    transition: "all 0.12s ease",
-                  }}
-                >
-                  {s.label}
-                </button>
-              ))}
-              <span style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-green)", background: "rgba(0,204,68,0.12)", border: "1px solid rgba(0,204,68,0.3)", padding: "2px 6px", borderRadius: "3px", marginLeft: "4px", fontWeight: "700" }}>
-                {processedTeams.length} TEAMS
-              </span>
+              <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
+                  SORT:
+                </span>
+                {[
+                  { id: "rank", label: "🏆 RANK" },
+                  { id: "budget", label: "💰 BUDGET" },
+                  { id: "alpha", label: "🔤 A-Z" },
+                ].map((s) => {
+                  const isSort = teamSortMode === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setTeamSortMode(s.id)}
+                      aria-pressed={isSort}
+                      style={{
+                        background: isSort ? "rgba(0,210,190,0.18)" : "rgba(255,255,255,0.04)",
+                        color: isSort ? "var(--neon-cyan)" : "var(--text-secondary)",
+                        border: `1px solid ${isSort ? "var(--neon-cyan)" : "rgba(255,255,255,0.08)"}`,
+                        borderRadius: "5px",
+                        padding: "3px 8px",
+                        fontFamily: "'Orbitron', monospace",
+                        fontSize: "0.64rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.12s ease",
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* VIEW 2: DRIVERS CONTROLS */}
         {viewMode === "drivers" && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 240px" }}>
-              <input
-                type="text"
-                value={driverSearch}
-                onChange={(e) => setDriverSearch(e.target.value)}
-                aria-label="Search Formula 1 drivers"
-                placeholder="🔍 Search 22 Drivers by name, team, code, #number..."
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {/* Upper Deck: Search + Quick Category Switcher + Pilot Counter */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Search Bar with Icon and Clear */}
+              <div
                 style={{
-                  width: "100%",
-                  background: "rgba(0,0,0,0.45)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "4px",
-                  padding: "4px 10px",
-                  color: "#fff",
-                  fontSize: "0.78rem",
-                  fontFamily: "'Rajdhani', sans-serif",
-                  outline: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: "rgba(0, 0, 0, 0.5)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "8px",
+                  padding: "6px 12px",
+                  flex: "1 1 280px",
+                  maxWidth: "440px",
+                  transition: "border-color 0.15s ease",
                 }}
-              />
-              {driverSearch && (
-                <button
-                  onClick={() => setDriverSearch("")}
-                  aria-label="Clear driver search"
-                  style={{ background: "transparent", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: "0.85rem" }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", marginRight: "2px" }}>
-                FILTER:
-              </span>
-              {[
-                { id: "all", label: "ALL (22)" },
-                { id: "champions", label: "👑 CHAMPIONS (4)" },
-                { id: "winners", label: "⚡ GP WINNERS (11)" },
-                { id: "rookies", label: "⭐ ROOKIES (6)" },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setDriverFilterCategory(f.id)}
-                  aria-pressed={driverFilterCategory === f.id}
-                  style={{
-                    background: driverFilterCategory === f.id ? "rgba(232,0,45,0.25)" : "rgba(255,255,255,0.04)",
-                    color: driverFilterCategory === f.id ? "var(--neon-red)" : "var(--text-secondary)",
-                    border: `1px solid ${driverFilterCategory === f.id ? "var(--neon-red)" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: "3px",
-                    padding: "3px 8px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    transition: "all 0.12s ease",
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", gap: "5px", alignItems: "center", flexWrap: "wrap" }}>
-              <label htmlFor="driver-team-filter" style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
-                TEAM:
-              </label>
-              <select
-                id="driver-team-filter"
-                value={driverFilterTeam}
-                onChange={(e) => setDriverFilterTeam(e.target.value)}
-                style={{ background: "rgba(0,0,0,0.45)", color: "#fff", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "3px", padding: "3px 6px", fontFamily: "'Rajdhani', sans-serif", fontSize: "0.75rem", cursor: "pointer" }}
               >
-                <option value="all">All teams</option>
-                {teams.map((team) => <option key={team.team} value={team.team}>{team.team}</option>)}
-              </select>
-              <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", marginRight: "2px" }}>
-                SORT:
-              </span>
-              {[
-                { id: "points", label: "📊 STANDINGS" },
-                { id: "wins", label: "🏆 WINS" },
-                { id: "number", label: "🔢 CAR #" },
-                { id: "rating", label: "🛡️ RATING" },
-                { id: "name", label: "🔤 NAME" },
-              ].map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setDriverSortMode(s.id)}
-                  aria-pressed={driverSortMode === s.id}
+                <span style={{ fontSize: "0.85rem", opacity: 0.7 }}>🔍</span>
+                <input
+                  type="text"
+                  value={driverSearch}
+                  onChange={(e) => setDriverSearch(e.target.value)}
+                  aria-label="Search Formula 1 drivers"
+                  placeholder="Search 22 drivers by name, team, code, #number..."
                   style={{
-                    background: driverSortMode === s.id ? "rgba(0,210,190,0.18)" : "rgba(255,255,255,0.04)",
-                    color: driverSortMode === s.id ? "var(--neon-cyan)" : "var(--text-secondary)",
-                    border: `1px solid ${driverSortMode === s.id ? "var(--neon-cyan)" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: "3px",
-                    padding: "3px 8px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "700",
+                    width: "100%",
+                    background: "transparent",
+                    border: "none",
+                    color: "#ffffff",
+                    fontSize: "0.80rem",
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontWeight: "600",
+                    outline: "none",
+                  }}
+                />
+                {driverSearch && (
+                  <button
+                    onClick={() => setDriverSearch("")}
+                    aria-label="Clear driver search"
+                    style={{ background: "transparent", border: "none", color: "var(--text-dim)", cursor: "pointer", fontSize: "0.85rem", padding: "0 4px" }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Segmented Category Filter Pills */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  padding: "3px 4px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  flexWrap: "wrap",
+                }}
+              >
+                {[
+                  { id: "all", label: "ALL GRID (22)" },
+                  { id: "champions", label: "👑 CHAMPIONS (4)" },
+                  { id: "winners", label: "⚡ GP WINNERS (11)" },
+                  { id: "rookies", label: "⭐ ROOKIES (6)" },
+                ].map((f) => {
+                  const isAct = driverFilterCategory === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setDriverFilterCategory(f.id)}
+                      aria-pressed={isAct}
+                      style={{
+                        background: isAct ? "rgba(232, 0, 45, 0.25)" : "transparent",
+                        color: isAct ? "#ffffff" : "var(--text-secondary)",
+                        border: isAct ? "1px solid var(--neon-red)" : "1px solid transparent",
+                        borderRadius: "6px",
+                        padding: "5px 10px",
+                        fontFamily: "'Orbitron', monospace",
+                        fontSize: "0.66rem",
+                        fontWeight: "800",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        boxShadow: isAct ? "0 0 10px rgba(232, 0, 45, 0.35)" : "none",
+                        letterSpacing: "0.03em",
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Drivers Status Badge */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "0.64rem",
+                  fontFamily: "'Orbitron', monospace",
+                  color: "var(--neon-cyan)",
+                  background: "rgba(0, 210, 190, 0.12)",
+                  border: "1px solid rgba(0, 210, 190, 0.3)",
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  fontWeight: "800",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--neon-cyan)", boxShadow: "0 0 8px var(--neon-cyan)" }} />
+                <span>{processedDrivers.length} PILOTS ACTIVE</span>
+              </div>
+            </div>
+
+            {/* Lower Deck: Team Selector Dropdown & Sorting Chips */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+                borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                paddingTop: "8px",
+              }}
+            >
+              {/* Left: Team Filter */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
+                  TEAM:
+                </span>
+                <select
+                  id="driver-team-filter"
+                  value={driverFilterTeam}
+                  onChange={(e) => setDriverFilterTeam(e.target.value)}
+                  style={{
+                    background: "rgba(0, 0, 0, 0.6)",
+                    color: "#ffffff",
+                    border: "1px solid rgba(255, 255, 255, 0.14)",
+                    borderRadius: "6px",
+                    padding: "4px 10px",
+                    fontFamily: "'Rajdhani', sans-serif",
+                    fontSize: "0.80rem",
+                    fontWeight: "600",
                     cursor: "pointer",
-                    transition: "all 0.12s ease",
+                    outline: "none",
                   }}
                 >
-                  {s.label}
-                </button>
-              ))}
-              <span style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-cyan)", background: "rgba(0,210,190,0.12)", border: "1px solid rgba(0,210,190,0.3)", padding: "2px 6px", borderRadius: "3px", marginLeft: "4px", fontWeight: "700" }}>
-                {processedDrivers.length} PILOTS
-              </span>
+                  <option value="all">All 11 Teams</option>
+                  {teams.map((team) => (
+                    <option key={team.team} value={team.team}>
+                      {team.team}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Right: Sort By Pills */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", fontWeight: "700", marginRight: "2px" }}>
+                  SORT BY:
+                </span>
+                {[
+                  { id: "points", label: "📊 STANDINGS" },
+                  { id: "rating", label: "🛡️ RATING" },
+                  { id: "wins", label: "🏆 WINS" },
+                  { id: "number", label: "🔢 CAR #" },
+                  { id: "name", label: "🔤 A-Z" },
+                ].map((s) => {
+                  const isSort = driverSortMode === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setDriverSortMode(s.id)}
+                      aria-pressed={isSort}
+                      style={{
+                        background: isSort ? "rgba(0, 210, 190, 0.18)" : "rgba(255, 255, 255, 0.04)",
+                        color: isSort ? "var(--neon-cyan)" : "var(--text-secondary)",
+                        border: `1px solid ${isSort ? "var(--neon-cyan)" : "rgba(255, 255, 255, 0.08)"}`,
+                        borderRadius: "5px",
+                        padding: "3px 9px",
+                        fontFamily: "'Orbitron', monospace",
+                        fontSize: "0.64rem",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.12s ease",
+                        boxShadow: isSort ? "0 0 10px rgba(0, 210, 190, 0.25)" : "none",
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* VIEW 3: RATINGS CONTROLS */}
@@ -1078,33 +1228,34 @@ function TeamsPaddock() {
                     setViewMode("dossier");
                   }}
                   style={{
-                    background: "linear-gradient(180deg, rgba(18, 22, 36, 0.96) 0%, rgba(9, 12, 19, 0.98) 100%)",
+                    background: "linear-gradient(180deg, rgba(16, 21, 33, 0.94) 0%, rgba(9, 12, 20, 0.98) 100%)",
                     borderTop: `3px solid ${color}`,
                     borderRight: "1px solid rgba(255,255,255,0.08)",
                     borderBottom: "1px solid rgba(255,255,255,0.08)",
                     borderLeft: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "12px",
-                    padding: "14px 16px 12px 16px",
+                    borderRadius: "16px",
+                    padding: "16px 18px 14px 18px",
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "10px",
+                    gap: "12px",
                     position: "relative",
                     overflow: "hidden",
                     transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.55)",
+                    backdropFilter: "blur(14px)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = color;
-                    e.currentTarget.style.boxShadow = `0 14px 36px ${color}33, 0 0 20px ${color}1a`;
-                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = `0 16px 36px ${color}35, 0 0 20px ${color}1a`;
+                    e.currentTarget.style.transform = "translateY(-5px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderTopColor = color;
                     e.currentTarget.style.borderRightColor = "rgba(255,255,255,0.08)";
                     e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.08)";
                     e.currentTarget.style.borderLeftColor = "rgba(255,255,255,0.08)";
-                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.55)";
+                    e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.55)";
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
@@ -1590,6 +1741,7 @@ function TeamsPaddock() {
               const podiums = d.podiums || profile.podiums || 0;
               const poles = profile.pole_positions || 0;
               const careerPoints = d.points || profile.career_points || 0;
+              const countryCode = NATIONALITY_TO_FIA[d.nationality] || (d.nationality ? d.nationality.slice(0, 3).toUpperCase() : (d.country ? d.country.slice(0, 3).toUpperCase() : "FIA"));
 
               return (
                 <div
@@ -1599,150 +1751,135 @@ function TeamsPaddock() {
                     setActiveDriverModal(d);
                   }}
                   style={{
-                    background: "var(--bg-card)",
-                    borderTop: `4px solid ${color}`,
-                    borderRight: "1px solid rgba(255,255,255,0.08)",
-                    borderBottom: "1px solid rgba(255,255,255,0.08)",
-                    borderLeft: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "14px",
-                    padding: "18px 20px",
+                    background: "linear-gradient(175deg, rgba(16, 21, 33, 0.94) 0%, rgba(9, 12, 20, 0.98) 100%)",
+                    borderTop: `3px solid ${color}`,
+                    borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderLeft: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderRadius: "18px",
+                    padding: "16px 18px 14px",
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    minHeight: "450px",
+                    minHeight: "470px",
                     position: "relative",
                     overflow: "hidden",
-                    transition: "all 0.25s ease",
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                    transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                    boxShadow: "0 12px 32px rgba(0, 0, 0, 0.6)",
+                    backdropFilter: "blur(14px)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = color;
-                    e.currentTarget.style.boxShadow = `0 16px 36px ${color}33`;
-                    e.currentTarget.style.transform = "translateY(-5px)";
+                    e.currentTarget.style.boxShadow = `0 18px 40px ${color}35, 0 0 20px ${color}20`;
+                    e.currentTarget.style.transform = "translateY(-6px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderTopColor = color;
-                    e.currentTarget.style.borderRightColor = "rgba(255,255,255,0.08)";
-                    e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.08)";
-                    e.currentTarget.style.borderLeftColor = "rgba(255,255,255,0.08)";
-                    e.currentTarget.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+                    e.currentTarget.style.borderRightColor = "rgba(255, 255, 255, 0.08)";
+                    e.currentTarget.style.borderBottomColor = "rgba(255, 255, 255, 0.08)";
+                    e.currentTarget.style.borderLeftColor = "rgba(255, 255, 255, 0.08)";
+                    e.currentTarget.style.boxShadow = "0 12px 32px rgba(0, 0, 0, 0.6)";
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  {/* Holographic Radial Ambient Glow behind Driver */}
+                  {/* Subtle Ambient Radial Team Light */}
                   <div
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: `radial-gradient(circle at 65% 40%, ${color}28 0%, transparent 65%)`,
+                      background: `radial-gradient(circle at 75% 20%, ${color}20 0%, transparent 65%)`,
                       pointerEvents: "none",
                     }}
                   />
 
-                  {/* Giant Angled Driver Number Watermark */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: "6px",
-                      top: "-15px",
-                      fontFamily: "'Orbitron', monospace",
-                      fontSize: "8.5rem",
-                      fontWeight: "900",
-                      opacity: "0.06",
-                      color: "#fff",
-                      pointerEvents: "none",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {d.number}
-                  </div>
-
-                  {/* Subtle Team Logo Watermark Badge */}
-                  {logoImg && (
-                    <img
-                      src={logoImg}
-                      alt=""
-                      style={{
-                        position: "absolute",
-                        right: "16px",
-                        top: "52px",
-                        width: "68px",
-                        height: "68px",
-                        objectFit: "contain",
-                        opacity: 0.08,
-                        pointerEvents: "none",
-                      }}
-                    />
-                  )}
-
-                  {/* ── CARD TOP RIBBON: Rank, Driver Code, Flag & OVR Shield ── */}
+                  {/* ── CARD HEADER: Unified Driver Pill + Status + OVR Shield ── */}
                   <div style={{ position: "relative", zIndex: 2 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      {/* Driver Code & Car Number */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                      {/* Left: Driver Number, Code & Nationality Pill */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div
                           style={{
-                            fontFamily: "'Orbitron', monospace",
-                            fontSize: "0.78rem",
-                            background: color,
-                            color: "#ffffff",
-                            padding: "3px 8px",
-                            borderRadius: "4px",
-                            fontWeight: "900",
-                            letterSpacing: "0.06em",
-                            boxShadow: `0 2px 8px ${color}66`,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            background: "rgba(0, 0, 0, 0.6)",
+                            border: `1px solid ${color}55`,
+                            borderRadius: "6px",
+                            overflow: "hidden",
                           }}
                         >
-                          {d.code} #{d.number}
-                        </span>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,210,190,0.12)", padding: "2px 8px", borderRadius: "4px", border: "1px solid rgba(0,210,190,0.35)" }}>
-                          <span style={{ fontSize: "0.72rem", color: "var(--neon-cyan)", fontFamily: "'Orbitron', monospace", fontWeight: "900", letterSpacing: "0.06em" }}>
-                            {NATIONALITY_TO_FIA[d.nationality] || (d.nationality ? d.nationality.slice(0, 3).toUpperCase() : (d.country ? d.country.slice(0, 3).toUpperCase() : "FIA"))}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Right: Overall Rating & WDC Crown */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        {wdcCount > 0 && (
                           <span
                             style={{
-                              fontSize: "0.7rem",
-                              fontFamily: "'Orbitron', monospace",
+                              background: color,
+                              color: "#ffffff",
                               fontWeight: "900",
-                              color: "var(--neon-yellow)",
-                              background: "rgba(255,221,0,0.15)",
-                              border: "1px solid rgba(255,221,0,0.4)",
-                              padding: "2px 6px",
-                              borderRadius: "4px",
-                              boxShadow: "0 0 8px rgba(255,221,0,0.3)",
+                              fontSize: "0.82rem",
+                              fontFamily: "'Orbitron', monospace",
+                              padding: "3px 8px",
+                              letterSpacing: "0.04em",
+                              boxShadow: `0 0 10px ${color}88`,
                             }}
                           >
-                            👑 {wdcCount}x WDC
+                            #{d.number}
                           </span>
-                        )}
+                          <span
+                            style={{
+                              color: "#ffffff",
+                              fontWeight: "800",
+                              fontSize: "0.78rem",
+                              fontFamily: "'Orbitron', monospace",
+                              padding: "3px 8px",
+                              letterSpacing: "0.08em",
+                            }}
+                          >
+                            {d.code}
+                          </span>
+                        </div>
 
+                        {/* Country Badge */}
+                        <span
+                          style={{
+                            fontSize: "0.68rem",
+                            fontFamily: "'Orbitron', monospace",
+                            fontWeight: "800",
+                            color: "var(--neon-cyan)",
+                            background: "rgba(0, 210, 190, 0.1)",
+                            border: "1px solid rgba(0, 210, 190, 0.3)",
+                            padding: "3px 7px",
+                            borderRadius: "5px",
+                          }}
+                        >
+                          {countryCode}
+                        </span>
+                      </div>
+
+                      {/* Right: Team Radio, and Overall Rating */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setRadioModalDriver(d.code);
                           }}
+                          aria-label={`Listen to ${d.name} team radio`}
                           style={{
-                            background: "rgba(0, 210, 190, 0.15)",
-                            border: "1px solid rgba(0, 210, 190, 0.4)",
-                            borderRadius: "4px",
-                            padding: "2px 6px",
+                            background: "rgba(0, 210, 190, 0.12)",
+                            border: "1px solid rgba(0, 210, 190, 0.3)",
+                            borderRadius: "6px",
+                            padding: "3px 7px",
                             fontFamily: "'Orbitron', monospace",
-                            fontSize: "0.62rem",
+                            fontSize: "0.64rem",
                             fontWeight: "800",
                             color: "var(--neon-cyan)",
                             cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            transition: "all 0.15s ease",
                           }}
                           title={`Listen to ${d.name} authentic team radio`}
                         >
-                          📻 RADIO
+                          <span>📻</span>
+                          <span>RADIO</span>
                         </button>
 
                         <div
@@ -1750,17 +1887,17 @@ function TeamsPaddock() {
                             display: "flex",
                             alignItems: "center",
                             gap: "3px",
-                            background: "rgba(0,0,0,0.7)",
-                            border: `1.5px solid ${ovr >= 94 ? "var(--neon-yellow)" : ovr >= 90 ? "var(--neon-cyan)" : color}`,
-                            borderRadius: "6px",
-                            padding: "2px 8px",
-                            boxShadow: `0 0 10px ${ovr >= 94 ? "rgba(255,221,0,0.4)" : color + "55"}`,
+                            background: "rgba(0, 0, 0, 0.65)",
+                            border: `1.5px solid ${ovr >= 95 ? "#ffd700" : ovr >= 90 ? "var(--neon-cyan)" : color}`,
+                            borderRadius: "8px",
+                            padding: "3px 8px",
+                            boxShadow: ovr >= 95 ? "0 0 12px rgba(255, 215, 0, 0.35)" : `0 0 10px ${color}44`,
                           }}
                         >
-                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.92rem", fontWeight: "900", color: "#ffffff" }}>
+                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "1.05rem", fontWeight: "900", color: "#ffffff", lineHeight: 1 }}>
                             {ovr}
                           </span>
-                          <span style={{ fontSize: "0.62rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
+                          <span style={{ fontSize: "0.58rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", fontWeight: "800" }}>
                             OVR
                           </span>
                         </div>
@@ -1768,27 +1905,47 @@ function TeamsPaddock() {
                     </div>
 
                     {/* Driver Nameplate */}
-                    <div style={{ marginTop: "12px" }}>
-                      <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: "600" }}>
-                        {firstName}
+                    <div style={{ marginTop: "10px", marginBottom: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontSize: "0.74rem", letterSpacing: "0.14em", color: "var(--text-secondary)", fontWeight: "600", textTransform: "uppercase" }}>
+                          {firstName}
+                        </div>
+                        {wdcCount > 0 && (
+                          <span
+                            style={{
+                              fontSize: "0.64rem",
+                              fontFamily: "'Orbitron', monospace",
+                              fontWeight: "900",
+                              color: "#ffd700",
+                              background: "rgba(255, 215, 0, 0.12)",
+                              border: "1px solid rgba(255, 215, 0, 0.35)",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              boxShadow: "0 0 8px rgba(255, 215, 0, 0.25)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            👑 {wdcCount}x WDC
+                          </span>
+                        )}
                       </div>
                       <div
                         style={{
                           fontFamily: "'Orbitron', monospace",
-                          fontSize: "1.55rem",
+                          fontSize: "1.5rem",
                           fontWeight: "900",
                           color: "#ffffff",
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
+                          letterSpacing: "0.03em",
                           lineHeight: 1.1,
-                          marginTop: "1px",
+                          marginTop: "2px",
                         }}
                       >
                         {lastName}
                       </div>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.74rem", color: color, fontWeight: "700", fontFamily: "'Orbitron', monospace", marginTop: "4px" }}>
-                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: color }} />
-                        {d.team} {teamObj?.car_model ? `· ${teamObj.car_model}` : ""}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", color: color, fontWeight: "700", fontFamily: "'Orbitron', monospace", marginTop: "3px" }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}` }} />
+                        <span>{d.team}</span>
+                        {teamObj?.car_model && <span style={{ color: "var(--text-dim)" }}>· {teamObj.car_model}</span>}
                       </div>
                     </div>
                   </div>
@@ -1798,26 +1955,26 @@ function TeamsPaddock() {
                     style={{
                       position: "relative",
                       width: "100%",
-                      height: "235px",
-                      borderRadius: "10px",
+                      height: "230px",
+                      borderRadius: "12px",
                       overflow: "hidden",
-                      background: `radial-gradient(circle at 50% 28%, ${color}35 0%, rgba(10,12,18,0.92) 75%)`,
+                      background: `radial-gradient(circle at 50% 30%, ${color}30 0%, rgba(10, 13, 20, 0.95) 75%)`,
                       display: "flex",
                       alignItems: "flex-start",
                       justifyContent: "center",
-                      marginTop: "6px",
-                      border: `1px solid ${color}28`,
-                      boxShadow: `inset 0 0 25px rgba(0,0,0,0.85), 0 4px 16px rgba(0,0,0,0.5)`,
+                      marginTop: "8px",
+                      border: `1px solid ${color}33`,
+                      boxShadow: "inset 0 0 25px rgba(0,0,0,0.85), 0 4px 16px rgba(0,0,0,0.5)",
                     }}
                   >
                     {/* Watermark Car Number in Stage Background */}
                     <div
                       style={{
                         position: "absolute",
-                        right: "8px",
-                        top: "4px",
+                        right: "10px",
+                        top: "6px",
                         fontFamily: "'Orbitron', sans-serif",
-                        fontSize: "5.8rem",
+                        fontSize: "6.5rem",
                         fontWeight: "900",
                         color: `${color}18`,
                         lineHeight: 0.85,
@@ -1829,24 +1986,43 @@ function TeamsPaddock() {
                       {d.number}
                     </div>
 
+                    {/* Team Crest Watermark */}
+                    {logoImg && (
+                      <img
+                        src={logoImg}
+                        alt=""
+                        style={{
+                          position: "absolute",
+                          left: "12px",
+                          top: "12px",
+                          width: "52px",
+                          height: "52px",
+                          objectFit: "contain",
+                          opacity: 0.12,
+                          pointerEvents: "none",
+                          zIndex: 1,
+                        }}
+                      />
+                    )}
+
                     {/* Team Color Halo Flare */}
                     <div
                       style={{
                         position: "absolute",
-                        top: "15%",
+                        top: "20%",
                         left: "50%",
                         transform: "translateX(-50%)",
-                        width: "140px",
-                        height: "140px",
-                        background: `radial-gradient(circle, ${color}30 0%, transparent 70%)`,
+                        width: "150px",
+                        height: "150px",
+                        background: `radial-gradient(circle, ${color}35 0%, transparent 70%)`,
                         borderRadius: "50%",
-                        filter: "blur(18px)",
+                        filter: "blur(20px)",
                         pointerEvents: "none",
                         zIndex: 1,
                       }}
                     />
 
-                    {/* Driver Hero Portrait - Focused Bust/Torso Crop */}
+                    {/* Driver Hero Portrait */}
                     {photoImg ? (
                       <img
                         src={photoImg}
@@ -1855,15 +2031,15 @@ function TeamsPaddock() {
                         decoding="async"
                         style={{
                           width: "100%",
-                          height: "235px",
+                          height: "230px",
                           objectFit: "cover",
                           objectPosition: "top center",
-                          filter: `drop-shadow(0 10px 20px rgba(0,0,0,0.95)) contrast(1.05)`,
+                          filter: "drop-shadow(0 10px 22px rgba(0,0,0,0.95)) contrast(1.05)",
                           transition: "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)",
                           position: "relative",
                           zIndex: 2,
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05) translateY(2px)"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.04) translateY(2px)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1) translateY(0)"; }}
                         onError={(e) => {
                           const alt = DRIVER_PHOTOS[d.code];
@@ -1878,13 +2054,13 @@ function TeamsPaddock() {
                       />
                     ) : null}
 
-                    {/* High-Tech Fallback Avatar if image is loading or unavailable */}
+                    {/* Fallback Avatar */}
                     <div
                       className="driver-fallback-avatar"
                       style={{
                         display: photoImg ? "none" : "flex",
                         width: "100%",
-                        height: "235px",
+                        height: "230px",
                         alignItems: "center",
                         justifyContent: "center",
                         flexDirection: "column",
@@ -1922,47 +2098,42 @@ function TeamsPaddock() {
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        height: "45px",
-                        background: "linear-gradient(to top, rgba(12,14,22,0.98), transparent)",
+                        height: "50px",
+                        background: "linear-gradient(to top, rgba(12, 15, 24, 0.98), transparent)",
                         zIndex: 3,
                         pointerEvents: "none",
                       }}
                     />
                   </div>
 
-                  {/* ── HUD 4-TIER TELEMETRY RATINGS BARS ── */}
+                  {/* ── PERFORMANCE METRICS STRIP: Clean 4-Tile High Legibility Matrix ── */}
                   <div
                     style={{
-                      background: "rgba(0,0,0,0.45)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: "8px",
-                      padding: "8px 12px",
-                      marginTop: "8px",
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "6px 12px",
+                      gridTemplateColumns: "repeat(4, 1fr)",
+                      gap: "6px",
+                      background: "rgba(0, 0, 0, 0.45)",
+                      border: "1px solid rgba(255, 255, 255, 0.06)",
+                      borderRadius: "10px",
+                      padding: "8px 6px",
+                      marginTop: "8px",
                     }}
                   >
                     {[
-                      { label: "PACE", val: ratings.pace },
-                      { label: "QUALIFYING", val: ratings.qualifying },
-                      { label: "RACECRAFT", val: ratings.racecraft },
-                      { label: "TIRE MGMT", val: ratings.tire_mgmt || 85 },
+                      { label: "PACE", val: ratings.pace, accent: color },
+                      { label: "QUALI", val: ratings.qualifying, accent: "var(--neon-cyan)" },
+                      { label: "RACE", val: ratings.racecraft, accent: "var(--neon-yellow)" },
+                      { label: "TIRE", val: ratings.tire_mgmt || 85, accent: "var(--neon-green)" },
                     ].map((m) => (
-                      <div key={m.label}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.62rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", marginBottom: "2px" }}>
-                          <span>{m.label}</span>
-                          <span style={{ color: "#ffffff", fontWeight: "700" }}>{m.val}</span>
+                      <div key={m.label} style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "0.58rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", letterSpacing: "0.06em", marginBottom: "2px" }}>
+                          {m.label}
                         </div>
-                        <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", overflow: "hidden" }}>
-                          <div
-                            style={{
-                              width: `${m.val}%`,
-                              height: "100%",
-                              background: `linear-gradient(90deg, ${color}, var(--neon-cyan))`,
-                              borderRadius: "2px",
-                            }}
-                          />
+                        <div style={{ fontSize: "0.95rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: "#ffffff", lineHeight: 1 }}>
+                          {m.val}
+                        </div>
+                        <div style={{ width: "75%", height: "3px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", margin: "4px auto 0", overflow: "hidden" }}>
+                          <div style={{ width: `${m.val}%`, height: "100%", background: m.accent, borderRadius: "2px" }} />
                         </div>
                       </div>
                     ))}
@@ -1971,7 +2142,7 @@ function TeamsPaddock() {
                   {/* ── CAREER STATS STRIP & DOSSIER BUTTON ── */}
                   <div
                     style={{
-                      borderTop: "1px solid rgba(255,255,255,0.08)",
+                      borderTop: "1px solid rgba(255, 255, 255, 0.08)",
                       paddingTop: "10px",
                       marginTop: "8px",
                       display: "flex",
@@ -1979,29 +2150,40 @@ function TeamsPaddock() {
                       alignItems: "center",
                     }}
                   >
-                    <div style={{ display: "flex", gap: "10px", fontSize: "0.72rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace" }}>
-                      <span><strong>{careerPoints}</strong> PTS</span>
-                      <span>·</span>
-                      <span>🏆 <strong>{wins}</strong> WINS</span>
-                      <span>·</span>
-                      <span>🍾 <strong>{podiums}</strong> PODS</span>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "baseline" }}>
+                      <div>
+                        <span style={{ fontSize: "0.56rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", display: "block" }}>WINS</span>
+                        <span style={{ fontSize: "0.90rem", fontWeight: "900", fontFamily: "'Orbitron', monospace", color: "#ffffff" }}>{wins}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.56rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", display: "block" }}>PODS</span>
+                        <span style={{ fontSize: "0.90rem", fontWeight: "900", fontFamily: "'Orbitron', monospace", color: "#ffffff" }}>{podiums}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.56rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace", display: "block" }}>PTS</span>
+                        <span style={{ fontSize: "0.90rem", fontWeight: "900", fontFamily: "'Orbitron', monospace", color: color }}>{careerPoints.toLocaleString()}</span>
+                      </div>
                     </div>
 
-                    <span
+                    <div
                       style={{
-                        fontSize: "0.7rem",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "0.68rem",
                         fontFamily: "'Orbitron', monospace",
                         fontWeight: "800",
                         color: color,
                         background: `${color}18`,
                         border: `1px solid ${color}55`,
-                        padding: "3px 8px",
-                        borderRadius: "4px",
+                        padding: "4px 10px",
+                        borderRadius: "6px",
                         letterSpacing: "0.04em",
+                        transition: "all 0.15s ease",
                       }}
                     >
                       DOSSIER →
-                    </span>
+                    </div>
                   </div>
                 </div>
               );
