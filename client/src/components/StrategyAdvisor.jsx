@@ -122,6 +122,9 @@ export default function StrategyAdvisor({
   onDeleteStrategy,
   onApplyPreset,
   onGoToTiming,
+  activePitEvent,
+  onSetPitEvent,
+  overtakeEvent,
 }) {
   const totalLaps = selectedCircuit?.laps || maxLaps || 58;
   const circuitName = selectedCircuit?.grand_prix_name || "Australian Grand Prix";
@@ -559,6 +562,136 @@ export default function StrategyAdvisor({
           </button>
         </div>
       </div>
+
+      {/* ── AUTHENTIC F1 TV BROADCAST PIT STOP BANNER (IN STRATEGY ROOM) ── */}
+      {activePitEvent && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "linear-gradient(90deg, #090e1a 0%, #1e1b2e 50%, #090e1a 100%)",
+            border: "2px solid #ffd700",
+            borderLeft: "8px solid #ffd700",
+            borderRadius: "8px",
+            padding: "10px 16px",
+            boxShadow: "0 0 26px rgba(255, 215, 0, 0.45), 0 8px 32px rgba(0,0,0,0.8)",
+            animation: "f1BroadcastBannerIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <span
+              style={{
+                background: "#e10600",
+                color: "#ffffff",
+                fontFamily: "'Orbitron', sans-serif",
+                fontWeight: "900",
+                fontSize: "0.68rem",
+                padding: "3px 8px",
+                borderRadius: "3px",
+                letterSpacing: "0.08em",
+                boxShadow: "0 0 8px rgba(225, 6, 0, 0.6)",
+              }}
+            >
+              F1 TV LIVE
+            </span>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "1.1rem" }}>📦</span>
+              <span
+                style={{
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.84rem",
+                  fontWeight: "900",
+                  color: "#ffffff",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                PIT STOP · LAP {activePitEvent.lap}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span
+                style={{
+                  background: "rgba(255, 215, 0, 0.22)",
+                  border: "1px solid #ffd700",
+                  color: "#ffd700",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontWeight: "900",
+                  fontSize: "0.80rem",
+                  boxShadow: "0 0 8px rgba(255, 215, 0, 0.4)",
+                }}
+              >
+                #{activePitEvent.num} {activePitEvent.code} ({activePitEvent.team})
+              </span>
+
+              <span style={{ color: "#ffffff", fontSize: "0.76rem", fontWeight: "700" }}>
+                BOXES · FITS
+              </span>
+
+              <span
+                style={{
+                  background:
+                    activePitEvent.tire === "S"
+                      ? "rgba(255, 24, 1, 0.25)"
+                      : activePitEvent.tire === "M"
+                      ? "rgba(255, 215, 0, 0.25)"
+                      : "rgba(255, 255, 255, 0.2)",
+                  border: "1px solid " + (activePitEvent.tire === "S" ? "#ff1801" : activePitEvent.tire === "M" ? "#ffd700" : "#ffffff"),
+                  color: "#ffffff",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontWeight: "900",
+                  fontSize: "0.80rem",
+                }}
+              >
+                {activePitEvent.tire} ({activePitEvent.compoundName}) · {activePitEvent.stopDuration}
+              </span>
+
+              <span
+                style={{
+                  color: "#00e676",
+                  fontSize: "0.78rem",
+                  fontWeight: "800",
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                ➜ REJOINS P{activePitEvent.reEntryPos}
+              </span>
+
+              <span
+                style={{
+                  color: "var(--neon-cyan)",
+                  fontSize: "0.74rem",
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: "700",
+                }}
+              >
+                · {activePitEvent.reason}
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onSetPitEvent && onSetPitEvent(null)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#ffd700",
+              cursor: "pointer",
+              fontSize: "1rem",
+              fontWeight: "700",
+              padding: "2px 6px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ── BROADCAST TOAST NOTIFICATION ── */}
       {notificationMsg && (

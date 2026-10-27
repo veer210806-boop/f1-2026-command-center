@@ -293,6 +293,18 @@ export default function App() {
 
   // ── Shared Drivers & Strategy Directives State ──
   const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
+  const [activePitEvent, setActivePitEvent] = useState(null);
+  const [overtakeEvent, setOvertakeEvent] = useState(null);
+
+  // Auto-dismiss pit stop broadcast popup after 8 seconds
+  useEffect(() => {
+    if (activePitEvent) {
+      const timer = setTimeout(() => {
+        setActivePitEvent(null);
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [activePitEvent]);
 
   // ── Dynamic Initial Strategy Directives for the active team ──
   const [plannedStrategies, setPlannedStrategies] = useState(() => {
@@ -446,9 +458,11 @@ export default function App() {
     });
   }, []);
 
-  // Synchronize starting grid when circuit changes
+  // Synchronize starting grid when circuit changes (ONLY on Lap 1 before race start)
   useEffect(() => {
-    setDrivers(buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", currentLapNum));
+    if (currentLapNum <= 1) {
+      setDrivers(buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
+    }
   }, [selectedCircuit?.circuit_id]);
 
   // Execute Pit Stop shared handler (updates drivers & timing matrix immediately)
@@ -472,8 +486,8 @@ export default function App() {
       const targetDriver = prevDrivers.find((d) => d.code === driverCode);
       if (!targetDriver) return prevDrivers;
 
-      const currentGapSec = parseGapSec(targetDriver.gap);
-      const newGapSec = currentGapSec + actualPitLoss;
+      const currentGapSec = targetDriver.gapSec !== undefined ? targetDriver.gapSec : parseGapSec(targetDriver.gap);
+      const newGapSec = +(currentGapSec + actualPitLoss).toFixed(3);
 
       const updated = prevDrivers.map((d) => {
         if (d.code === driverCode) {
@@ -490,23 +504,23 @@ export default function App() {
         }
         return {
           ...d,
-          gapSec: parseGapSec(d.gap),
+          gapSec: d.gapSec !== undefined ? d.gapSec : parseGapSec(d.gap),
         };
       });
 
-      // Clear "IN PIT" state after 5 seconds to transition back to RACING
+      // Clear "IN PIT" state after 4 seconds to transition back to RACING without shifting order
       setTimeout(() => {
         setDrivers((latest) =>
           latest.map((d) => (d.code === driverCode ? { ...d, pitState: "RACING" } : d))
         );
-      }, 5000);
+      }, 4000);
 
-      // Sort grid by gapSec so the car drops to the exact re-entry position!
+      // Sort grid strictly by gapSec so the car drops to the exact re-entry position!
       updated.sort((a, b) => a.gapSec - b.gapSec);
 
       const leaderGapSec = updated[0].gapSec;
 
-      return updated.map((d, i) => {
+      const finalGrid = updated.map((d, i) => {
         const isLead = i === 0;
         const relativeGap = +(d.gapSec - leaderGapSec).toFixed(3);
         const prevPos = prevDrivers.findIndex((p) => p.code === d.code) + 1;
@@ -524,12 +538,36 @@ export default function App() {
           posDelta: posDiff > 0 ? `+${posDiff}` : posDiff < 0 ? `${posDiff}` : "0",
           arrow: posDiff > 0 ? "up" : posDiff < 0 ? "down" : d.arrow || "neutral",
           gap: isLead ? "LEADER" : `+${relativeGap.toFixed(3)}s`,
+          gapSec: d.gapSec,
           interval: intervalVal,
           overtaken: posDiff > 0,
         };
       });
+
+      const newTargetPos = finalGrid.findIndex((d) => d.code === driverCode) + 1;
+      const carAhead = newTargetPos > 1 ? finalGrid[newTargetPos - 2] : null;
+      const aheadNotice = carAhead ? ` behind ${carAhead.code} (#${carAhead.num})` : " in clean air";
+      const compoundName = targetCompound === "S" ? "Soft" : targetCompound === "M" ? "Medium" : targetCompound === "H" ? "Hard" : targetCompound === "I" ? "Intermediate" : "Wet";
+
+      const pitData = {
+        lap: currentLapNum,
+        num: targetDriver.num,
+        code: targetDriver.code,
+        name: targetDriver.name,
+        team: targetDriver.team,
+        tire: targetCompound,
+        compoundName,
+        stopDuration: `${actualPitLoss}s stop`,
+        reEntryPos: newTargetPos,
+        reason: "Tactical Box Command",
+      };
+      setActivePitEvent(pitData);
+      setOvertakeEvent(`📦 LIVE PIT STOP: LAP ${currentLapNum}: #${targetDriver.num} ${targetDriver.code} (${targetDriver.team}) BOXES · FITS ${compoundName} (${actualPitLoss}s stop) · REJOINS P${newTargetPos}${aheadNotice}!`);
+      f1Audio.playRadioBeep();
+
+      return finalGrid;
     });
-  }, [activeFlag, selectedCircuit, currentLapNum]);
+  }, [activeFlag, selectedCircuit, currentLapNum, drivers, handleCompletePlanStop]);
 
   // Strategy Decided & Deleted Handlers
   const handleAddStrategy = useCallback((newStrat) => {
@@ -577,32 +615,18 @@ export default function App() {
     }
   }, [drivers, selectedTeam, currentLapNum]);
 
+  // Master race simulation clock: cleanly increments currentLapNum
   useEffect(() => {
     if (!isAutoSimulating) return;
     const intervalMs = simSpeed === 5 ? 800 : simSpeed === 2 ? 1800 : 3500;
     const timer = setInterval(() => {
       setCurrentLapNum((prev) => {
         const next = prev + 1;
-        const targetLap = next > totalLaps ? 1 : next;
-
-        // Check if any planned strategy matches targetLap
-        plannedStrategies.forEach((strat) => {
-          if (strat.lap === targetLap && !strat.applied) {
-            handleExecutePitStop({
-              driverCode: strat.driverCode,
-              targetCompound: strat.targetCompound,
-              initialWear: strat.initialWear || 4,
-              initialAge: strat.initialAge || 0,
-            });
-            setPlannedStrategies((p) => p.map((s) => s.id === strat.id ? { ...s, applied: true } : s));
-          }
-        });
-
-        return targetLap;
+        return next > totalLaps ? 1 : next;
       });
     }, intervalMs);
     return () => clearInterval(timer);
-  }, [isAutoSimulating, simSpeed, totalLaps, plannedStrategies, handleExecutePitStop]);
+  }, [isAutoSimulating, simSpeed, totalLaps]);
 
   const lapProgressPct = Math.round((currentLapNum / totalLaps) * 100);
   const activeTabMeta = TABS.find((tab) => tab.id === activeTab) || TABS[0];
@@ -883,7 +907,8 @@ export default function App() {
       {/* ── Main Content ── */}
       <main id="command-main" className="main-content" tabIndex="-1" style={{ paddingTop: "4px" }}>
         <Suspense fallback={<CommandLoader label={activeTabMeta.subtitle} />}>
-          {activeTab === "timing"    && (
+          {/* Keep TimingTower and StrategyAdvisor mounted persistently to prevent simulation reset or unmounting */}
+          <div style={{ display: activeTab === "timing" ? "block" : "none" }}>
             <TimingTower
               selectedCircuit={selectedCircuit}
               onGoToCalendar={handleGoToCalendar}
@@ -900,9 +925,13 @@ export default function App() {
               plannedStrategies={plannedStrategies}
               driverPlans={driverPlans}
               onCompletePlanStop={handleCompletePlanStop}
+              activePitEvent={activePitEvent}
+              onSetPitEvent={setActivePitEvent}
+              overtakeEvent={overtakeEvent}
+              onSetOvertakeEvent={setOvertakeEvent}
             />
-          )}
-          {activeTab === "strategy"  && (
+          </div>
+          <div style={{ display: activeTab === "strategy" ? "block" : "none" }}>
             <StrategyAdvisor
               selectedCircuit={selectedCircuit}
               drivers={drivers}
@@ -920,8 +949,12 @@ export default function App() {
               onDeleteStrategy={handleDeleteStrategy}
               onApplyPreset={handleApplyPreset}
               onGoToTiming={() => setActiveTab("timing")}
+              activePitEvent={activePitEvent}
+              onSetPitEvent={setActivePitEvent}
+              overtakeEvent={overtakeEvent}
+              onSetOvertakeEvent={setOvertakeEvent}
             />
-          )}
+          </div>
           {activeTab === "telemetry" && <TelemetryViewer selectedCircuit={selectedCircuit} />}
           {activeTab === "paddock"   && <TeamsPaddock />}
           {activeTab === "calendar"  && (
