@@ -13,6 +13,8 @@ const StrategyAdvisor = lazy(() => import("./components/StrategyAdvisor"));
 const TelemetryViewer = lazy(() => import("./components/TelemetryViewer"));
 const BudgetManager = lazy(() => import("./components/BudgetManager"));
 import LiveBroadcastGantry from "./components/LiveBroadcastGantry";
+import StrategyGameGatewayModal, { CONSTRUCTORS_2026 } from "./components/StrategyGameGatewayModal";
+import RestartMenuModal from "./components/RestartMenuModal";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -178,6 +180,19 @@ export default function App() {
   const [activeFlag, setActiveFlag] = useState("GREEN");
   const [overtakeTriggerCount, setOvertakeTriggerCount] = useState(0);
 
+  // ── Strategy Game Mode: Role Clearance & Team Principal Selection ──
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem("gp_strategy_role") || "team";
+  });
+  const [selectedTeam, setSelectedTeam] = useState(() => {
+    return localStorage.getItem("gp_strategy_team") || "Ferrari";
+  });
+  const [isGatewayOpen, setIsGatewayOpen] = useState(() => {
+    return !localStorage.getItem("gp_strategy_role");
+  });
+  const [isRestartMenuOpen, setIsRestartMenuOpen] = useState(false);
+  const [restartSignal, setRestartSignal] = useState(0);
+
   useEffect(() => {
     if (!isAutoSimulating) return;
     const intervalMs = simSpeed === 5 ? 800 : simSpeed === 2 ? 1800 : 3500;
@@ -192,6 +207,7 @@ export default function App() {
 
   const lapProgressPct = Math.round((currentLapNum / totalLaps) * 100);
   const activeTabMeta = TABS.find((tab) => tab.id === activeTab) || TABS[0];
+  const currentTeamObj = CONSTRUCTORS_2026.find((t) => t.id === selectedTeam) || CONSTRUCTORS_2026[0];
 
   return (
     <div className="app-wrapper">
@@ -346,8 +362,73 @@ export default function App() {
           })}
         </nav>
 
-        {/* Right: Race Lap Capsule + GPS Clock */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* Right: Strategy Role Pill + Restart/Switch Button + Race Lap Capsule + GPS Clock */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {/* Strategy Role & Team Clearance Pill */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "7px",
+              background: userRole === "team" ? "rgba(255,255,255,0.05)" : "rgba(234, 179, 8, 0.12)",
+              border: userRole === "team" ? `1px solid ${currentTeamObj.color}70` : "1px solid rgba(234, 179, 8, 0.4)",
+              borderRadius: "20px",
+              padding: "4px 10px",
+              boxShadow: userRole === "team" ? `0 0 10px ${currentTeamObj.color}25` : "0 0 10px rgba(234, 179, 8, 0.2)",
+            }}
+          >
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: userRole === "team" ? currentTeamObj.color : "#ffd700", boxShadow: `0 0 6px ${userRole === "team" ? currentTeamObj.color : "#ffd700"}` }} />
+            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", fontWeight: "900", color: "#ffffff", letterSpacing: "0.03em" }}>
+              {userRole === "team" ? currentTeamObj.name.toUpperCase() : "FIA RACE CONTROL"}
+            </span>
+            <span
+              style={{
+                fontSize: "0.58rem",
+                fontFamily: "'Orbitron', monospace",
+                fontWeight: "800",
+                color: userRole === "team" ? "var(--neon-cyan)" : "#ffd700",
+                background: userRole === "team" ? "rgba(0,210,190,0.18)" : "rgba(255,215,0,0.2)",
+                padding: "1px 5px",
+                borderRadius: "3px",
+              }}
+            >
+              {userRole === "team" ? "STRATEGIST" : "GOD MODE"}
+            </span>
+          </div>
+
+          {/* 🔄 RESTART / SWITCH Menu Button */}
+          <button
+            onClick={() => setIsRestartMenuOpen(true)}
+            style={{
+              background: "linear-gradient(135deg, rgba(232, 0, 45, 0.25) 0%, rgba(20, 24, 38, 0.95) 100%)",
+              border: "1px solid rgba(232, 0, 45, 0.55)",
+              borderRadius: "18px",
+              padding: "4px 11px",
+              color: "#ffffff",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.66rem",
+              fontWeight: "900",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              boxShadow: "0 0 12px rgba(232, 0, 45, 0.3)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--neon-red)";
+              e.currentTarget.style.boxShadow = "0 0 18px rgba(232, 0, 45, 0.6)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "rgba(232, 0, 45, 0.55)";
+              e.currentTarget.style.boxShadow = "0 0 12px rgba(232, 0, 45, 0.3)";
+            }}
+            title="Reset Race, Switch Constructor, or Toggle FIA Clearance"
+          >
+            <span>🔄</span>
+            <span>RESTART / SWITCH</span>
+          </button>
+
           {/* Micro Lap Progress Capsule */}
           <div
             style={{
@@ -409,6 +490,9 @@ export default function App() {
               controlledLap={currentLapNum}
               controlledFlag={activeFlag}
               triggerOvertakeSignal={overtakeTriggerCount}
+              userRole={userRole}
+              playerTeam={selectedTeam}
+              restartSignal={restartSignal}
             />
           )}
           {activeTab === "calendar"  && (
@@ -424,6 +508,52 @@ export default function App() {
           {activeTab === "budget"    && <BudgetManager />}
         </Suspense>
       </main>
+
+      {/* ── 2026 Strategy Simulation Gateway Landing Modal ── */}
+      <StrategyGameGatewayModal
+        isOpen={isGatewayOpen}
+        initialRole={userRole}
+        initialTeam={selectedTeam}
+        onLaunchGame={({ role, teamId }) => {
+          setUserRole(role);
+          if (teamId) setSelectedTeam(teamId);
+          setIsGatewayOpen(false);
+          localStorage.setItem("gp_strategy_role", role);
+          if (teamId) localStorage.setItem("gp_strategy_team", teamId);
+          setActiveTab("timing");
+        }}
+      />
+
+      {/* ── Dynamic Restart / Switch Modal ── */}
+      <RestartMenuModal
+        isOpen={isRestartMenuOpen}
+        onClose={() => setIsRestartMenuOpen(false)}
+        currentCircuitName={selectedCircuit?.grand_prix_name || "Australian Grand Prix"}
+        currentRole={userRole}
+        currentTeamId={selectedTeam}
+        onRestartRace={() => {
+          setCurrentLapNum(1);
+          setRestartSignal((s) => s + 1);
+          setIsAutoSimulating(false);
+          setActiveFlag("GREEN");
+        }}
+        onChangeTeam={(teamId) => {
+          if (teamId) {
+            setSelectedTeam(teamId);
+            localStorage.setItem("gp_strategy_team", teamId);
+          } else {
+            setIsGatewayOpen(true);
+          }
+        }}
+        onToggleRole={() => {
+          const nextRole = userRole === "team" ? "fia" : "team";
+          setUserRole(nextRole);
+          localStorage.setItem("gp_strategy_role", nextRole);
+        }}
+        onOpenGateway={() => {
+          setIsGatewayOpen(true);
+        }}
+      />
     </div>
   );
 }
