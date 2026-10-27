@@ -207,7 +207,7 @@ export default function App() {
   }, [selectedCircuit?.circuit_id]);
 
   // Execute Pit Stop shared handler (updates drivers & timing matrix immediately)
-  const handleExecutePitStop = useCallback(({ driverCode, targetCompound, reentry }) => {
+  const handleExecutePitStop = useCallback(({ driverCode, targetCompound, initialWear = 4, initialAge = 0, reentry }) => {
     const baseLoss = activeFlag === "SC" ? 13.5 : activeFlag === "VSC" ? 15.2 : (selectedCircuit?.pit_loss_green || 22.5);
     const pitCrewVariance = +((Math.random() * 0.4) - 0.2).toFixed(2);
     const actualPitLoss = +(baseLoss + pitCrewVariance).toFixed(2);
@@ -232,8 +232,8 @@ export default function App() {
             gapSec: newGapSec,
             pitState: "IN PIT",
             tire: targetCompound,
-            tireAge: 0,
-            wear: 4,
+            tireAge: initialAge,
+            wear: initialWear,
             pits: (d.pits || 0) + 1,
             lastPitLap: currentLapNum,
           };
@@ -284,12 +284,14 @@ export default function App() {
   // Strategy Decided & Deleted Handlers
   const handleAddStrategy = useCallback((newStrat) => {
     setPlannedStrategies((prev) => [
-      ...prev,
+      ...prev.filter((s) => s.driverCode !== newStrat.driverCode || s.lap !== newStrat.lap),
       {
         id: Date.now(),
         driverCode: newStrat.driverCode,
         lap: newStrat.lap,
         targetCompound: newStrat.targetCompound,
+        initialWear: newStrat.initialWear || 4,
+        initialAge: newStrat.initialAge || 0,
         label: newStrat.label || `Planned Stop at Lap ${newStrat.lap} → ${newStrat.targetCompound}`,
         applied: false,
       },
@@ -336,7 +338,12 @@ export default function App() {
         // Check if any planned strategy matches targetLap
         plannedStrategies.forEach((strat) => {
           if (strat.lap === targetLap && !strat.applied) {
-            handleExecutePitStop({ driverCode: strat.driverCode, targetCompound: strat.targetCompound });
+            handleExecutePitStop({
+              driverCode: strat.driverCode,
+              targetCompound: strat.targetCompound,
+              initialWear: strat.initialWear || 4,
+              initialAge: strat.initialAge || 0,
+            });
             setPlannedStrategies((p) => p.map((s) => s.id === strat.id ? { ...s, applied: true } : s));
           }
         });
