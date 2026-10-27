@@ -683,10 +683,10 @@ function TimingTower({
     return getGrandPrixConfig(activeCircuitId);
   }, [activeCircuitId]);
 
-  const [currentLap, setCurrentLap] = useState(34);
+  const [currentLap, setCurrentLap] = useState(controlledLap || 1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedDriverIdx, setSelectedDriverIdx] = useState(0);
-  const [drivers, setDrivers] = useState(() => (externalDrivers && externalDrivers.length > 0 ? externalDrivers : buildTimingTowerGridForCircuit("australia", 34)));
+  const [drivers, setDrivers] = useState(() => (externalDrivers && externalDrivers.length > 0 ? externalDrivers : buildTimingTowerGridForCircuit("australia", 1)));
 
   // Synchronize internal drivers with externalDrivers from App.jsx / StrategyAdvisor
   const lastExternalSyncRef = useRef(null);

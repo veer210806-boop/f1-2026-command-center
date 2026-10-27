@@ -30,7 +30,7 @@ const TEAM_COLORS = {
 
 export default function StatsF1LapMatrix({
   drivers = [],
-  currentLap = 34,
+  currentLap = 1,
   maxLaps = 58,
   circuitName = "Australian Grand Prix",
   circuitId = "australia",

@@ -20,7 +20,7 @@ const AUTHENTIC_RADIO_QUOTES = [
 ];
 
 export default function LiveBroadcastGantry({
-  currentLap = 34,
+  currentLap = 1,
   maxLaps = 58,
   isAutoSimulating = false,
   onToggleSim,

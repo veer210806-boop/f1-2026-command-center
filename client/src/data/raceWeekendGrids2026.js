@@ -969,7 +969,7 @@ export function generateRaceWeekendData(circuitIdOrRound, customMaxLaps) {
 }
 
 // ── BUILD 22 DETAILED DRIVER ROWS FOR TIMING TOWER AT SPECIFIC LAP ────
-export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 34) {
+export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 1) {
   const raceData = generateRaceWeekendData(circuitIdOrRound);
   const targetLapData = raceData.lapHistory[Math.min(atLap, raceData.lapHistory.length - 1)] || raceData.lapHistory[0];
   const orderAtLap = targetLapData.order;
@@ -1008,11 +1008,11 @@ export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 34) {
       team: meta.team,
       flag: meta.flag,
       tire,
-      tireAge: Math.min(22, atLap > 24 ? atLap - 22 : atLap),
+      tireAge: atLap <= 1 ? 0 : Math.min(22, atLap > 24 ? atLap - 22 : atLap),
       gap: isLeader ? "LEADER" : `+${accumulatedGap.toFixed(3)}s`,
       interval: isLeader ? formattedLap : `+${gapStep.toFixed(3)}s`,
       arrow: posGain > 0 ? "up" : posGain < 0 ? "down" : "none",
-      wear: Math.min(85, 20 + atLap * 1.1),
+      wear: atLap <= 1 ? 4 : Math.min(85, 20 + atLap * 1.1),
       delta: posGain > 0 ? `+0.0${posGain * 2}` : `-0.1${Math.abs(posGain)}`,
       s1: (28.1 + idx * 0.05).toFixed(3),
       s1Type: idx === 0 ? "purple" : idx < 4 ? "green" : "yellow",
@@ -1024,7 +1024,7 @@ export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 34) {
       mom: idx < 3 ? "Z-MODE" : idx === 4 ? "MOM ON" : "Z-MODE",
       bestLap: formattedLap,
       lastLap: formattedLap,
-      pits: atLap >= 20 ? 1 : 0,
+      pits: atLap <= 1 ? 0 : atLap >= 20 ? 1 : 0,
       posDelta: posDeltaStr,
       speedTrap: 338 - idx * 1.2,
       trackPct: Math.max(0.05, 0.95 - idx * 0.04),

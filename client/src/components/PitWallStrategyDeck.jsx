@@ -19,7 +19,7 @@ export default function PitWallStrategyDeck({
   currentRole = "team", // "team" | "fia"
   playerTeam = "Ferrari",
   drivers = [],
-  currentLap = 34,
+  currentLap = 1,
   maxLaps = 58,
   activeFlag = "GREEN", // "GREEN" | "SC" | "VSC" | "RED"
   onExecutePitStop,

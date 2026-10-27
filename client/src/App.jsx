@@ -175,7 +175,7 @@ export default function App() {
   }, []);
 
   const totalLaps = selectedCircuit?.laps || 58;
-  const [currentLapNum, setCurrentLapNum] = useState(34);
+  const [currentLapNum, setCurrentLapNum] = useState(1);
   const [isAutoSimulating, setIsAutoSimulating] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1);
   const [activeFlag, setActiveFlag] = useState("GREEN");
@@ -195,10 +195,10 @@ export default function App() {
   const [restartSignal, setRestartSignal] = useState(0);
 
   // ── Shared Drivers & Strategy Directives State ──
-  const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 34));
+  const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
   const [plannedStrategies, setPlannedStrategies] = useState([
-    { id: 1, driverCode: "LEC", lap: 38, targetCompound: "H", label: "Primary Pit Stop → Fit Hard Compound", applied: false },
-    { id: 2, driverCode: "HAM", lap: 42, targetCompound: "S", label: "Late Attack Stint → Fit Soft Compound", applied: false },
+    { id: 1, driverCode: "LEC", lap: 22, targetCompound: "H", label: "Primary Pit Stop → Fit Hard Compound", applied: false },
+    { id: 2, driverCode: "HAM", lap: 26, targetCompound: "H", label: "Staggered Pit Stop → Fit Hard Compound", applied: false },
   ]);
 
   // Synchronize starting grid when circuit changes
@@ -233,7 +233,7 @@ export default function App() {
             pitState: "IN PIT",
             tire: targetCompound,
             tireAge: 0,
-            wear: 5,
+            wear: 4,
             pits: (d.pits || 0) + 1,
             lastPitLap: currentLapNum,
           };
@@ -243,6 +243,13 @@ export default function App() {
           gapSec: parseGapSec(d.gap),
         };
       });
+
+      // Clear "IN PIT" state after 5 seconds to transition back to RACING
+      setTimeout(() => {
+        setDrivers((latest) =>
+          latest.map((d) => (d.code === driverCode ? { ...d, pitState: "RACING" } : d))
+        );
+      }, 5000);
 
       // Sort grid by gapSec so the car drops to the exact re-entry position!
       updated.sort((a, b) => a.gapSec - b.gapSec);

@@ -138,7 +138,7 @@ function LowPoly3DBuilding({ x, y, w, d, h, isNight = false }) {
 export default function LiveRaceMapTracker({
   selectedCircuit,
   drivers = [],
-  currentLap = 34,
+  currentLap = 1,
   maxLaps = 58,
   sessionFlag = "GREEN",
   onCloseToTower,
