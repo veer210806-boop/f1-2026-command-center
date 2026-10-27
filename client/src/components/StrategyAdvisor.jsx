@@ -135,22 +135,47 @@ export default function StrategyAdvisor({
 
   // Current constructor team profile
   const currentTeamObj = useMemo(() => {
-    return CONSTRUCTORS_2026.find((t) => t.id === playerTeam) || CONSTRUCTORS_2026[0];
+    const p = (playerTeam || "").toLowerCase();
+    return (
+      CONSTRUCTORS_2026.find(
+        (t) =>
+          t.id.toLowerCase() === p ||
+          t.name.toLowerCase().includes(p) ||
+          p.includes(t.id.toLowerCase())
+      ) || CONSTRUCTORS_2026[0]
+    );
   }, [playerTeam]);
 
-  // Player team drivers (e.g. Leclerc & Hamilton for Ferrari)
+  // Player team drivers (e.g. Verstappen & Hadjar for Red Bull)
   const teamDrivers = useMemo(() => {
-    if (userRole === "team") {
-      const filtered = drivers.filter(
-        (d) => d.team && d.team.toLowerCase().includes(playerTeam.toLowerCase())
-      );
-      return filtered.length > 0 ? filtered : drivers.slice(0, 2);
+    const p = (playerTeam || "").toLowerCase();
+    const filtered = drivers.filter(
+      (d) =>
+        d.team &&
+        (d.team.toLowerCase().includes(p) ||
+          p.includes(d.team.toLowerCase()) ||
+          (p.includes("red") && d.team.toLowerCase().includes("red")) ||
+          (p.includes("audi") && d.team.toLowerCase().includes("sauber")) ||
+          (p.includes("sauber") && d.team.toLowerCase().includes("audi")) ||
+          (p.includes("bulls") && d.team.toLowerCase().includes("bulls")))
+    );
+    if (filtered.length > 0) return filtered.slice(0, 2);
+    if (currentTeamObj?.drivers) {
+      const codes = currentTeamObj.drivers.map((d) => d.code);
+      const found = drivers.filter((d) => codes.includes(d.code));
+      if (found.length > 0) return found.slice(0, 2);
     }
     return drivers.slice(0, 2);
-  }, [drivers, playerTeam, userRole]);
+  }, [drivers, playerTeam, currentTeamObj]);
 
   // Active selected driver tab in Strategy Workbench
-  const [activeDriverCode, setActiveDriverCode] = useState(() => teamDrivers[0]?.code || "LEC");
+  const [activeDriverCode, setActiveDriverCode] = useState(() => teamDrivers[0]?.code || "VER");
+
+  useEffect(() => {
+    if (teamDrivers.length > 0) {
+      setActiveDriverCode(teamDrivers[0].code);
+    }
+  }, [playerTeam]);
 
   useEffect(() => {
     if (teamDrivers.length > 0 && !teamDrivers.some((d) => d.code === activeDriverCode)) {

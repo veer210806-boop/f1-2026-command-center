@@ -37,7 +37,18 @@ export default function PitWallStrategyDeck({
   // In FIA mode: show selector for any of the 22 drivers.
   const teamDrivers = useMemo(() => {
     if (currentRole === "team") {
-      return drivers.filter((d) => d.team && d.team.toLowerCase().includes(playerTeam.toLowerCase()));
+      const p = (playerTeam || "").toLowerCase();
+      const matched = drivers.filter(
+        (d) =>
+          d.team &&
+          (d.team.toLowerCase().includes(p) ||
+            p.includes(d.team.toLowerCase()) ||
+            (p.includes("red") && d.team.toLowerCase().includes("red")) ||
+            (p.includes("audi") && d.team.toLowerCase().includes("sauber")) ||
+            (p.includes("sauber") && d.team.toLowerCase().includes("audi")) ||
+            (p.includes("bulls") && d.team.toLowerCase().includes("bulls")))
+      );
+      return matched.length > 0 ? matched.slice(0, 2) : drivers.slice(0, 2);
     }
     return drivers;
   }, [drivers, playerTeam, currentRole]);

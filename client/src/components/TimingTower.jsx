@@ -711,8 +711,19 @@ function TimingTower({
   const [momCooldown, setMomCooldown] = useState(0);
   const [overtakeEvent, setOvertakeEvent] = useState(null);
   const [activeOvertake, setActiveOvertake] = useState(null);
+  const [activePitEvent, setActivePitEvent] = useState(null);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [lapHistory, setLapHistory] = useState(() => generateRaceWeekendData("australia", 58).lapHistory);
+
+  // Auto-dismiss pit stop broadcast popup after 7 seconds
+  useEffect(() => {
+    if (activePitEvent) {
+      const timer = setTimeout(() => {
+        setActivePitEvent(null);
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [activePitEvent]);
 
   // Switch to Grand Prix's unique starting grid and lap matrix progression whenever selected circuit changes
   useEffect(() => {
@@ -832,6 +843,18 @@ function TimingTower({
       const aheadNotice = carAhead ? ` behind ${carAhead.code} (#${carAhead.num})` : " in clean air";
       const eventMsg = `📦 PIT STOP EXECUTED: #${targetDriver.num} ${targetDriver.code} fitted ${targetCompound} (${actualPitLoss}s stop). Rejoins P${newTargetPos}${aheadNotice}!`;
       setOvertakeEvent(eventMsg);
+      setActivePitEvent({
+        lap: currentLap,
+        num: targetDriver.num,
+        code: targetDriver.code,
+        name: targetDriver.name,
+        team: targetDriver.team,
+        tire: targetCompound,
+        compoundName: targetCompound === "S" ? "Soft" : targetCompound === "M" ? "Medium" : "Hard",
+        stopDuration: `${actualPitLoss}s`,
+        reEntryPos: newTargetPos,
+        reason: "Tactical Box Command",
+      });
       setRadioMsg(`[RADIO #${targetDriver.num}] Box confirm. ${targetCompound} tires fitted. You are P${newTargetPos}${aheadNotice}. Out-lap is cold!`);
       playF1OvertakeChime(isSoundMuted);
       onCompletePlanStop?.(driverCode, (targetDriver.pits || 0) + 1);
@@ -884,7 +907,19 @@ function TimingTower({
             const pitLoss = sessionFlag === "SC" ? 13.5 : 22.5;
             currentGapSec += pitLoss;
             onCompletePlanStop?.(d.code, plannedStop.stopNum || 1);
-            setOvertakeEvent(`📦 PIT STOP EXECUTED: #${d.num} ${d.code} pitted on Lap ${controlledLap} fitting ${plannedStop.targetCompound}!`);
+            setOvertakeEvent(`📦 PIT STOP EXECUTED: #${d.num} ${d.code} (${d.team}) pitted on Lap ${controlledLap} fitting ${plannedStop.targetCompound}!`);
+            setActivePitEvent({
+              lap: controlledLap,
+              num: d.num,
+              code: d.code,
+              name: d.name,
+              team: d.team,
+              tire: plannedStop.targetCompound,
+              compoundName: plannedStop.targetCompound === "S" ? "Soft" : plannedStop.targetCompound === "M" ? "Medium" : "Hard",
+              stopDuration: "2.3s stop",
+              reEntryPos: Math.min(22, (d.pos || 1) + 8),
+              reason: "Planned Strategy Call",
+            });
             playF1OvertakeChime(isSoundMuted);
           } else if (!isPlayerDriver && (newWear > 74 || (sessionFlag === "SC" && newTireAge > 14 && Math.random() > 0.45))) {
             aiPitted = true;
@@ -893,6 +928,20 @@ function TimingTower({
             aiNewTire = trackDampness > 30 ? "I" : d.tire === "M" ? "H" : "M";
             const pitLoss = sessionFlag === "SC" ? 13.5 : 22.5;
             currentGapSec += pitLoss;
+            setOvertakeEvent(`📦 PIT STOP: #${d.num} ${d.code} (${d.team}) boxes on Lap ${controlledLap} fitting ${aiNewTire}!`);
+            setActivePitEvent({
+              lap: controlledLap,
+              num: d.num,
+              code: d.code,
+              name: d.name,
+              team: d.team,
+              tire: aiNewTire,
+              compoundName: aiNewTire === "S" ? "Soft" : aiNewTire === "M" ? "Medium" : aiNewTire === "I" ? "Intermediate" : "Hard",
+              stopDuration: `${(2.2 + Math.random() * 0.5).toFixed(1)}s`,
+              reEntryPos: Math.min(22, (d.pos || 1) + 9),
+              reason: sessionFlag === "SC" ? "Free SC Pit Stop" : "Tire Degradation Cliff",
+            });
+            playF1OvertakeChime(isSoundMuted);
           }
 
           return {
@@ -2503,6 +2552,132 @@ function TimingTower({
             </div>
           )}
 
+          {/* ── AUTHENTIC F1 TV BROADCAST PIT STOP LOWER-THIRD BANNER ── */}
+          {activePitEvent && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(90deg, #090e1a 0%, #1e1b2e 50%, #090e1a 100%)",
+                border: "2px solid #ffd700",
+                borderLeft: "8px solid #ffd700",
+                borderRadius: "6px",
+                padding: "8px 14px",
+                boxShadow: "0 0 24px rgba(255, 215, 0, 0.45), 0 8px 32px rgba(0,0,0,0.8)",
+                animation: "f1BroadcastBannerIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+                margin: "4px 0 6px 0",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    background: "#e10600",
+                    color: "#ffffff",
+                    fontFamily: "'Orbitron', sans-serif",
+                    fontWeight: "900",
+                    fontSize: "0.66rem",
+                    padding: "3px 7px",
+                    borderRadius: "3px",
+                    letterSpacing: "0.08em",
+                    boxShadow: "0 0 8px rgba(225, 6, 0, 0.6)",
+                  }}
+                >
+                  F1 TV LIVE
+                </span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "1.1rem" }}>📦</span>
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.82rem",
+                      fontWeight: "900",
+                      color: "#ffffff",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    PIT STOP · LAP {activePitEvent.lap}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span
+                    style={{
+                      background: "rgba(255, 215, 0, 0.22)",
+                      border: "1px solid #ffd700",
+                      color: "#ffd700",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: "900",
+                      fontSize: "0.78rem",
+                      boxShadow: "0 0 8px rgba(255, 215, 0, 0.4)",
+                    }}
+                  >
+                    #{activePitEvent.num} {activePitEvent.code} ({activePitEvent.team})
+                  </span>
+
+                  <span style={{ color: "#ffffff", fontSize: "0.75rem", fontWeight: "700" }}>
+                    BOXES · FITS
+                  </span>
+
+                  <span
+                    style={{
+                      background:
+                        activePitEvent.tire === "S"
+                          ? "rgba(255, 24, 1, 0.25)"
+                          : activePitEvent.tire === "M"
+                          ? "rgba(255, 215, 0, 0.25)"
+                          : "rgba(255, 255, 255, 0.2)",
+                      border: `1px solid ${
+                        activePitEvent.tire === "S"
+                          ? "#ff1801"
+                          : activePitEvent.tire === "M"
+                          ? "#ffd700"
+                          : "#ffffff"
+                      }`,
+                      color: "#ffffff",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontWeight: "900",
+                      fontSize: "0.78rem",
+                    }}
+                  >
+                    {activePitEvent.tire} ({activePitEvent.compoundName}) · {activePitEvent.stopDuration}
+                  </span>
+
+                  <span
+                    style={{
+                      color: "var(--neon-cyan)",
+                      fontSize: "0.75rem",
+                      fontFamily: "'Rajdhani', sans-serif",
+                      fontWeight: "700",
+                    }}
+                  >
+                    · Rejoins P{activePitEvent.reEntryPos} ({activePitEvent.reason})
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setActivePitEvent(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#a0a5b8",
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                  fontWeight: "700",
+                  padding: "2px 6px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Unified Table with Sticky Header */}
           <div
             style={{
@@ -2804,6 +2979,17 @@ function TimingTower({
 
                           {/* Planned Strategy Badge (Coordinates Timing Matrix with Strategy Room) */}
                           {(() => {
+                            // Only show badge if this driver belongs to the user's active team (or FIA god mode)
+                            const isDriverOnPlayerTeam =
+                              userRole === "fia" ||
+                              (d.team &&
+                                (d.team.toLowerCase().includes(playerTeam.toLowerCase()) ||
+                                  playerTeam.toLowerCase().includes(d.team.toLowerCase()) ||
+                                  (playerTeam.toLowerCase().includes("red") && d.team.toLowerCase().includes("red")) ||
+                                  (playerTeam.toLowerCase().includes("audi") && d.team.toLowerCase().includes("sauber")) ||
+                                  (playerTeam.toLowerCase().includes("sauber") && d.team.toLowerCase().includes("audi"))));
+                            if (!isDriverOnPlayerTeam) return null;
+
                             const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && !s.applied);
                             if (!plannedStop) return null;
                             const isThisLap = controlledLap === plannedStop.lap;

@@ -16,6 +16,103 @@ import LiveBroadcastGantry from "./components/LiveBroadcastGantry";
 import StrategyGameGatewayModal, { CONSTRUCTORS_2026 } from "./components/StrategyGameGatewayModal";
 import RestartMenuModal from "./components/RestartMenuModal";
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
+import { f1Audio } from "./utils/f1AudioEngine";
+
+// ── Helpers for Dynamic Team Drivers & Strategy Directives ──
+export function getTeamDriversHelper(teamId, gridList = []) {
+  if (!teamId || !gridList || gridList.length === 0) return gridList?.slice(0, 2) || [];
+  const t = teamId.toLowerCase();
+
+  let matched = gridList.filter((d) => {
+    if (!d.team) return false;
+    const dt = d.team.toLowerCase();
+    if (dt.includes(t) || t.includes(dt)) return true;
+    if (t.includes("red") && dt.includes("red")) return true;
+    if ((t.includes("audi") || t.includes("sauber")) && (dt.includes("audi") || dt.includes("sauber"))) return true;
+    if ((t.includes("bulls") || t.includes("rb") || t.includes("racing bulls")) && (dt.includes("bulls") || dt.includes("rb") || dt.includes("racing bulls"))) return true;
+    if (t.includes("aston") && dt.includes("aston")) return true;
+    if (t.includes("cadillac") && dt.includes("cadillac")) return true;
+    if (t.includes("haas") && dt.includes("haas")) return true;
+    if (t.includes("alpine") && dt.includes("alpine")) return true;
+    if (t.includes("williams") && dt.includes("williams")) return true;
+    if (t.includes("mercedes") && dt.includes("mercedes")) return true;
+    if (t.includes("mclaren") && dt.includes("mclaren")) return true;
+    if (t.includes("ferrari") && dt.includes("ferrari")) return true;
+    return false;
+  });
+
+  if (matched.length >= 2) return matched.slice(0, 2);
+
+  const constructorObj = CONSTRUCTORS_2026.find((c) => {
+    const cid = c.id.toLowerCase();
+    const cname = c.name.toLowerCase();
+    return cid.includes(t) || t.includes(cid) || cname.includes(t) || t.includes(cname);
+  });
+
+  if (constructorObj?.drivers) {
+    const codes = constructorObj.drivers.map((d) => d.code);
+    const found = gridList.filter((d) => codes.includes(d.code));
+    if (found.length > 0) return found.slice(0, 2);
+  }
+
+  return gridList.slice(0, 2);
+}
+
+export function createInitialTeamPlans(teamId, gridList = [], totalLaps = 58) {
+  const tDrivers = getTeamDriversHelper(teamId, gridList);
+  const d1 = tDrivers[0] || { code: "VER", num: 3, name: "Max Verstappen" };
+  const d2 = tDrivers[1] || { code: "HAD", num: 6, name: "Isack Hadjar" };
+
+  const plans = {
+    [d1.code]: {
+      stopsCount: 1,
+      stop1Lap: 22,
+      stop1SetId: "H1",
+      stop1Completed: false,
+      stop2Lap: 42,
+      stop2SetId: "S2",
+      stop2Completed: false,
+      pushMode: "balanced",
+      nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+    },
+    [d2.code]: {
+      stopsCount: 1,
+      stop1Lap: 26,
+      stop1SetId: "H1",
+      stop1Completed: false,
+      stop2Lap: 44,
+      stop2SetId: "S1",
+      stop2Completed: false,
+      pushMode: "balanced",
+      nextRecommendedWindow: "Laps 25 - 28 (Hard C2)",
+    },
+  };
+
+  const strategies = [
+    {
+      id: `stop1_${d1.code}`,
+      driverCode: d1.code,
+      lap: 22,
+      targetCompound: "H",
+      setId: "H1",
+      stopNum: 1,
+      label: `Stop 1 @ Lap 22 (H)`,
+      applied: false,
+    },
+    {
+      id: `stop1_${d2.code}`,
+      driverCode: d2.code,
+      lap: 26,
+      targetCompound: "H",
+      setId: "H1",
+      stopNum: 1,
+      label: `Stop 1 @ Lap 26 (H)`,
+      applied: false,
+    },
+  ];
+
+  return { plans, strategies };
+}
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -196,36 +293,73 @@ export default function App() {
 
   // ── Shared Drivers & Strategy Directives State ──
   const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
-  const [plannedStrategies, setPlannedStrategies] = useState([
-    { id: "stop1_LEC", driverCode: "LEC", lap: 22, targetCompound: "H", setId: "H1", stopNum: 1, label: "Stop 1 @ Lap 22 (H)", applied: false },
-    { id: "stop1_HAM", driverCode: "HAM", lap: 26, targetCompound: "H", setId: "H1", stopNum: 1, label: "Stop 1 @ Lap 26 (H)", applied: false },
-  ]);
 
-  // ── Global Driver Plans State (Persists across tab switches) ──
-  const [driverPlans, setDriverPlans] = useState(() => ({
-    LEC: {
-      stopsCount: 1,
-      stop1Lap: 22,
-      stop1SetId: "H1",
-      stop1Completed: false,
-      stop2Lap: 42,
-      stop2SetId: "S2",
-      stop2Completed: false,
-      pushMode: "balanced",
-      nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
-    },
-    HAM: {
-      stopsCount: 1,
-      stop1Lap: 26,
-      stop1SetId: "H1",
-      stop1Completed: false,
-      stop2Lap: 44,
-      stop2SetId: "S1",
-      stop2Completed: false,
-      pushMode: "balanced",
-      nextRecommendedWindow: "Laps 25 - 28 (Hard C2)",
-    },
-  }));
+  // ── Dynamic Initial Strategy Directives for the active team ──
+  const [plannedStrategies, setPlannedStrategies] = useState(() => {
+    const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
+    const initGrid = buildTimingTowerGridForCircuit("australia", 1);
+    const { strategies } = createInitialTeamPlans(initTeam, initGrid, 58);
+    return strategies;
+  });
+
+  // ── Global Driver Plans State (Dynamic for the active team) ──
+  const [driverPlans, setDriverPlans] = useState(() => {
+    const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
+    const initGrid = buildTimingTowerGridForCircuit("australia", 1);
+    const { plans } = createInitialTeamPlans(initTeam, initGrid, 58);
+    return plans;
+  });
+
+  // Dedicated handler to switch team and instantly update plans for that team
+  const handleSelectTeam = useCallback((newTeamId) => {
+    if (!newTeamId) return;
+    setSelectedTeam(newTeamId);
+    localStorage.setItem("gp_strategy_team", newTeamId);
+    const { plans, strategies } = createInitialTeamPlans(newTeamId, drivers, totalLaps);
+    setDriverPlans(plans);
+    setPlannedStrategies(strategies);
+  }, [drivers, totalLaps]);
+
+  // Synchronize plans whenever selectedTeam or drivers change
+  useEffect(() => {
+    const activeTeamDrivers = getTeamDriversHelper(selectedTeam, drivers);
+    const activeDriverCodes = activeTeamDrivers.map((d) => d.code);
+    const currentPlannedCodes = Object.keys(driverPlans);
+
+    const isMatching = activeDriverCodes.every((code) => currentPlannedCodes.includes(code));
+    if (!isMatching && activeTeamDrivers.length > 0) {
+      const { plans, strategies } = createInitialTeamPlans(selectedTeam, drivers, totalLaps);
+      setDriverPlans(plans);
+      setPlannedStrategies(strategies);
+    }
+  }, [selectedTeam, drivers, totalLaps]);
+
+  // Direct Restart Race Simulation Handler
+  const handleDirectRestart = useCallback(() => {
+    f1Audio.playRadioBeep();
+    setCurrentLapNum(1);
+    setIsAutoSimulating(false);
+    setActiveFlag("GREEN");
+    setRestartSignal((s) => s + 1);
+
+    const freshGrid = buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1).map((d, i) => ({
+      ...d,
+      pos: i + 1,
+      tireAge: 0,
+      wear: 4,
+      pits: 0,
+      pitState: "RACING",
+      gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
+      interval: i === 0 ? "1:28.412" : `+0.650s`,
+      posDelta: "0",
+      arrow: "neutral",
+    }));
+    setDrivers(freshGrid);
+
+    const { plans, strategies } = createInitialTeamPlans(selectedTeam, freshGrid, totalLaps);
+    setDriverPlans(plans);
+    setPlannedStrategies(strategies);
+  }, [selectedCircuit, selectedTeam, totalLaps]);
 
   const handleCompletePlanStop = useCallback((driverCode, stopNum) => {
     setDriverPlans((prev) => {
@@ -734,6 +868,7 @@ export default function App() {
           maxLaps={totalLaps}
           isAutoSimulating={isAutoSimulating}
           onToggleSim={() => setIsAutoSimulating((s) => !s)}
+          onRestartRace={handleDirectRestart}
           simSpeed={simSpeed}
           onChangeSimSpeed={(spd) => setSimSpeed(spd)}
           onTriggerOvertake={() => {
@@ -807,10 +942,9 @@ export default function App() {
         initialTeam={selectedTeam}
         onLaunchGame={({ role, teamId }) => {
           setUserRole(role);
-          if (teamId) setSelectedTeam(teamId);
+          if (teamId) handleSelectTeam(teamId);
           setIsGatewayOpen(false);
           localStorage.setItem("gp_strategy_role", role);
-          if (teamId) localStorage.setItem("gp_strategy_team", teamId);
           setActiveTab("timing");
         }}
       />
@@ -822,54 +956,10 @@ export default function App() {
         currentCircuitName={selectedCircuit?.grand_prix_name || "Australian Grand Prix"}
         currentRole={userRole}
         currentTeamId={selectedTeam}
-        onRestartRace={() => {
-          setCurrentLapNum(1);
-          setRestartSignal((s) => s + 1);
-          setIsAutoSimulating(false);
-          setActiveFlag("GREEN");
-          const freshGrid = buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1).map((d, i) => ({
-            ...d,
-            pos: i + 1,
-            tireAge: 0,
-            wear: 4,
-            pits: 0,
-            pitState: "RACING",
-            gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
-            interval: i === 0 ? "1:28.412" : `+0.650s`,
-            posDelta: "0",
-            arrow: "neutral",
-          }));
-          setDrivers(freshGrid);
-          setPlannedStrategies((prev) => prev.map((s) => ({ ...s, applied: false })));
-          setDriverPlans({
-            LEC: {
-              stopsCount: 1,
-              stop1Lap: 22,
-              stop1SetId: "H1",
-              stop1Completed: false,
-              stop2Lap: 42,
-              stop2SetId: "S2",
-              stop2Completed: false,
-              pushMode: "balanced",
-              nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
-            },
-            HAM: {
-              stopsCount: 1,
-              stop1Lap: 26,
-              stop1SetId: "H1",
-              stop1Completed: false,
-              stop2Lap: 44,
-              stop2SetId: "S1",
-              stop2Completed: false,
-              pushMode: "balanced",
-              nextRecommendedWindow: "Laps 25 - 28 (Hard C2)",
-            },
-          });
-        }}
+        onRestartRace={handleDirectRestart}
         onChangeTeam={(teamId) => {
           if (teamId) {
-            setSelectedTeam(teamId);
-            localStorage.setItem("gp_strategy_team", teamId);
+            handleSelectTeam(teamId);
           } else {
             setIsGatewayOpen(true);
           }

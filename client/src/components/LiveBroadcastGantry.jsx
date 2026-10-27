@@ -24,6 +24,7 @@ export default function LiveBroadcastGantry({
   maxLaps = 58,
   isAutoSimulating = false,
   onToggleSim,
+  onRestartRace,
   simSpeed = 1,
   onChangeSimSpeed,
   onTriggerOvertake,
@@ -167,6 +168,32 @@ export default function LiveBroadcastGantry({
           >
             <span>⚔️ OVERTAKE</span>
           </button>
+
+          {/* Quick Direct Restart Race to Lap 1 Button */}
+          {onRestartRace && (
+            <button
+              onClick={onRestartRace}
+              style={{
+                background: "rgba(255, 215, 0, 0.12)",
+                border: "1px solid #ffd700",
+                color: "#ffd700",
+                padding: "4px 10px",
+                borderRadius: "5px",
+                fontFamily: "'Orbitron', monospace",
+                fontSize: "0.68rem",
+                fontWeight: "800",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                boxShadow: "0 0 8px rgba(255, 215, 0, 0.25)",
+                transition: "all 0.15s ease",
+              }}
+              title="Restart simulation back to Lap 1 with fresh tires, grid and team strategy"
+            >
+              <span>🔄 RESTART LAP 1</span>
+            </button>
+          )}
 
           {/* Current Flag Capsule */}
           <div
