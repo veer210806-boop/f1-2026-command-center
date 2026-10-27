@@ -664,6 +664,9 @@ function TimingTower({
   drivers: externalDrivers,
   onExecutePitStop,
   onDriversUpdate,
+  plannedStrategies = [],
+  driverPlans,
+  onCompletePlanStop,
 }) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
   const roundNum = selectedCircuit?.round || 1;
@@ -831,6 +834,7 @@ function TimingTower({
       setOvertakeEvent(eventMsg);
       setRadioMsg(`[RADIO #${targetDriver.num}] Box confirm. ${targetCompound} tires fitted. You are P${newTargetPos}${aheadNotice}. Out-lap is cold!`);
       playF1OvertakeChime(isSoundMuted);
+      onCompletePlanStop?.(driverCode, (targetDriver.pits || 0) + 1);
 
       return finalGrid;
     });
@@ -862,14 +866,27 @@ function TimingTower({
           const newWear = Math.min(100, Math.round((d.wear || 20) + wearRate + wetPenalty));
           const newTireAge = (d.tireAge || 0) + 1;
 
-          // AI Opponent Strategy: If rival car hits high wear (>74%) or SC active and tireAge > 14, AI pits
+          // AI Opponent Strategy & Player Planned Strategy Pit Execution
           let aiPitted = false;
           let aiNewTire = d.tire;
           let currentPitState = d.pitState || "RACING";
           let currentPits = d.pits || 0;
           let currentGapSec = parseGapSec(d.gap);
 
-          if (!isPlayerDriver && (newWear > 74 || (sessionFlag === "SC" && newTireAge > 14 && Math.random() > 0.45))) {
+          // Check if this driver has a planned strategy directive for this exact lap!
+          const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && s.lap === controlledLap && !s.applied);
+
+          if (plannedStop) {
+            aiPitted = true;
+            currentPits += 1;
+            currentPitState = "IN PIT";
+            aiNewTire = plannedStop.targetCompound;
+            const pitLoss = sessionFlag === "SC" ? 13.5 : 22.5;
+            currentGapSec += pitLoss;
+            onCompletePlanStop?.(d.code, plannedStop.stopNum || 1);
+            setOvertakeEvent(`📦 PIT STOP EXECUTED: #${d.num} ${d.code} pitted on Lap ${controlledLap} fitting ${plannedStop.targetCompound}!`);
+            playF1OvertakeChime(isSoundMuted);
+          } else if (!isPlayerDriver && (newWear > 74 || (sessionFlag === "SC" && newTireAge > 14 && Math.random() > 0.45))) {
             aiPitted = true;
             currentPits += 1;
             currentPitState = "IN PIT";
@@ -880,11 +897,11 @@ function TimingTower({
 
           return {
             ...d,
-            wear: aiPitted ? 6 : newWear,
+            wear: aiPitted ? 4 : newWear,
             tireAge: aiPitted ? 0 : newTireAge,
             tire: aiNewTire,
             pits: currentPits,
-            pitState: currentPitState === "IN PIT" && !aiPitted ? "RACING" : currentPitState,
+            pitState: currentPitState,
             gapSec: currentGapSec,
           };
         });
@@ -2784,6 +2801,34 @@ function TimingTower({
                           >
                             {DRIVER_IOC_MAP[d.code] || "FIA"}
                           </span>
+
+                          {/* Planned Strategy Badge (Coordinates Timing Matrix with Strategy Room) */}
+                          {(() => {
+                            const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && !s.applied);
+                            if (!plannedStop) return null;
+                            const isThisLap = controlledLap === plannedStop.lap;
+                            return (
+                              <span
+                                style={{
+                                  fontSize: "0.58rem",
+                                  fontFamily: "'Orbitron', monospace",
+                                  fontWeight: "800",
+                                  background: isThisLap ? "rgba(232, 0, 45, 0.35)" : "rgba(0, 210, 190, 0.15)",
+                                  border: `1px solid ${isThisLap ? "var(--neon-red)" : "var(--neon-cyan)"}`,
+                                  color: isThisLap ? "#ffffff" : "var(--neon-cyan)",
+                                  padding: "1px 5px",
+                                  borderRadius: "3px",
+                                  letterSpacing: "0.04em",
+                                  lineHeight: 1,
+                                  flexShrink: 0,
+                                  animation: isThisLap ? "f1PulseOvertakeRed 1.2s infinite" : "none",
+                                }}
+                                title={`Planned pit stop from Strategy Room at Lap ${plannedStop.lap}`}
+                              >
+                                {isThisLap ? `🚨 BOX LAP ${plannedStop.lap}!` : `🎯 PIT L${plannedStop.lap} (${plannedStop.targetCompound})`}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
 

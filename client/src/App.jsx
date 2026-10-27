@@ -197,9 +197,120 @@ export default function App() {
   // ── Shared Drivers & Strategy Directives State ──
   const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
   const [plannedStrategies, setPlannedStrategies] = useState([
-    { id: 1, driverCode: "LEC", lap: 22, targetCompound: "H", label: "Primary Pit Stop → Fit Hard Compound", applied: false },
-    { id: 2, driverCode: "HAM", lap: 26, targetCompound: "H", label: "Staggered Pit Stop → Fit Hard Compound", applied: false },
+    { id: "stop1_LEC", driverCode: "LEC", lap: 22, targetCompound: "H", setId: "H1", stopNum: 1, label: "Stop 1 @ Lap 22 (H)", applied: false },
+    { id: "stop1_HAM", driverCode: "HAM", lap: 26, targetCompound: "H", setId: "H1", stopNum: 1, label: "Stop 1 @ Lap 26 (H)", applied: false },
   ]);
+
+  // ── Global Driver Plans State (Persists across tab switches) ──
+  const [driverPlans, setDriverPlans] = useState(() => ({
+    LEC: {
+      stopsCount: 1,
+      stop1Lap: 22,
+      stop1SetId: "H1",
+      stop1Completed: false,
+      stop2Lap: 42,
+      stop2SetId: "S2",
+      stop2Completed: false,
+      pushMode: "balanced",
+      nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+    },
+    HAM: {
+      stopsCount: 1,
+      stop1Lap: 26,
+      stop1SetId: "H1",
+      stop1Completed: false,
+      stop2Lap: 44,
+      stop2SetId: "S1",
+      stop2Completed: false,
+      pushMode: "balanced",
+      nextRecommendedWindow: "Laps 25 - 28 (Hard C2)",
+    },
+  }));
+
+  const handleCompletePlanStop = useCallback((driverCode, stopNum) => {
+    setDriverPlans((prev) => {
+      const current = prev[driverCode] || {
+        stopsCount: 1,
+        stop1Lap: 24,
+        stop1SetId: "H1",
+        stop1Completed: false,
+        stop2Lap: 42,
+        stop2SetId: "S1",
+        stop2Completed: false,
+        pushMode: "balanced",
+      };
+
+      const completedLap = stopNum === 1 ? current.stop1Lap : current.stop2Lap;
+      const nextOptimal = Math.min(totalLaps - 5, completedLap + 24);
+
+      return {
+        ...prev,
+        [driverCode]: {
+          ...current,
+          ...(stopNum === 1 ? { stop1Completed: true } : { stop2Completed: true }),
+          stop2Lap: nextOptimal,
+          nextRecommendedWindow: `Laps ${Math.max(1, nextOptimal - 2)} - ${nextOptimal + 2} (Softs / Sprint)`,
+        },
+      };
+    });
+  }, [totalLaps]);
+
+  const handleUpdateDriverPlan = useCallback((driverCode, updatedFields) => {
+    setDriverPlans((prev) => {
+      const current = prev[driverCode] || {
+        stopsCount: 1,
+        stop1Lap: 24,
+        stop1SetId: "H1",
+        stop1Completed: false,
+        stop2Lap: 42,
+        stop2SetId: "S1",
+        stop2Completed: false,
+        pushMode: "balanced",
+        nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+      };
+      const merged = { ...current, ...updatedFields };
+
+      // Synchronize with plannedStrategies so Timing Matrix displays badges & auto-executes
+      setPlannedStrategies((prevStrategies) => {
+        const otherDrivers = prevStrategies.filter((s) => s.driverCode !== driverCode);
+        const newPlanned = [];
+
+        if (!merged.stop1Completed && merged.stop1Lap) {
+          const comp = merged.stop1SetId?.startsWith("S") ? "S" : merged.stop1SetId?.startsWith("M") ? "M" : "H";
+          newPlanned.push({
+            id: `stop1_${driverCode}`,
+            driverCode,
+            lap: merged.stop1Lap,
+            targetCompound: comp,
+            setId: merged.stop1SetId,
+            stopNum: 1,
+            label: `Stop 1 @ Lap ${merged.stop1Lap} (${comp})`,
+            applied: false,
+          });
+        }
+        if (merged.stopsCount === 2 && !merged.stop2Completed && merged.stop2Lap) {
+          const comp = merged.stop2SetId?.startsWith("S") ? "S" : merged.stop2SetId?.startsWith("M") ? "M" : "H";
+          newPlanned.push({
+            id: `stop2_${driverCode}`,
+            driverCode,
+            lap: merged.stop2Lap,
+            targetCompound: comp,
+            setId: merged.stop2SetId,
+            stopNum: 2,
+            label: `Stop 2 @ Lap ${merged.stop2Lap} (${comp})`,
+            applied: false,
+          });
+        }
+
+        return [...otherDrivers, ...newPlanned];
+      });
+
+      return {
+        ...prev,
+        [driverCode]: merged,
+      };
+    });
+  }, []);
 
   // Synchronize starting grid when circuit changes
   useEffect(() => {
@@ -217,6 +328,11 @@ export default function App() {
       const num = parseFloat(String(gapStr).replace("+", "").replace("s", ""));
       return isNaN(num) ? 0 : num;
     };
+
+    // Mark stop completed & setup next optimal window in driverPlans!
+    const currentTarget = drivers.find((d) => d.code === driverCode);
+    const completedStopNum = (currentTarget?.pits || 0) + 1;
+    handleCompletePlanStop(driverCode, completedStopNum);
 
     setDrivers((prevDrivers) => {
       const targetDriver = prevDrivers.find((d) => d.code === driverCode);
@@ -646,6 +762,9 @@ export default function App() {
               drivers={drivers}
               onExecutePitStop={handleExecutePitStop}
               onDriversUpdate={setDrivers}
+              plannedStrategies={plannedStrategies}
+              driverPlans={driverPlans}
+              onCompletePlanStop={handleCompletePlanStop}
             />
           )}
           {activeTab === "strategy"  && (
@@ -659,6 +778,9 @@ export default function App() {
               activeFlag={activeFlag}
               onExecutePitStop={handleExecutePitStop}
               plannedStrategies={plannedStrategies}
+              driverPlans={driverPlans}
+              onUpdateDriverPlan={handleUpdateDriverPlan}
+              onCompletePlanStop={handleCompletePlanStop}
               onAddStrategy={handleAddStrategy}
               onDeleteStrategy={handleDeleteStrategy}
               onApplyPreset={handleApplyPreset}
@@ -719,6 +841,30 @@ export default function App() {
           }));
           setDrivers(freshGrid);
           setPlannedStrategies((prev) => prev.map((s) => ({ ...s, applied: false })));
+          setDriverPlans({
+            LEC: {
+              stopsCount: 1,
+              stop1Lap: 22,
+              stop1SetId: "H1",
+              stop1Completed: false,
+              stop2Lap: 42,
+              stop2SetId: "S2",
+              stop2Completed: false,
+              pushMode: "balanced",
+              nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+            },
+            HAM: {
+              stopsCount: 1,
+              stop1Lap: 26,
+              stop1SetId: "H1",
+              stop1Completed: false,
+              stop2Lap: 44,
+              stop2SetId: "S1",
+              stop2Completed: false,
+              pushMode: "balanced",
+              nextRecommendedWindow: "Laps 25 - 28 (Hard C2)",
+            },
+          });
         }}
         onChangeTeam={(teamId) => {
           if (teamId) {

@@ -115,6 +115,9 @@ export default function StrategyAdvisor({
   activeFlag = "GREEN",
   onExecutePitStop,
   plannedStrategies = [],
+  driverPlans = {},
+  onUpdateDriverPlan,
+  onCompletePlanStop,
   onAddStrategy,
   onDeleteStrategy,
   onApplyPreset,
@@ -159,34 +162,23 @@ export default function StrategyAdvisor({
     return teamDrivers.find((d) => d.code === activeDriverCode) || teamDrivers[0] || drivers[0];
   }, [teamDrivers, activeDriverCode, drivers]);
 
-  // Driver plan state (1-stop or 2-stop, specific laps and compounds)
-  const [driverPlans, setDriverPlans] = useState({
-    LEC: {
-      stopsCount: 1,
-      stop1Lap: 23,
-      stop1SetId: "H1", // Hard NEW
-      stop2Lap: 40,
-      stop2SetId: "S2", // Soft USED Q3
-      pushMode: "balanced",
-    },
-    HAM: {
-      stopsCount: 1,
-      stop1Lap: 26,
-      stop1SetId: "H1",
-      stop2Lap: 42,
-      stop2SetId: "S1",
-      pushMode: "balanced",
-    },
-  });
-
-  // Current driver's active plan
+  // Read current driver's plan directly from persistent props in App.jsx!
   const currentPlan = driverPlans[activeDriverCode] || {
     stopsCount: 1,
     stop1Lap: 24,
     stop1SetId: "H1",
-    stop2Lap: 40,
+    stop1Completed: false,
+    stop2Lap: 42,
     stop2SetId: "S1",
+    stop2Completed: false,
     pushMode: "balanced",
+    nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+  };
+
+  const updatePlanField = (field, value) => {
+    if (onUpdateDriverPlan) {
+      onUpdateDriverPlan(activeDriverCode, { [field]: value });
+    }
   };
 
   // Immediate "BOX THIS LAP NOW" selected tire set
@@ -198,15 +190,6 @@ export default function StrategyAdvisor({
   // Notification message toast
   const [notificationMsg, setNotificationMsg] = useState(null);
 
-  const updatePlanField = (field, value) => {
-    setDriverPlans((prev) => ({
-      ...prev,
-      [activeDriverCode]: {
-        ...(prev[activeDriverCode] || currentPlan),
-        [field]: value,
-      },
-    }));
-  };
 
   // Helper to parse driver gap in seconds
   const parseGapSec = (gapStr) => {
@@ -217,7 +200,10 @@ export default function StrategyAdvisor({
 
   // Selected tire set metadata
   const selectedStop1Set = DEFAULT_TIRE_SETS.find((s) => s.id === currentPlan.stop1SetId) || DEFAULT_TIRE_SETS[4];
+  const selectedStop2Set = DEFAULT_TIRE_SETS.find((s) => s.id === currentPlan.stop2SetId) || DEFAULT_TIRE_SETS[0];
   const selectedInstantSet = DEFAULT_TIRE_SETS.find((s) => s.id === instantBoxSetId) || DEFAULT_TIRE_SETS[4];
+
+  const isStop1Done = currentPlan.stop1Completed || (activeDriver?.pits || 0) >= 1;
 
   // ═════════════════════════════════════════════════════════════════════════════
   // 🔮 DYNAMIC RE-ENTRY & TRAFFIC SIMULATION ENGINE
@@ -226,26 +212,52 @@ export default function StrategyAdvisor({
   const simulatedReentry = useMemo(() => {
     if (!activeDriver || !drivers || drivers.length === 0) return null;
 
-    const targetPitLap = Math.max(1, Math.min(totalLaps, currentPlan.stop1Lap));
-    const targetSet = selectedStop1Set;
+    const targetPitLap = isStop1Done
+      ? Math.max(1, Math.min(totalLaps, currentPlan.stop2Lap || 42))
+      : Math.max(1, Math.min(totalLaps, currentPlan.stop1Lap || 24));
+    const targetSet = isStop1Done ? selectedStop2Set : selectedStop1Set;
     const targetCompound = targetSet.compound;
 
-    // 1. DYNAMIC FIELD SPREAD AT targetPitLap:
-    // At Lap 1: field spread is ~20s. Over 58 laps, it expands by ~1.22s/lap.
-    const fieldSpreadAtLap = Math.min(115, 20.0 + (targetPitLap - 1) * 1.22);
+    // Relative cumulative pace per lap for each driver
+    const GRID_PACE_DELTAS = {
+      NOR: 0.00,
+      VER: 0.06,
+      LEC: 0.12,
+      HAM: 0.16,
+      RUS: 0.22,
+      PIA: 0.25,
+      SAI: 0.45,
+      ANT: 0.55,
+      ALO: 0.65,
+      ALB: 0.75,
+      PER: 0.85,
+      HAD: 0.95,
+      STR: 1.10,
+      GAS: 1.20,
+      OCO: 1.30,
+      LAW: 1.40,
+      BEA: 1.55,
+      HUL: 1.70,
+      BOT: 1.85,
+      BOR: 2.00,
+      COL: 2.15,
+      LIN: 2.30,
+    };
 
-    // 2. Map all 22 grid cars and calculate their projected gaps at targetPitLap
+    const ourPace = GRID_PACE_DELTAS[activeDriver.code] ?? 0.14;
+    const ourPostPitGap = +(targetPitLap * ourPace + pitLossDuration).toFixed(2);
+
+    // Calculate every rival's projected gap to leader at targetPitLap
     const gridAtTargetLap = drivers.map((d, idx) => {
       const isSelf = d.code === activeDriver.code;
+      const rivalPace = GRID_PACE_DELTAS[d.code] ?? 0.85;
       const rivalSchedule = RIVAL_PIT_SCHEDULE[d.code] || { pitLap: 25, comp: "H" };
 
-      // Natural gap to leader before any pit stops (quadratic spread)
-      const normalizedRank = idx / Math.max(1, drivers.length - 1);
-      const naturalGap = +(fieldSpreadAtLap * Math.pow(normalizedRank, 1.22)).toFixed(2);
-
-      // Has this rival car already taken their pit stop by targetPitLap?
+      // Did rival pit at or before targetPitLap?
       const rivalHasPitted = !isSelf && rivalSchedule.pitLap <= targetPitLap;
       const pitLossIncurred = rivalHasPitted ? 22.5 : 0;
+      const naturalGap = +(targetPitLap * rivalPace).toFixed(2);
+      const projectedGap = +(naturalGap + pitLossIncurred).toFixed(2);
 
       return {
         code: d.code,
@@ -255,22 +267,17 @@ export default function StrategyAdvisor({
         isSelf,
         naturalGap,
         hasPitted: rivalHasPitted,
-        projectedGap: naturalGap + pitLossIncurred,
+        projectedGap,
         initialPos: idx + 1,
       };
     });
 
-    // 3. Our driver takes the pit stop loss at targetPitLap
-    const selfCar = gridAtTargetLap.find((d) => d.isSelf) || gridAtTargetLap[0];
-    const ourPostPitGap = +(selfCar.naturalGap + pitLossDuration).toFixed(2);
-
-    // 4. Compare our post-pit gap against every rival at targetPitLap
     const rivals = gridAtTargetLap.filter((d) => !d.isSelf);
     const carsAhead = rivals.filter((r) => r.projectedGap < ourPostPitGap);
     const carsBehind = rivals.filter((r) => r.projectedGap >= ourPostPitGap);
 
-    carsAhead.sort((a, b) => b.projectedGap - a.projectedGap); // Closest car ahead is index 0
-    carsBehind.sort((a, b) => a.projectedGap - b.projectedGap); // Closest car behind is index 0
+    carsAhead.sort((a, b) => b.projectedGap - a.projectedGap);
+    carsBehind.sort((a, b) => a.projectedGap - b.projectedGap);
 
     const reEntryPos = Math.min(22, carsAhead.length + 1);
     const carAhead = carsAhead[0] || null;
@@ -295,11 +302,10 @@ export default function StrategyAdvisor({
 
     // Stint longevity & tire health assessment
     const remainingLapsToFinish = totalLaps - targetPitLap;
-    const spec = TIRE_SPECS[targetCompound] || TIRE_SPECS.H;
     let stintHealth = "OPTIMAL";
     let stintWarning = null;
 
-    if (currentPlan.stopsCount === 1) {
+    if (!isStop1Done && currentPlan.stopsCount === 1) {
       if (targetCompound === "S" && remainingLapsToFinish > 16) {
         stintHealth = "CRITICAL";
         stintWarning = `Severe Cliff Alert: ${remainingLapsToFinish} laps to finish on Softs! Tires will completely degrade by Lap ${targetPitLap + 16}. Consider a 2-stop or Hard tire!`;
@@ -315,10 +321,13 @@ export default function StrategyAdvisor({
       }
     } else {
       stintHealth = "OPTIMAL";
-      stintWarning = `2-Stop Attack Strategy: Stop 1 at Lap ${targetPitLap} (${targetSet.label}), Stop 2 at Lap ${currentPlan.stop2Lap}. Maximum pace attack plan.`;
+      stintWarning = isStop1Done
+        ? `Stop 2 Sprint: ${remainingLapsToFinish} laps remaining on ${targetSet.label}. Push mode to the checkered flag.`
+        : `2-Stop Attack Strategy: Stop 1 at Lap ${targetPitLap} (${targetSet.label}), Stop 2 at Lap ${currentPlan.stop2Lap}. Maximum pace attack plan.`;
     }
 
     return {
+      stopNum: isStop1Done ? 2 : 1,
       pitLap: targetPitLap,
       compound: targetCompound,
       set: targetSet,
@@ -333,40 +342,63 @@ export default function StrategyAdvisor({
       stintWarning,
       remainingLapsToFinish,
     };
-  }, [activeDriver, drivers, currentPlan, selectedStop1Set, pitLossDuration, totalLaps, activeFlag]);
+  }, [activeDriver, drivers, currentPlan, selectedStop1Set, selectedStop2Set, isStop1Done, pitLossDuration, totalLaps, activeFlag]);
 
   // ── CONFIRM & LOCK STRATEGY DIRECTIVE ───────────────────────────────────────
   const handleLockStrategy = () => {
     f1Audio.playRadioBeep();
 
     if (onAddStrategy) {
-      const newDirective1 = {
-        driverCode: activeDriver.code,
-        lap: currentPlan.stop1Lap,
-        targetCompound: selectedStop1Set.compound,
-        initialWear: selectedStop1Set.wear,
-        initialAge: selectedStop1Set.age,
-        label: `Stop 1 @ Lap ${currentPlan.stop1Lap} → Fit ${selectedStop1Set.label}`,
-      };
-      onAddStrategy(newDirective1);
-
-      if (currentPlan.stopsCount === 2) {
-        const stop2Set = DEFAULT_TIRE_SETS.find((s) => s.id === currentPlan.stop2SetId) || DEFAULT_TIRE_SETS[0];
+      if (isStop1Done) {
+        // Driver already completed Stop 1 → Lock Stop 2!
+        const stop2Set = selectedStop2Set;
         const newDirective2 = {
+          id: `stop2_${activeDriver.code}`,
           driverCode: activeDriver.code,
           lap: currentPlan.stop2Lap,
           targetCompound: stop2Set.compound,
           initialWear: stop2Set.wear,
           initialAge: stop2Set.age,
+          stopNum: 2,
           label: `Stop 2 @ Lap ${currentPlan.stop2Lap} → Fit ${stop2Set.label}`,
         };
         onAddStrategy(newDirective2);
+        setNotificationMsg(
+          `🔒 STOP 2 LOCKED for #${activeDriver.num} ${activeDriver.code}: Scheduled for Lap ${currentPlan.stop2Lap} (${stop2Set.label}). Car will automatically box on Timing Matrix!`
+        );
+      } else {
+        const newDirective1 = {
+          id: `stop1_${activeDriver.code}`,
+          driverCode: activeDriver.code,
+          lap: currentPlan.stop1Lap,
+          targetCompound: selectedStop1Set.compound,
+          initialWear: selectedStop1Set.wear,
+          initialAge: selectedStop1Set.age,
+          stopNum: 1,
+          label: `Stop 1 @ Lap ${currentPlan.stop1Lap} → Fit ${selectedStop1Set.label}`,
+        };
+        onAddStrategy(newDirective1);
+
+        if (currentPlan.stopsCount === 2) {
+          const stop2Set = selectedStop2Set;
+          const newDirective2 = {
+            id: `stop2_${activeDriver.code}`,
+            driverCode: activeDriver.code,
+            lap: currentPlan.stop2Lap,
+            targetCompound: stop2Set.compound,
+            initialWear: stop2Set.wear,
+            initialAge: stop2Set.age,
+            stopNum: 2,
+            label: `Stop 2 @ Lap ${currentPlan.stop2Lap} → Fit ${stop2Set.label}`,
+          };
+          onAddStrategy(newDirective2);
+        }
+
+        setNotificationMsg(
+          `🔒 STRATEGY LOCKED for #${activeDriver.num} ${activeDriver.code}: Stop 1 scheduled for Lap ${currentPlan.stop1Lap} (${selectedStop1Set.label}). Car will automatically box on Timing Matrix!`
+        );
       }
     }
-
-    setNotificationMsg(
-      `🔒 STRATEGY LOCKED for #${activeDriver.num} ${activeDriver.code}: Stop 1 scheduled for Lap ${currentPlan.stop1Lap} (${selectedStop1Set.label}). Car will automatically box on Timing Matrix!`
-    );
     setTimeout(() => setNotificationMsg(null), 6000);
   };
 
@@ -1080,76 +1112,129 @@ export default function StrategyAdvisor({
               gap: "10px",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-              <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.78rem", fontWeight: "900", color: "var(--neon-cyan)" }}>
-                🛑 PIT STOP 1:
-              </span>
+            {/* If Stop 1 is completed (driver has pitted) */}
+            {currentPlan.stop1Completed || (activeDriver?.pits || 0) >= 1 ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                  background: "rgba(0, 204, 68, 0.12)",
+                  border: "1.5px solid var(--neon-green)",
+                  borderRadius: "6px",
+                  padding: "10px 14px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "1.2rem" }}>✅</span>
+                  <div>
+                    <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.80rem", fontWeight: "900", color: "var(--neon-green)" }}>
+                      STOP 1 COMPLETED AT LAP {activeDriver?.lastPitLap || currentPlan.stop1Lap} ({activeDriver?.tire || "H"} - {TIRE_SPECS[activeDriver?.tire || "H"]?.name || "Hard"})
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "#d2f5e0", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600", marginTop: "2px" }}>
+                      🎯 Automatic Next Best Pit Window: <strong style={{ color: "var(--neon-cyan)" }}>{currentPlan.nextRecommendedWindow || `Laps ${Math.min(totalLaps - 5, (activeDriver?.lastPitLap || currentPlan.stop1Lap) + 24)} (Soft C4 Sprint)`}</strong>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Lap Slider & Direct Number Input */}
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, maxWidth: "500px", minWidth: "260px" }}>
-                <span style={{ fontSize: "0.70rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>PIT ON LAP:</span>
-                <input
-                  type="range"
-                  min="1"
-                  max={totalLaps}
-                  value={currentPlan.stop1Lap}
-                  onChange={(e) => updatePlanField("stop1Lap", parseInt(e.target.value))}
-                  style={{
-                    flex: 1,
-                    accentColor: "var(--neon-cyan)",
-                    cursor: "pointer",
-                  }}
-                />
-                <input
-                  type="number"
-                  min="1"
-                  max={totalLaps}
-                  value={currentPlan.stop1Lap}
-                  onChange={(e) => updatePlanField("stop1Lap", Math.max(1, Math.min(totalLaps, parseInt(e.target.value) || 1)))}
-                  style={{
-                    width: "55px",
-                    background: "#161b2a",
-                    border: "1px solid var(--neon-cyan)",
-                    color: "#ffffff",
-                    borderRadius: "4px",
-                    padding: "3px 6px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.80rem",
-                    fontWeight: "900",
-                    textAlign: "center",
-                  }}
-                />
-                <span style={{ fontSize: "0.68rem", color: "var(--text-dim)" }}>/ {totalLaps}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "0.68rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
+                    PITS COMPLETED: <strong style={{ color: "#ffffff" }}>{activeDriver?.pits || 1}</strong>
+                  </span>
+                  {currentPlan.stopsCount === 1 && (
+                    <button
+                      onClick={() => updatePlanField("stopsCount", 2)}
+                      style={{
+                        background: "rgba(255, 215, 0, 0.2)",
+                        border: "1px solid #ffd700",
+                        color: "#ffd700",
+                        borderRadius: "4px",
+                        padding: "4px 8px",
+                        fontFamily: "'Orbitron', monospace",
+                        fontSize: "0.66rem",
+                        fontWeight: "800",
+                        cursor: "pointer",
+                      }}
+                    >
+                      + PLAN STOP 2
+                    </button>
+                  )}
+                </div>
               </div>
+            ) : (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.78rem", fontWeight: "900", color: "var(--neon-cyan)" }}>
+                  🛑 PIT STOP 1:
+                </span>
 
-              {/* Fit Tire Allocation Selector */}
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>FIT SET:</span>
-                <select
-                  value={currentPlan.stop1SetId}
-                  onChange={(e) => updatePlanField("stop1SetId", e.target.value)}
-                  style={{
-                    background: "#161b2a",
-                    color: selectedStop1Set.compound === "S" ? "#FF1801" : selectedStop1Set.compound === "H" ? "#FFFFFF" : "#FFD700",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: "4px",
-                    padding: "4px 8px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.72rem",
-                    fontWeight: "800",
-                  }}
-                >
-                  {DEFAULT_TIRE_SETS.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label} ({s.lifePct}% Life - {s.condition})
-                    </option>
-                  ))}
-                </select>
+                {/* Lap Slider & Direct Number Input */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, maxWidth: "500px", minWidth: "260px" }}>
+                  <span style={{ fontSize: "0.70rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>PIT ON LAP:</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max={totalLaps}
+                    value={currentPlan.stop1Lap}
+                    onChange={(e) => updatePlanField("stop1Lap", parseInt(e.target.value))}
+                    style={{
+                      flex: 1,
+                      accentColor: "var(--neon-cyan)",
+                      cursor: "pointer",
+                    }}
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalLaps}
+                    value={currentPlan.stop1Lap}
+                    onChange={(e) => updatePlanField("stop1Lap", Math.max(1, Math.min(totalLaps, parseInt(e.target.value) || 1)))}
+                    style={{
+                      width: "55px",
+                      background: "#161b2a",
+                      border: "1px solid var(--neon-cyan)",
+                      color: "#ffffff",
+                      borderRadius: "4px",
+                      padding: "3px 6px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.80rem",
+                      fontWeight: "900",
+                      textAlign: "center",
+                    }}
+                  />
+                  <span style={{ fontSize: "0.68rem", color: "var(--text-dim)" }}>/ {totalLaps}</span>
+                </div>
+
+                {/* Fit Tire Allocation Selector */}
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "0.66rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>FIT SET:</span>
+                  <select
+                    value={currentPlan.stop1SetId}
+                    onChange={(e) => updatePlanField("stop1SetId", e.target.value)}
+                    style={{
+                      background: "#161b2a",
+                      color: selectedStop1Set.compound === "S" ? "#FF1801" : selectedStop1Set.compound === "H" ? "#FFFFFF" : "#FFD700",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: "4px",
+                      padding: "4px 8px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.72rem",
+                      fontWeight: "800",
+                    }}
+                  >
+                    {DEFAULT_TIRE_SETS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.lifePct}% Life - {s.condition})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* STOP 2 (IF 2-STOP SELECTED) */}
-            {currentPlan.stopsCount === 2 && (
+            {/* STOP 2 (IF 2-STOP SELECTED OR STOP 1 COMPLETED) */}
+            {(currentPlan.stopsCount === 2 || (activeDriver?.pits || 0) >= 1) && (
               <div style={{ borderTop: "1px dashed rgba(255,255,255,0.1)", paddingTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
                 <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.78rem", fontWeight: "900", color: "#ffd700" }}>
                   🛑 PIT STOP 2:
@@ -1234,7 +1319,7 @@ export default function StrategyAdvisor({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
                 <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.74rem", fontWeight: "900", color: "#ffffff", display: "flex", alignItems: "center", gap: "6px" }}>
                   <span>🔮</span>
-                  <span>LIVE RE-ENTRY & TRAFFIC PROJECTION FOR STOP AT LAP {simulatedReentry.pitLap}:</span>
+                  <span>LIVE RE-ENTRY & TRAFFIC PROJECTION FOR STOP {simulatedReentry.stopNum || 1} AT LAP {simulatedReentry.pitLap}:</span>
                 </span>
 
                 <span
