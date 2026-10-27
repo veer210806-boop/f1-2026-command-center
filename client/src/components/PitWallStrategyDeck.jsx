@@ -207,7 +207,7 @@ export default function PitWallStrategyDeck({
           const currentTire = driver.tire || "M";
           const chosenComp = selectedCompounds[driver.code] || "H";
           const tireAge = driver.tireAge || 18;
-          const wearPct = driver.wear || Math.min(95, Math.round(tireAge * 3.5));
+          const wearPct = Math.round(driver.wear != null ? driver.wear : Math.min(95, tireAge * 3.5));
           const face = getDriverFaceUrl(driver.code, driver.photo_url || DRIVER_PHOTOS[driver.code]);
           const isAtCliff = wearPct >= 75;
 

@@ -2,7 +2,7 @@
 // TimingTower.jsx — Advanced F1 Pit Wall Command Center
 // Next-Gen 2026 Formula 1 Live Mission Control Dashboard
 // ============================================================
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, useRef, memo } from "react";
 import axios from "axios";
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine
@@ -15,7 +15,6 @@ import TeamRadioModal from "./TeamRadioModal";
 import FiaRaceControlModal from "./FiaRaceControlModal";
 import LiveRaceMapTracker from "./LiveRaceMapTracker";
 import StatsF1LapMatrix from "./StatsF1LapMatrix";
-import PitWallStrategyDeck from "./PitWallStrategyDeck";
 import { RACE_STATUS_FLAGS, INITIAL_FIA_BULLETINS } from "../data/fiaRaceControl";
 import {
   generateRaceWeekendData,
@@ -655,12 +654,16 @@ function playF1OvertakeChime(muted = false) {
 function TimingTower({
   selectedCircuit,
   onGoToCalendar,
+  onGoToStrategy,
   controlledLap,
   controlledFlag,
   triggerOvertakeSignal,
   userRole = "team",
   playerTeam = "Ferrari",
   restartSignal = 0,
+  drivers: externalDrivers,
+  onExecutePitStop,
+  onDriversUpdate,
 }) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
   const roundNum = selectedCircuit?.round || 1;
@@ -683,7 +686,17 @@ function TimingTower({
   const [currentLap, setCurrentLap] = useState(34);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedDriverIdx, setSelectedDriverIdx] = useState(0);
-  const [drivers, setDrivers] = useState(() => buildTimingTowerGridForCircuit("australia", 34));
+  const [drivers, setDrivers] = useState(() => (externalDrivers && externalDrivers.length > 0 ? externalDrivers : buildTimingTowerGridForCircuit("australia", 34)));
+
+  // Synchronize internal drivers with externalDrivers from App.jsx / StrategyAdvisor
+  const lastExternalSyncRef = useRef(null);
+  useEffect(() => {
+    if (externalDrivers && externalDrivers.length > 0 && externalDrivers !== lastExternalSyncRef.current) {
+      lastExternalSyncRef.current = externalDrivers;
+      setDrivers(externalDrivers);
+    }
+  }, [externalDrivers]);
+
   const [radioMsg, setRadioMsg] = useState("Box this lap for Hard compounds. Push hard on in-lap.");
   const [radioFeedIdx, setRadioFeedIdx] = useState(0);
 
@@ -940,6 +953,11 @@ function TimingTower({
           setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 2800 ? null : curr));
         }, 3000);
 
+        if (onDriversUpdate) {
+          lastExternalSyncRef.current = reordered;
+          onDriversUpdate(reordered);
+        }
+
         return reordered;
       });
     }
@@ -995,6 +1013,11 @@ function TimingTower({
       });
 
       setSelectedDriverIdx(targetIdx);
+
+      if (onDriversUpdate) {
+        lastExternalSyncRef.current = finalDrivers;
+        onDriversUpdate(finalDrivers);
+      }
 
       const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
       setActiveOvertake({
@@ -1761,23 +1784,6 @@ function TimingTower({
         />
       ) : (
         <>
-          {/* ════════ STRATEGIST MISSION CONTROL: LIVE RE-ENTRY RADAR & PIT WALL COMMAND DECK ════════ */}
-          <div style={{ marginBottom: "12px", width: "100%" }}>
-            <PitWallStrategyDeck
-              currentRole={userRole}
-              playerTeam={playerTeam}
-              drivers={drivers}
-              currentLap={currentLap}
-              maxLaps={maxLaps}
-              activeFlag={sessionFlag}
-              onExecutePitStop={handleExecutePitStop}
-              onRadioBroadcast={(driver, msg) => {
-                setRadioMsg(`[RADIO #${driver.num} ${driver.code}] ${msg}`);
-                setOvertakeEvent(`📻 TEAM RADIO: ${driver.code} — "${msg}"`);
-              }}
-            />
-          </div>
-
           {/* ════════ FRONT / UPPER COCKPIT: 2-COLUMN LAYOUT (LEFT MAP + TIMING TOWER) ════════ */}
           <div style={{ display: "grid", gridTemplateColumns: "330px 1fr", gap: "12px", alignItems: "start", width: "100%" }}>
 
@@ -2230,6 +2236,33 @@ function TimingTower({
 
             {/* Action & Density Mode Switcher Controls */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              {/* Shortcut to Strategy Command Room */}
+              {onGoToStrategy && (
+                <button
+                  onClick={onGoToStrategy}
+                  title="Open Strategy Room to command pit stops, view re-entry radar, and manage stint plans"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(232,0,45,0.28) 0%, rgba(20,24,36,0.95) 100%)",
+                    border: "1px solid rgba(232,0,45,0.6)",
+                    color: "#ffffff",
+                    borderRadius: "4px",
+                    padding: "3px 9px",
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: "0.62rem",
+                    fontWeight: "900",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    boxShadow: "0 0 10px rgba(232,0,45,0.35)",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>🧠</span>
+                  <span>PIT STRATEGY ROOM →</span>
+                </button>
+              )}
+
               {/* Interactive Overtake Duel Simulator Button */}
               <button
                 onClick={handleTriggerDuelOvertake}
