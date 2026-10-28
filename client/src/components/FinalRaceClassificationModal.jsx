@@ -61,10 +61,10 @@ export default function FinalRaceClassificationModal({
   const p3 = classifiedDrivers[2] || { code: "RUS", num: 63, name: "George Russell", team: "Mercedes", gap: "+3.910s" };
 
   // Calculate Player Team Debrief
+  const pLower = (typeof playerTeam === "string" ? playerTeam : "Ferrari").toLowerCase();
   const playerTeamDrivers = classifiedDrivers.filter((d) => {
     if (!d.team) return false;
     const teamLower = d.team.toLowerCase();
-    const pLower = playerTeam.toLowerCase();
     return (
       teamLower.includes(pLower) ||
       pLower.includes(teamLower) ||
@@ -75,7 +75,7 @@ export default function FinalRaceClassificationModal({
   });
 
   const playerTeamPts = playerTeamDrivers.reduce((acc, d) => acc + (d.totalPts || 0), 0);
-  const playerTeamObj = CONSTRUCTORS_2026.find((c) => c.id.toLowerCase() === playerTeam.toLowerCase()) || CONSTRUCTORS_2026[0];
+  const playerTeamObj = CONSTRUCTORS_2026.find((c) => c.id.toLowerCase() === pLower) || CONSTRUCTORS_2026[0];
 
   // Identify Official Driver of the Day (Max net position gain or race winner)
   let bestMover = classifiedDrivers[0];

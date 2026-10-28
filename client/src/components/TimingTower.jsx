@@ -766,16 +766,17 @@ function TimingTower({
   // Player Team Drivers for In-Race Tactical Dilemmas & Directives
   const playerTeamDrivers = useMemo(() => {
     if (!drivers || drivers.length === 0) return [];
+    const safePlayerTeam = typeof playerTeam === "string" ? playerTeam.toLowerCase() : "";
+    if (!safePlayerTeam) return [];
     return drivers.filter((d) => {
       if (!d.team) return false;
       const teamLower = d.team.toLowerCase();
-      const pLower = playerTeam.toLowerCase();
       return (
-        teamLower.includes(pLower) ||
-        pLower.includes(teamLower) ||
-        (pLower.includes("red") && teamLower.includes("red")) ||
-        (pLower.includes("audi") && teamLower.includes("sauber")) ||
-        (pLower.includes("sauber") && teamLower.includes("audi"))
+        teamLower.includes(safePlayerTeam) ||
+        safePlayerTeam.includes(teamLower) ||
+        (safePlayerTeam.includes("red") && teamLower.includes("red")) ||
+        (safePlayerTeam.includes("audi") && teamLower.includes("sauber")) ||
+        (safePlayerTeam.includes("sauber") && teamLower.includes("audi"))
       );
     });
   }, [drivers, playerTeam]);
@@ -3246,6 +3247,17 @@ function TimingTower({
                   const logoUrl = getTeamLogo(d.team);
                   const isCompact = tableDensity === "compact";
 
+                  // Driver Team Ownership Flag (Row-level Scope)
+                  const safePlayerTeam = typeof playerTeam === "string" ? playerTeam.toLowerCase() : "";
+                  const isDriverOnPlayerTeam =
+                    userRole === "fia" ||
+                    (d.team && safePlayerTeam &&
+                      (d.team.toLowerCase().includes(safePlayerTeam) ||
+                        safePlayerTeam.includes(d.team.toLowerCase()) ||
+                        (safePlayerTeam.includes("red") && d.team.toLowerCase().includes("red")) ||
+                        (safePlayerTeam.includes("audi") && d.team.toLowerCase().includes("sauber")) ||
+                        (safePlayerTeam.includes("sauber") && d.team.toLowerCase().includes("audi"))));
+
                   // Metallic Position Pill Configuration
                   const posBadgeStyle = d.pos === 1 ? {
                     background: "linear-gradient(135deg, #ffd700 0%, #b8860b 100%)",
@@ -3484,15 +3496,6 @@ function TimingTower({
 
                           {/* Planned Strategy Badge (Coordinates Timing Matrix with Strategy Room) */}
                           {(() => {
-                            // Only show badge if this driver belongs to the user's active team (or FIA god mode)
-                            const isDriverOnPlayerTeam =
-                              userRole === "fia" ||
-                              (d.team &&
-                                (d.team.toLowerCase().includes(playerTeam.toLowerCase()) ||
-                                  playerTeam.toLowerCase().includes(d.team.toLowerCase()) ||
-                                  (playerTeam.toLowerCase().includes("red") && d.team.toLowerCase().includes("red")) ||
-                                  (playerTeam.toLowerCase().includes("audi") && d.team.toLowerCase().includes("sauber")) ||
-                                  (playerTeam.toLowerCase().includes("sauber") && d.team.toLowerCase().includes("audi"))));
                             if (!isDriverOnPlayerTeam) return null;
 
                             const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && !s.applied);
