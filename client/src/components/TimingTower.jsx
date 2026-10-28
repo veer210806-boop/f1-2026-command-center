@@ -1656,7 +1656,7 @@ function TimingTower({
                 ...d,
                 pos: 1,
                 gap: "LEADER",
-                interval: "1:28.750",
+                interval: "—",
               };
             }
             const gapStep = +(0.8 + (idx * 0.12) + (d.pitState === "IN PIT" ? 18.0 : 0)).toFixed(3);

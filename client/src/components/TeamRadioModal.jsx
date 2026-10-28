@@ -10,7 +10,7 @@ import {
   RADIO_CATEGORIES,
   filterRadioArchive
 } from "../data/teamRadioArchive";
-import { getDriverFaceUrl, getTeamLogo } from "../data/f1MediaAssets2026";
+import { getDriverFaceUrl } from "../data/f1MediaAssets2026";
 
 export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" }) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");

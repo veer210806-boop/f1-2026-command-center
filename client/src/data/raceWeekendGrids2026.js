@@ -990,7 +990,10 @@ export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 1) {
     const gapStep = +(0.75 + idx * 0.12).toFixed(3);
     if (!isLeader) accumulatedGap += gapStep;
 
-    const baseLap = 88.4 + idx * 0.14;
+    const s1Sec = +(28.1 + idx * 0.05).toFixed(3);
+    const s2Sec = +(37.8 + idx * 0.08).toFixed(3);
+    const s3Sec = +(22.8 + idx * 0.04).toFixed(3);
+    const baseLap = +(s1Sec + s2Sec + s3Sec).toFixed(3);
     const mins = Math.floor(baseLap / 60);
     const secs = (baseLap % 60).toFixed(3);
     const formattedLap = `${mins}:${secs.padStart(6, "0")}`;
@@ -1013,7 +1016,7 @@ export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 1) {
       tireAge: isPreRace ? 0 : Math.min(22, atLap > 24 ? atLap - 22 : atLap),
       gap: isPreRace ? (isLeader ? "LEADER" : "—") : (isLeader ? "LEADER" : `+${accumulatedGap.toFixed(3)}s`),
       gapSec: isPreRace ? 0 : accumulatedGap,
-      interval: isPreRace ? "—" : (isLeader ? formattedLap : `+${gapStep.toFixed(3)}s`),
+      interval: isPreRace ? "—" : (isLeader ? "—" : `+${gapStep.toFixed(3)}s`),
       arrow: isPreRace ? "none" : (posGain > 0 ? "up" : posGain < 0 ? "down" : "none"),
       wear: isPreRace ? 4 : Math.min(85, 20 + atLap * 1.1),
       delta: isPreRace ? "0.000" : (posGain > 0 ? `+0.0${posGain * 2}` : `-0.1${Math.abs(posGain)}`),

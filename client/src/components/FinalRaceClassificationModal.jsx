@@ -5,7 +5,7 @@
 // ============================================================
 import React from "react";
 import { getDriverFaceUrl, DRIVER_PHOTOS } from "../data/f1MediaAssets2026";
-import { CONSTRUCTORS_2026 } from "./StrategyGameGatewayModal";
+import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
 
 const F1_POINTS_TABLE = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];

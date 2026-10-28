@@ -15,7 +15,7 @@ export default function FiaRaceControlModal({
 }) {
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [bulletinList, setBulletinList] = useState(bulletins);
+  const [bulletinList] = useState(bulletins);
 
   useEffect(() => {
     const handleEsc = (e) => {

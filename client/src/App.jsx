@@ -467,8 +467,8 @@ export default function App() {
       wear: 4,
       pits: 0,
       pitState: "RACING",
-      gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
-      interval: i === 0 ? "1:28.412" : "+0.650s",
+      gap: i === 0 ? "LEADER" : "—",
+      interval: "—",
       posDelta: "0",
       arrow: "neutral",
     }));
@@ -514,8 +514,8 @@ export default function App() {
       wear: 4,
       pits: 0,
       pitState: "RACING",
-      gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
-      interval: i === 0 ? "1:28.412" : `+0.650s`,
+      gap: i === 0 ? "LEADER" : "—",
+      interval: "—",
       posDelta: "0",
       arrow: "neutral",
     }));
@@ -534,7 +534,7 @@ export default function App() {
     f1Audio.playRadioBeep();
 
     // Ensure the current race result is locked in before advancing
-    handleRecordRaceResult(selectedCircuit, drivers);
+    handleRecordRaceResult(circuitRef.current, driversRef.current);
 
     const currentIdx = circuits.findIndex((c) => c.circuit_id === selectedCircuit?.circuit_id);
     const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % circuits.length : 0;
@@ -555,8 +555,8 @@ export default function App() {
       wear: 4,
       pits: 0,
       pitState: "RACING",
-      gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
-      interval: i === 0 ? "1:28.412" : `+0.650s`,
+      gap: i === 0 ? "LEADER" : "—",
+      interval: "—",
       posDelta: "0",
       arrow: "neutral",
     }));
@@ -812,6 +812,12 @@ export default function App() {
       ]);
     }
   }, [drivers, selectedTeam, currentLapNum]);
+
+  // Live references to prevent stale closures during simulation and race completion
+  const driversRef = useRef(drivers);
+  driversRef.current = drivers;
+  const circuitRef = useRef(selectedCircuit);
+  circuitRef.current = selectedCircuit;
 
   // Master race simulation clock: cleanly increments currentLapNum
   useEffect(() => {
