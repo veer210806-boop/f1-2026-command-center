@@ -217,10 +217,15 @@ export default function PitWallStrategyDeck({
           const reentry = calculateReentry(driver);
           const currentTire = driver.tire || "M";
           const chosenComp = selectedCompounds[driver.code] || "H";
-          const tireAge = driver.tireAge || 18;
+          const tireAge = driver.tireAge || 0;
           const wearPct = Math.round(driver.wear != null ? driver.wear : Math.min(95, tireAge * 3.5));
           const face = getDriverFaceUrl(driver.code, driver.photo_url || DRIVER_PHOTOS[driver.code]);
           const isAtCliff = wearPct >= 75;
+          const hasPitted = (driver.pits || 0) >= 1;
+          const remainingLaps = Math.max(0, maxLaps - currentLap);
+          const safeStintLimit = currentTire === "H" ? 42 : currentTire === "M" ? 28 : 16;
+          const isTireSafeToEnd = wearPct < 72 && (tireAge + remainingLaps) <= (safeStintLimit + 8);
+          const isNoPitRequired = hasPitted && (isTireSafeToEnd || remainingLaps <= 15);
 
           return (
             <div
@@ -270,8 +275,30 @@ export default function PitWallStrategyDeck({
                       </span>
                     </div>
                     <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace" }}>
-                      GAP TO LEAD: <strong style={{ color: "#ffffff" }}>{driver.gap}</strong> · PITS COMPLETED: <strong style={{ color: "var(--neon-green)" }}>{driver.pits || 1}</strong>
+                      GAP TO LEAD: <strong style={{ color: "#ffffff" }}>{driver.gap}</strong> · PITS COMPLETED: <strong style={{ color: "var(--neon-green)" }}>{driver.pits ?? 0}</strong>
                     </div>
+                    {isNoPitRequired ? (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(0, 230, 118, 0.15)", border: "1px solid var(--neon-green)", borderRadius: "4px", padding: "2px 8px", marginTop: "3px" }}>
+                        <span style={{ fontSize: "0.65rem" }}>🟢</span>
+                        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", fontWeight: "900", color: "var(--neon-green)" }}>
+                          NO PIT REQUIRED · RUN TO FLAG
+                        </span>
+                      </div>
+                    ) : hasPitted ? (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(255, 215, 0, 0.12)", border: "1px solid rgba(255, 215, 0, 0.3)", borderRadius: "4px", padding: "2px 8px", marginTop: "3px" }}>
+                        <span style={{ fontSize: "0.65rem" }}>🟡</span>
+                        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", fontWeight: "800", color: "#ffd700" }}>
+                          RULE SATISFIED · OPTIONAL STOP AVAILABLE
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(232, 0, 45, 0.12)", border: "1px solid rgba(232, 0, 45, 0.3)", borderRadius: "4px", padding: "2px 8px", marginTop: "3px" }}>
+                        <span style={{ fontSize: "0.65rem" }}>⚠️</span>
+                        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", fontWeight: "800", color: "#ff8c99" }}>
+                          MANDATORY STOP REQUIRED
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -432,32 +459,42 @@ export default function PitWallStrategyDeck({
                 </div>
 
                 {/* Confirm Box Order Button */}
-                <button
-                  onClick={() => handleConfirmBox(driver)}
-                  style={{
-                    background: "linear-gradient(135deg, rgba(232,0,45,0.95) 0%, rgba(180,0,30,0.98) 100%)",
-                    color: "#ffffff",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: "6px",
-                    padding: "6px 14px",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.72rem",
-                    fontWeight: "900",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    boxShadow: "0 0 14px rgba(232,0,45,0.6)",
-                    letterSpacing: "0.04em",
-                    transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.03)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(232,0,45,0.85)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 0 14px rgba(232,0,45,0.6)"; }}
-                >
-                  <span>📻</span>
-                  <span>BOX THIS LAP ({chosenComp})</span>
-                  <span>→</span>
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+                  <button
+                    onClick={() => handleConfirmBox(driver)}
+                    style={{
+                      background: isNoPitRequired
+                        ? "linear-gradient(135deg, rgba(0, 180, 100, 0.9) 0%, rgba(0, 120, 60, 0.95) 100%)"
+                        : "linear-gradient(135deg, rgba(232,0,45,0.95) 0%, rgba(180,0,30,0.98) 100%)",
+                      color: "#ffffff",
+                      border: `1px solid ${isNoPitRequired ? "var(--neon-green)" : "rgba(255,255,255,0.2)"}`,
+                      borderRadius: "6px",
+                      padding: "6px 14px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.72rem",
+                      fontWeight: "900",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: isNoPitRequired ? "0 0 14px rgba(0,230,118,0.4)" : "0 0 14px rgba(232,0,45,0.6)",
+                      letterSpacing: "0.04em",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.03)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+                    title={isNoPitRequired ? "Car does not require another stop, but you may pit optionally anytime (e.g. for fastest lap softs or late SC)" : "Call car into the pits this lap"}
+                  >
+                    <span>📻</span>
+                    <span>{isNoPitRequired ? `BOX THIS LAP (${chosenComp}) · OPTIONAL` : `BOX THIS LAP (${chosenComp})`}</span>
+                    <span>→</span>
+                  </button>
+                  {isNoPitRequired && (
+                    <span style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Rajdhani', sans-serif" }}>
+                      * No pit required (stint safe). Stop is optional by user choice.
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );

@@ -15,6 +15,7 @@ const BudgetManager = lazy(() => import("./components/BudgetManager"));
 import LiveBroadcastGantry from "./components/LiveBroadcastGantry";
 import StrategyGameGatewayModal, { CONSTRUCTORS_2026 } from "./components/StrategyGameGatewayModal";
 import RestartMenuModal from "./components/RestartMenuModal";
+import FinalRaceClassificationModal from "./components/FinalRaceClassificationModal";
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
 import { f1Audio } from "./utils/f1AudioEngine";
 
@@ -289,6 +290,7 @@ export default function App() {
     return !localStorage.getItem("gp_strategy_role");
   });
   const [isRestartMenuOpen, setIsRestartMenuOpen] = useState(false);
+  const [isRaceFinishedModalOpen, setIsRaceFinishedModalOpen] = useState(false);
   const [restartSignal, setRestartSignal] = useState(0);
 
   // ── Shared Drivers & Strategy Directives State ──
@@ -372,6 +374,47 @@ export default function App() {
     setDriverPlans(plans);
     setPlannedStrategies(strategies);
   }, [selectedCircuit, selectedTeam, totalLaps]);
+
+  const currentCircuitIdx = circuits.findIndex((c) => c.circuit_id === selectedCircuit?.circuit_id);
+  const nextCircuit = currentCircuitIdx >= 0 ? circuits[(currentCircuitIdx + 1) % circuits.length] : circuits[0];
+
+  // Advance to Next Grand Prix on the 2026 World Championship Calendar
+  const handleAdvanceToNextRace = useCallback(() => {
+    f1Audio.playRadioBeep();
+    const currentIdx = circuits.findIndex((c) => c.circuit_id === selectedCircuit?.circuit_id);
+    const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % circuits.length : 0;
+    const nextC = circuits[nextIdx];
+
+    setSelectedCircuit(nextC);
+    setCurrentLapNum(1);
+    setIsAutoSimulating(false);
+    setActiveFlag("GREEN");
+    setIsRaceFinishedModalOpen(false);
+    setRestartSignal((s) => s + 1);
+
+    const nextLaps = nextC.laps || 58;
+    const freshGrid = buildTimingTowerGridForCircuit(nextC.circuit_id, 1).map((d, i) => ({
+      ...d,
+      pos: i + 1,
+      tireAge: 0,
+      wear: 4,
+      pits: 0,
+      pitState: "RACING",
+      gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
+      interval: i === 0 ? "1:28.412" : `+0.650s`,
+      posDelta: "0",
+      arrow: "neutral",
+    }));
+    setDrivers(freshGrid);
+
+    const { plans, strategies } = createInitialTeamPlans(selectedTeam, freshGrid, nextLaps);
+    setDriverPlans(plans);
+    setPlannedStrategies(strategies);
+
+    setActiveTab("timing");
+    setActivePitEvent(null);
+    setOvertakeEvent(`🏁 WELCOME TO ROUND ${nextC.round}: ${nextC.grand_prix_name.toUpperCase()}! Grid, tire allocations & initial team strategies loaded.`);
+  }, [circuits, selectedCircuit, selectedTeam]);
 
   const handleCompletePlanStop = useCallback((driverCode, stopNum) => {
     setDriverPlans((prev) => {
@@ -622,7 +665,14 @@ export default function App() {
     const timer = setInterval(() => {
       setCurrentLapNum((prev) => {
         const next = prev + 1;
-        return next > totalLaps ? 1 : next;
+        if (next >= totalLaps) {
+          setIsAutoSimulating(false);
+          setIsRaceFinishedModalOpen(true);
+          setActiveFlag("CHEQUERED");
+          f1Audio.playRadioBeep();
+          return totalLaps;
+        }
+        return next;
       });
     }, intervalMs);
     return () => clearInterval(timer);
@@ -893,6 +943,7 @@ export default function App() {
           isAutoSimulating={isAutoSimulating}
           onToggleSim={() => setIsAutoSimulating((s) => !s)}
           onRestartRace={handleDirectRestart}
+          onOpenResultsModal={() => setIsRaceFinishedModalOpen(true)}
           simSpeed={simSpeed}
           onChangeSimSpeed={(spd) => setSimSpeed(spd)}
           onTriggerOvertake={() => {
@@ -903,6 +954,82 @@ export default function App() {
           defaultExpanded={activeTab === "timing"}
         />
       </div>
+
+      {/* ── Chequered Flag Race Completed Notification Banner ── */}
+      {currentLapNum >= totalLaps && (
+        <div
+          style={{
+            background: "linear-gradient(90deg, rgba(255, 215, 0, 0.22) 0%, rgba(20, 24, 38, 0.98) 50%, rgba(255, 215, 0, 0.22) 100%)",
+            border: "1.5px solid #ffd700",
+            borderRadius: "10px",
+            padding: "12px 22px",
+            margin: "0 24px 12px 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+            boxShadow: "0 0 24px rgba(255, 215, 0, 0.35)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "1.6rem" }}>🏁</span>
+            <div>
+              <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.90rem", fontWeight: "900", color: "#ffd700", letterSpacing: "0.06em" }}>
+                CHEQUERED FLAG · 2026 {selectedCircuit?.grand_prix_name?.toUpperCase()} COMPLETED!
+              </div>
+              <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600" }}>
+                Race simulation concluded at Lap {totalLaps}/{totalLaps}. Official classification and championship points are finalized.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              onClick={() => setIsRaceFinishedModalOpen(true)}
+              style={{
+                background: "rgba(255, 215, 0, 0.2)",
+                border: "1px solid #ffd700",
+                color: "#ffd700",
+                borderRadius: "6px",
+                padding: "7px 14px",
+                fontFamily: "'Orbitron', monospace",
+                fontSize: "0.72rem",
+                fontWeight: "900",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <span>🏆</span>
+              <span>VIEW FINAL RESULTS & PODIUM</span>
+            </button>
+
+            <button
+              onClick={handleAdvanceToNextRace}
+              style={{
+                background: "linear-gradient(135deg, #ffd700 0%, #ff8c00 100%)",
+                border: "none",
+                color: "#0a0c14",
+                borderRadius: "6px",
+                padding: "7px 18px",
+                fontFamily: "'Orbitron', monospace",
+                fontSize: "0.74rem",
+                fontWeight: "900",
+                cursor: "pointer",
+                boxShadow: "0 0 16px rgba(255, 215, 0, 0.6)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <span>ADVANCE TO ROUND {nextCircuit?.round} ({nextCircuit?.city})</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Main Content ── */}
       <main id="command-main" className="main-content" tabIndex="-1" style={{ paddingTop: "4px" }}>
@@ -1005,6 +1132,18 @@ export default function App() {
         onOpenGateway={() => {
           setIsGatewayOpen(true);
         }}
+      />
+
+      {/* ── 2026 Final Race Classification & Podium Modal ── */}
+      <FinalRaceClassificationModal
+        isOpen={isRaceFinishedModalOpen}
+        onClose={() => setIsRaceFinishedModalOpen(false)}
+        drivers={drivers}
+        selectedCircuit={selectedCircuit}
+        playerTeam={selectedTeam}
+        onAdvanceToNextRace={handleAdvanceToNextRace}
+        onRestartRace={handleDirectRestart}
+        nextCircuit={nextCircuit}
       />
     </div>
   );

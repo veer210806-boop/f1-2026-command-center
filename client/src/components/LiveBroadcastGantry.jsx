@@ -25,6 +25,7 @@ export default function LiveBroadcastGantry({
   isAutoSimulating = false,
   onToggleSim,
   onRestartRace,
+  onOpenResultsModal,
   simSpeed = 1,
   onChangeSimSpeed,
   onTriggerOvertake,
@@ -119,31 +120,57 @@ export default function LiveBroadcastGantry({
             </span>
           </div>
 
-          {/* Auto-Race Play / Stop Button */}
-          <button
-            onClick={onToggleSim}
-            style={{
-              background: isAutoSimulating
-                ? "linear-gradient(135deg, #ff1744 0%, #b3001e 100%)"
-                : "linear-gradient(135deg, #00e676 0%, #00a854 100%)",
-              color: isAutoSimulating ? "#ffffff" : "#07080b",
-              border: "none",
-              padding: "5px 12px",
-              borderRadius: "5px",
-              fontFamily: "'Orbitron', monospace",
-              fontSize: "0.70rem",
-              fontWeight: "900",
-              letterSpacing: "0.06em",
-              cursor: "pointer",
-              boxShadow: isAutoSimulating ? "0 0 12px rgba(255, 23, 68, 0.5)" : "0 0 10px rgba(0, 230, 118, 0.4)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "5px",
-              transition: "all 0.2s ease",
-            }}
-          >
-            <span>{isAutoSimulating ? "⏹ STOP SIM" : "▶ LIVE SIM"}</span>
-          </button>
+          {/* Auto-Race Play / Stop Button or Race Completed Results Button */}
+          {currentLap >= maxLaps ? (
+            <button
+              onClick={onOpenResultsModal || onToggleSim}
+              style={{
+                background: "linear-gradient(135deg, #ffd700 0%, #ff8c00 100%)",
+                color: "#07080b",
+                border: "none",
+                padding: "5px 12px",
+                borderRadius: "5px",
+                fontFamily: "'Orbitron', monospace",
+                fontSize: "0.70rem",
+                fontWeight: "900",
+                letterSpacing: "0.06em",
+                cursor: "pointer",
+                boxShadow: "0 0 14px rgba(255, 215, 0, 0.6)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                transition: "all 0.2s ease",
+              }}
+              title="Race finished! Click to view Official Final Results & Podium"
+            >
+              <span>🏆 FINAL RESULTS</span>
+            </button>
+          ) : (
+            <button
+              onClick={onToggleSim}
+              style={{
+                background: isAutoSimulating
+                  ? "linear-gradient(135deg, #ff1744 0%, #b3001e 100%)"
+                  : "linear-gradient(135deg, #00e676 0%, #00a854 100%)",
+                color: isAutoSimulating ? "#ffffff" : "#07080b",
+                border: "none",
+                padding: "5px 12px",
+                borderRadius: "5px",
+                fontFamily: "'Orbitron', monospace",
+                fontSize: "0.70rem",
+                fontWeight: "900",
+                letterSpacing: "0.06em",
+                cursor: "pointer",
+                boxShadow: isAutoSimulating ? "0 0 12px rgba(255, 23, 68, 0.5)" : "0 0 10px rgba(0, 230, 118, 0.4)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <span>{isAutoSimulating ? "⏹ STOP SIM" : "▶ LIVE SIM"}</span>
+            </button>
+          )}
 
           {/* Instant Overtake Trigger Button */}
           <button
@@ -198,9 +225,9 @@ export default function LiveBroadcastGantry({
           {/* Current Flag Capsule */}
           <div
             style={{
-              background: activeFlag === "GREEN" ? "rgba(0, 230, 118, 0.14)" : activeFlag === "RED" ? "rgba(255, 23, 68, 0.16)" : "rgba(255, 183, 0, 0.16)",
-              border: `1px solid ${activeFlag === "GREEN" ? "var(--neon-green)" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-amber)"}`,
-              color: activeFlag === "GREEN" ? "var(--neon-green)" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-amber)",
+              background: activeFlag === "CHEQUERED" ? "rgba(255, 215, 0, 0.22)" : activeFlag === "GREEN" ? "rgba(0, 230, 118, 0.14)" : activeFlag === "RED" ? "rgba(255, 23, 68, 0.16)" : "rgba(255, 183, 0, 0.16)",
+              border: `1px solid ${activeFlag === "CHEQUERED" ? "#ffd700" : activeFlag === "GREEN" ? "var(--neon-green)" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-amber)"}`,
+              color: activeFlag === "CHEQUERED" ? "#ffd700" : activeFlag === "GREEN" ? "var(--neon-green)" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-amber)",
               borderRadius: "5px",
               padding: "3px 8px",
               fontFamily: "'Orbitron', monospace",
@@ -211,7 +238,7 @@ export default function LiveBroadcastGantry({
               gap: "4px",
             }}
           >
-            <span>{activeFlag === "GREEN" ? "🟢 TRACK CLEAR" : activeFlag === "SC" ? "🟡 SAFETY CAR" : activeFlag === "VSC" ? "🟡 VSC" : "🔴 RED FLAG"}</span>
+            <span>{activeFlag === "CHEQUERED" ? "🏁 CHEQUERED FLAG" : activeFlag === "GREEN" ? "🟢 TRACK CLEAR" : activeFlag === "SC" ? "🟡 SAFETY CAR" : activeFlag === "VSC" ? "🟡 VSC" : "🔴 RED FLAG"}</span>
           </div>
         </div>
 

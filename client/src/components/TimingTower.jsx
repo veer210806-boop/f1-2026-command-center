@@ -3095,7 +3095,31 @@ function TimingTower({
                             if (!isDriverOnPlayerTeam) return null;
 
                             const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && !s.applied);
-                            if (!plannedStop) return null;
+                            if (!plannedStop) {
+                              if ((d.pits || 0) >= 1) {
+                                return (
+                                  <span
+                                    style={{
+                                      fontSize: "0.58rem",
+                                      fontFamily: "'Orbitron', monospace",
+                                      fontWeight: "800",
+                                      background: "rgba(0, 230, 118, 0.15)",
+                                      border: "1px solid var(--neon-green)",
+                                      color: "var(--neon-green)",
+                                      padding: "1px 5px",
+                                      borderRadius: "3px",
+                                      letterSpacing: "0.04em",
+                                      lineHeight: 1,
+                                      flexShrink: 0,
+                                    }}
+                                    title="Mandatory 2-compound rule satisfied. Stint is safe to checkered flag (user can still box optionally if desired)."
+                                  >
+                                    🏁 NO PIT REQ
+                                  </span>
+                                );
+                              }
+                              return null;
+                            }
                             const isThisLap = controlledLap === plannedStop.lap;
                             return (
                               <span

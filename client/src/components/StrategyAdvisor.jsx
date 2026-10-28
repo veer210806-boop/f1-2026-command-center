@@ -1006,7 +1006,11 @@ export default function StrategyAdvisor({
                 </span>
               </div>
               <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace", marginTop: "3px" }}>
-                Pits Completed: <strong style={{ color: "var(--neon-green)" }}>{activeDriver.pits || 0}</strong> · Best Lap: <span style={{ color: "#ffffff" }}>{activeDriver.bestLap || "1:28.412"}</span>
+                Pits Completed: <strong style={{ color: "var(--neon-green)" }}>{activeDriver.pits || 0}</strong> · Best Lap: <span style={{ color: "#ffffff" }}>{activeDriver.bestLap || "1:28.412"}</span>{(activeDriver?.pits || 0) >= 1 && (
+                <span style={{ marginLeft: "8px", background: "rgba(0, 230, 118, 0.18)", border: "1px solid var(--neon-green)", color: "var(--neon-green)", padding: "2px 7px", borderRadius: "4px", fontSize: "0.65rem", fontWeight: "900" }}>
+                  🟢 NO PIT REQUIRED · SAFE TO FLAG
+                </span>
+              )}
               </div>
             </div>
           </div>
@@ -1293,6 +1297,15 @@ export default function StrategyAdvisor({
                     </div>
                     <div style={{ fontSize: "0.72rem", color: "#d2f5e0", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600", marginTop: "2px" }}>
                       🎯 Automatic Next Best Pit Window: <strong style={{ color: "var(--neon-cyan)" }}>{currentPlan.nextRecommendedWindow || `Laps ${Math.min(totalLaps - 5, (activeDriver?.lastPitLap || currentPlan.stop1Lap) + 24)} (Soft C4 Sprint)`}</strong>
+                    </div>
+                    <div style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(0, 230, 118, 0.18)", border: "1px solid var(--neon-green)", borderRadius: "4px", padding: "3px 9px" }}>
+                      <span style={{ fontSize: "0.68rem" }}>🟢</span>
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.66rem", fontWeight: "900", color: "var(--neon-green)" }}>
+                        NO FURTHER PIT REQUIRED · SAFE TO CHECKERED FLAG
+                      </span>
+                      <span style={{ fontSize: "0.62rem", color: "#d2f5e0", fontFamily: "'Rajdhani', sans-serif" }}>
+                        (Mandatory 2-compound rule satisfied. Additional stop is optional by user choice)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1638,8 +1651,13 @@ export default function StrategyAdvisor({
                 title="Pit on the very next/current lap right now, regardless of planned lap!"
               >
                 <span>📻</span>
-                <span>BOX THIS LAP NOW ({selectedInstantSet.label})</span>
+                <span>{(activeDriver?.pits || 0) >= 1 ? `BOX THIS LAP NOW (${selectedInstantSet.label}) [OPTIONAL STOP]` : `BOX THIS LAP NOW (${selectedInstantSet.label})`}</span>
               </button>
+              {((activeDriver?.pits || 0) >= 1 || currentPlan.stop1Completed) && (
+                <div style={{ fontSize: "0.62rem", color: "var(--neon-green)", fontFamily: "'Rajdhani', sans-serif", textAlign: "right", marginTop: "3px" }}>
+                  🟢 No pit required to finish race. Stop is purely optional if you choose.
+                </div>
+              )}
             </div>
           </div>
         </div>
