@@ -42,41 +42,36 @@ const LUT_SIZE = 1400; // Dense 1400-waypoint lookup table for 60FPS fluid physi
 
 // ── 3D Extruded Low-Poly Melbourne CBD Skyline (F1 Manager 24 Cityscape) ───
 const MELBOURNE_SKYLINE_BUILDINGS = [
-  // Background Row (Distant tall CBD towers & spires)
-  { x: -60, y: 35,  w: 22, d: 15, h: 50 },
-  { x: -30, y: 15,  w: 26, d: 17, h: 70 },
-  { x: 5,   y: -5,  w: 30, d: 20, h: 90 },
-  { x: 42,  y: 8,   w: 26, d: 17, h: 75 },
-  { x: 76,  y: -15, w: 32, d: 21, h: 105 },
-  { x: 116, y: -25, w: 36, d: 24, h: 125 },
-  { x: 160, y: -10, w: 30, d: 20, h: 95 },
-  { x: 198, y: -30, w: 40, d: 26, h: 135 },
-  { x: 246, y: -35, w: 42, d: 27, h: 145 },
-  { x: 296, y: -20, w: 36, d: 24, h: 118 },
-  { x: 340, y: -28, w: 38, d: 25, h: 130 },
-  { x: 386, y: -12, w: 32, d: 21, h: 100 },
-  { x: 426, y: -20, w: 34, d: 22, h: 110 },
-  { x: 468, y: 0,   w: 28, d: 18, h: 80 },
-  { x: 504, y: 15,  w: 26, d: 17, h: 65 },
-  { x: 538, y: 30,  w: 24, d: 16, h: 55 },
+  // North-West Urban Cluster (South Melbourne / Albert Road behind Turns 11-14)
+  { x: -95, y: 45,  w: 24, d: 16, h: 55 },
+  { x: -65, y: 20,  w: 28, d: 18, h: 75 },
+  { x: -28, y: 0,   w: 32, d: 20, h: 95 },
+  { x: 12,  y: 12,  w: 26, d: 17, h: 70 },
+  { x: 48,  y: -10, w: 34, d: 22, h: 110 },
+  { x: 88,  y: 5,   w: 28, d: 18, h: 80 },
+  { x: -80, y: 85,  w: 26, d: 17, h: 45 },
+  { x: -45, y: 65,  w: 28, d: 18, h: 50 },
+  { x: -10, y: 50,  w: 30, d: 20, h: 60 },
+  { x: 30,  y: 60,  w: 26, d: 17, h: 52 },
 
-  // Midground / Foreground Row (High-rises along St Kilda Rd & Albert Park perimeter)
-  { x: -45, y: 75,  w: 24, d: 16, h: 38 },
-  { x: -15, y: 60,  w: 26, d: 17, h: 48 },
-  { x: 20,  y: 48,  w: 28, d: 18, h: 58 },
-  { x: 56,  y: 38,  w: 26, d: 17, h: 52 },
-  { x: 92,  y: 28,  w: 28, d: 18, h: 62 },
-  { x: 130, y: 20,  w: 30, d: 20, h: 72 },
-  { x: 170, y: 32,  w: 26, d: 17, h: 55 },
-  { x: 206, y: 16,  w: 32, d: 21, h: 82 },
-  { x: 248, y: 10,  w: 34, d: 22, h: 92 },
-  { x: 290, y: 22,  w: 30, d: 20, h: 76 },
-  { x: 330, y: 15,  w: 32, d: 21, h: 85 },
-  { x: 370, y: 28,  w: 28, d: 18, h: 66 },
-  { x: 406, y: 22,  w: 30, d: 20, h: 72 },
-  { x: 444, y: 38,  w: 28, d: 18, h: 58 },
-  { x: 480, y: 50,  w: 26, d: 17, h: 48 },
-  { x: 514, y: 62,  w: 24, d: 16, h: 42 },
+  // Far Horizon Distant Spires (Distant CBD silhouettes)
+  { x: 140, y: -45, w: 32, d: 20, h: 105 },
+  { x: 185, y: -55, w: 36, d: 22, h: 120 },
+  { x: 235, y: -50, w: 30, d: 20, h: 100 },
+  { x: 280, y: -60, w: 34, d: 22, h: 115 },
+  { x: 330, y: -45, w: 30, d: 20, h: 95 },
+
+  // North-East Urban Cluster (St Kilda Road & Queens Road behind Turns 3-6)
+  { x: 380, y: -5,  w: 30, d: 20, h: 85 },
+  { x: 420, y: -20, w: 36, d: 24, h: 120 },
+  { x: 465, y: -10, w: 34, d: 22, h: 105 },
+  { x: 510, y: 5,   w: 32, d: 20, h: 90 },
+  { x: 550, y: 30,  w: 28, d: 18, h: 70 },
+  { x: 395, y: 45,  w: 28, d: 18, h: 65 },
+  { x: 435, y: 35,  w: 32, d: 21, h: 78 },
+  { x: 480, y: 50,  w: 30, d: 20, h: 72 },
+  { x: 525, y: 65,  w: 26, d: 17, h: 58 },
+  { x: 565, y: 85,  w: 24, d: 16, h: 48 },
 ];
 
 function LowPoly3DBuilding({ x, y, w, d, h, isNight = false }) {
@@ -184,8 +179,8 @@ export default function LiveRaceMapTracker({
   }, []);
 
   // Pan & Zoom (Optimized for widescreen track display)
-  const [zoom, setZoom] = useState(1.25);
-  const [pan, setPan] = useState({ x: 35, y: -10 });
+  const [zoom, setZoom] = useState(1.18);
+  const [pan, setPan] = useState({ x: 18, y: -24 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const mapContainerRef = useRef(null);
@@ -712,7 +707,7 @@ export default function LiveRaceMapTracker({
             width: "100%",
             height: "100%",
             transform: is3DMode
-              ? `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotateX(47deg) rotateZ(-12deg)`
+              ? `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotateX(51deg) rotateZ(-10deg)`
               : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: "center center",
             transition: isDragging ? "none" : "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -742,17 +737,17 @@ export default function LiveRaceMapTracker({
               </linearGradient>
 
               {/* Albert Park Lake Azure Teal Water Gradient */}
-              <linearGradient id="albertLakeWaterGrad" x1="0%" y1="0%" x2="100%" y2="80%">
-                <stop offset="0%" stopColor="#345468" />
-                <stop offset="35%" stopColor="#4d778b" />
-                <stop offset="70%" stopColor="#3f677b" />
-                <stop offset="100%" stopColor="#264152" />
+              <linearGradient id="albertLakeWaterGrad" x1="0%" y1="0%" x2="100%" y2="85%">
+                <stop offset="0%" stopColor="#4d7c92" />
+                <stop offset="35%" stopColor="#7baac0" />
+                <stop offset="68%" stopColor="#6292a8" />
+                <stop offset="100%" stopColor="#3d677d" />
               </linearGradient>
 
               {/* Water Specular Sun Sheen */}
               <linearGradient id="lakeSunSheenGrad" x1="0%" y1="0%" x2="80%" y2="100%">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.38" />
-                <stop offset="45%" stopColor="#9cd0e2" stopOpacity="0.18" />
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.48" />
+                <stop offset="42%" stopColor="#bde4f4" stopOpacity="0.25" />
                 <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
               </linearGradient>
 
@@ -794,87 +789,83 @@ export default function LiveRaceMapTracker({
               <rect x="-180" y="300" width="105" height="65" fill={isNightMode ? "#0d131f" : "#131923"} stroke="none" />
             </g>
 
-            {/* 1. Albert Park Parkland Boundary & Golf Course Fairways (Fitted to Rotated Track) */}
+            {/* 1. Albert Park Parkland Boundary & Golf Course Fairways */}
             <g className="albert-park-lawns">
+              {/* Main Outer Park Perimeter */}
               <path
-                d="M -40 100 C 30 50, 480 30, 540 80 C 570 160, 560 380, 510 470 C 430 510, 20 500, -30 430 C -60 350, -70 170, -40 100 Z"
+                d="M 10 120 C 70 70, 450 50, 520 100 C 560 170, 550 400, 490 470 C 410 510, 40 500, -10 420 C -40 340, -40 180, 10 120 Z"
                 fill={isNightMode ? "#101e14" : "#233821"}
                 opacity="0.96"
               />
 
+              {/* Inner Lake Meadow Backing */}
               <path
-                d="M 0 120 C 80 80, 420 60, 490 100 C 510 160, 500 230, 450 260 C 380 230, 80 220, 10 190 Z"
-                fill={isNightMode ? "#162b1b" : "#2e4c2b"}
-                opacity="0.9"
+                d="M 60 150 C 120 120, 390 110, 460 150 C 490 220, 480 380, 430 420 C 350 450, 100 440, 50 380 C 20 310, 20 200, 60 150 Z"
+                fill={isNightMode ? "#162b1b" : "#2c4828"}
+                opacity="0.92"
+              />
+
+              {/* Fairway Greens */}
+              <path
+                d="M 100 140 C 180 125, 340 130, 420 160 C 390 200, 280 205, 180 195 C 120 190, 90 165, 100 140 Z"
+                fill={isNightMode ? "#1a3220" : "#345730"}
+                opacity="0.85"
               />
               <path
-                d="M 30 270 C 110 250, 430 260, 480 280 C 500 350, 460 420, 390 440 C 260 450, 50 430, 10 380 Z"
-                fill={isNightMode ? "#1a3220" : "#335630"}
-                opacity="0.88"
-              />
-              <path
-                d="M 40 135 C 130 110, 360 95, 430 120 C 450 155, 380 185, 290 180 C 180 175, 70 170, 40 135 Z"
-                fill={isNightMode ? "#1e3c25" : "#3c6339"}
-                opacity="0.78"
-              />
-              <path
-                d="M 50 295 C 150 280, 370 295, 430 315 C 400 370, 290 400, 190 395 C 100 390, 60 350, 50 295 Z"
-                fill={isNightMode ? "#1d3823" : "#3a6037"}
-                opacity="0.75"
+                d="M 110 375 C 190 365, 330 380, 410 395 C 370 435, 270 445, 170 435 C 110 425, 90 400, 110 375 Z"
+                fill={isNightMode ? "#1d3823" : "#395f35"}
+                opacity="0.82"
               />
 
               {/* Sand Bunkers */}
-              <path d="M 90 155 C 105 150, 115 157, 108 167 C 98 174, 85 169, 90 155 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
-              <path d="M 250 145 C 265 140, 275 148, 268 158 C 258 165, 245 160, 250 145 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
-              <path d="M 370 330 C 385 325, 395 333, 388 343 C 378 350, 365 345, 370 330 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
-              <path d="M 210 360 C 225 355, 235 363, 228 373 C 218 380, 205 375, 210 360 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
+              <path d="M 160 160 C 175 155, 185 162, 178 172 C 168 179, 155 174, 160 160 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
+              <path d="M 330 175 C 345 170, 355 178, 348 188 C 338 195, 325 190, 330 175 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
+              <path d="M 280 395 C 295 390, 305 398, 298 408 C 288 415, 275 410, 280 395 Z" fill={isNightMode ? "#2a241b" : "#5c533c"} opacity="0.85" />
 
-              {/* Walking Trails */}
-              <path d="M -10 160 Q 200 175 480 145" fill="none" stroke="rgba(235, 230, 210, 0.18)" strokeWidth="1.3" strokeDasharray="4 4" />
-              <path d="M 10 350 Q 240 335 490 370" fill="none" stroke="rgba(235, 230, 210, 0.16)" strokeWidth="1.3" strokeDasharray="5 5" />
-
-              {/* Tree Clusters */}
+              {/* Tree Groves */}
               <g opacity="0.94">
-                <circle cx="50" cy="150" r="7" fill={isNightMode ? "#0a170b" : "#112213"} />
-                <circle cx="57" cy="147" r="6" fill={isNightMode ? "#0f2311" : "#1b361e"} />
-                <circle cx="170" cy="140" r="8" fill={isNightMode ? "#0a170b" : "#112213"} />
-                <circle cx="178" cy="136" r="6.5" fill={isNightMode ? "#0f2311" : "#1b361e"} />
-                <circle cx="320" cy="145" r="8.5" fill={isNightMode ? "#0a170b" : "#112213"} />
-                <circle cx="328" cy="141" r="7" fill={isNightMode ? "#0f2311" : "#1b361e"} />
-                <circle cx="130" cy="330" r="8" fill={isNightMode ? "#0a170b" : "#112213"} />
-                <circle cx="138" cy="326" r="6.5" fill={isNightMode ? "#0f2311" : "#1b361e"} />
-                <circle cx="280" cy="340" r="8.5" fill={isNightMode ? "#0a170b" : "#112213"} />
-                <circle cx="288" cy="336" r="7" fill={isNightMode ? "#0f2311" : "#1b361e"} />
+                <circle cx="80" cy="180" r="7.5" fill={isNightMode ? "#0a170b" : "#112213"} />
+                <circle cx="87" cy="177" r="6" fill={isNightMode ? "#0f2311" : "#1b361e"} />
+                <circle cx="210" cy="155" r="8" fill={isNightMode ? "#0a170b" : "#112213"} />
+                <circle cx="218" cy="151" r="6.5" fill={isNightMode ? "#0f2311" : "#1b361e"} />
+                <circle cx="360" cy="180" r="8.5" fill={isNightMode ? "#0a170b" : "#112213"} />
+                <circle cx="368" cy="176" r="7" fill={isNightMode ? "#0f2311" : "#1b361e"} />
+                <circle cx="160" cy="385" r="8" fill={isNightMode ? "#0a170b" : "#112213"} />
+                <circle cx="168" cy="381" r="6.5" fill={isNightMode ? "#0f2311" : "#1b361e"} />
+                <circle cx="310" cy="405" r="8.5" fill={isNightMode ? "#0a170b" : "#112213"} />
+                <circle cx="318" cy="401" r="7" fill={isNightMode ? "#0f2311" : "#1b361e"} />
               </g>
             </g>
 
-            {/* 2. Albert Park Lake (Nested Perfectly Inside the Track Curves) */}
+            {/* 2. Albert Park Lake (Authentic F1 Manager 24 Large Elongated Geometry) */}
             <g className="albert-park-lake">
+              {/* Lake Outer Shore Baseline */}
               <path
-                d="M 65 210 C 52 190, 85 180, 140 195 C 220 220, 310 238, 430 242 C 465 245, 475 258, 455 272 C 395 292, 260 282, 150 262 C 95 248, 70 235, 65 210 Z"
-                fill={isNightMode ? "#101820" : "#1a2730"}
-                opacity="0.95"
+                d="M 90 220 C 80 180, 130 170, 180 185 C 240 200, 320 220, 410 250 C 450 265, 460 290, 440 315 C 390 350, 320 375, 240 370 C 170 365, 120 340, 95 310 C 75 285, 80 250, 90 220 Z"
+                fill={isNightMode ? "#0d1822" : "url(#albertLakeWaterGrad)"}
+                stroke={isNightMode ? "#1a2c3d" : "#324d5e"}
+                strokeWidth="1.8"
               />
+
+              {/* Water Specular Sheen Highlight */}
               <path
-                d="M 67 210 C 54 192, 87 182, 140 196 C 220 221, 310 239, 428 243 C 462 246, 472 257, 453 270 C 393 290, 260 280, 150 260 C 97 246, 72 233, 67 210 Z"
-                fill={isNightMode ? "#09121c" : "url(#albertLakeWaterGrad)"}
-                stroke={isNightMode ? "#142538" : "#325464"}
-                strokeWidth="1.4"
-              />
-              <path
-                d="M 78 206 C 68 194, 98 186, 145 198 C 218 222, 305 240, 415 246 C 435 248, 440 258, 400 266 C 310 272, 200 260, 125 245 C 90 238, 82 225, 78 206 Z"
+                d="M 105 215 C 100 185, 140 178, 185 192 C 242 205, 318 225, 400 255 C 430 268, 440 288, 420 308 C 375 338, 310 360, 235 355 C 175 350, 130 330, 108 305 C 92 282, 98 250, 105 215 Z"
                 fill="url(#lakeSunSheenGrad)"
-                opacity={isNightMode ? "0.15" : "0.7"}
+                opacity={isNightMode ? "0.2" : "0.75"}
               />
 
-              {/* Center Green Island */}
-              <ellipse cx="120" cy="216" rx="14" ry="7" fill={isNightMode ? "#122514" : "#203d21"} stroke={isNightMode ? "#0a170c" : "#142815"} strokeWidth="0.8" />
-              <circle cx="117" cy="214" r="3" fill={isNightMode ? "#0a170b" : "#112213"} />
-              <circle cx="124" cy="216" r="2.6" fill={isNightMode ? "#0f2311" : "#1b361e"} />
+              {/* Center Green Island in West Basin */}
+              {/* Authentic F1 Manager 24 Albert Park Cross-Lake Bridge & Lakeside Path */}
+              <line x1="235" y1="195" x2="228" y2="368" stroke={isNightMode ? "#2a3648" : "#8798a5"} strokeWidth="2.5" />
+              <line x1="235" y1="195" x2="228" y2="368" stroke="#ffffff" strokeWidth="0.6" strokeDasharray="2.5 2.5" opacity="0.6" />
+              <path d="M 120 180 C 190 190, 310 215, 430 248" fill="none" stroke={isNightMode ? "#1a2838" : "#4a5a6a"} strokeWidth="1.6" opacity="0.75" />
+              <ellipse cx="138" cy="250" rx="16" ry="9" fill={isNightMode ? "#122514" : "#203d21"} stroke={isNightMode ? "#0a170c" : "#142815"} strokeWidth="1" />
+              <circle cx="134" cy="248" r="4" fill={isNightMode ? "#0a170b" : "#112213"} />
+              <circle cx="142" cy="251" r="3.5" fill={isNightMode ? "#0f2311" : "#1b361e"} />
 
-              {/* Wooden Footbridge */}
-              <line x1="210" y1="218" x2="228" y2="278" stroke="#6d5e48" strokeWidth="2.4" />
-              <line x1="210" y1="218" x2="228" y2="278" stroke="#ffffff" strokeWidth="0.6" strokeDasharray="2 2" opacity="0.7" />
+              {/* Wooden Footbridge to South Shore */}
+              <line x1="138" y1="259" x2="148" y2="350" stroke="#5a4e3c" strokeWidth="2.2" />
+              <line x1="138" y1="259" x2="148" y2="350" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.6" />
             </g>
 
             {/* 3. Melbourne CBD Skyline */}
@@ -885,14 +876,14 @@ export default function LiveRaceMapTracker({
             </g>
 
             {/* 4. Paddock Complex & Pit Garages along Bottom Main Straight */}
-            <g transform="translate(180, 385) rotate(-1.5)">
-              <rect x="0" y="0" width="195" height="18" rx="1.5" fill={isNightMode ? "#151b26" : "#1c2432"} stroke={isNightMode ? "#253044" : "#37455c"} strokeWidth="0.8" />
-              <rect x="0" y="-4" width="195" height="3" fill="#e10600" opacity="0.9" />
-              <polygon points="-10,22 205,22 198,32 -3,32" fill={isNightMode ? "#1a222f" : "#222c3c"} stroke="#e10600" strokeWidth="0.8" />
-              <rect x="15" y="24" width="30" height="9" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
-              <rect x="55" y="24" width="30" height="9" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
-              <rect x="95" y="24" width="30" height="9" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
-              <rect x="135" y="24" width="30" height="9" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
+            <g transform="translate(190, 442) rotate(1)">
+              <rect x="0" y="0" width="180" height="14" rx="2" fill={isNightMode ? "#151b26" : "#1c2432"} stroke={isNightMode ? "#253044" : "#37455c"} strokeWidth="0.8" />
+              <rect x="0" y="-3" width="180" height="2.5" fill="#e10600" opacity="0.95" />
+              <polygon points="-8,18 190,18 184,26 -2,26" fill={isNightMode ? "#1a222f" : "#222c3c"} stroke="#e10600" strokeWidth="0.8" />
+              <rect x="15" y="20" width="26" height="7" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
+              <rect x="52" y="20" width="26" height="7" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
+              <rect x="89" y="20" width="26" height="7" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
+              <rect x="126" y="20" width="26" height="7" fill="#121822" stroke="#2c3748" strokeWidth="0.6" />
             </g>
 
             {/* Hidden measurement path */}
@@ -910,31 +901,22 @@ export default function LiveRaceMapTracker({
               <path
                 d={activeTrackPath}
                 fill="none"
-                stroke={isNightRace ? "#242a38" : "#4a3e2b"}
-                strokeWidth="48"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={isNightRace ? "0.45" : "0.45"}
-              />
-              <path
-                d={activeTrackPath}
-                fill="none"
-                stroke={isNightRace ? "#1a202d" : "#362c1e"}
+                stroke={isNightRace ? "#1f2633" : "#3d3324"}
                 strokeWidth="38"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.55"
+                opacity="0.4"
               />
 
               {/* Asphalt Runoff Apron */}
               <path
                 d={activeTrackPath}
                 fill="none"
-                stroke="#161b24"
-                strokeWidth="26"
+                stroke="#141820"
+                strokeWidth="24"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.9"
+                opacity="0.85"
               />
 
               {/* High-Contrast Red & White FIA Rumble Curbs */}
@@ -942,22 +924,22 @@ export default function LiveRaceMapTracker({
                 d={activeTrackPath}
                 fill="none"
                 stroke="#d92027"
-                strokeWidth="19"
+                strokeWidth="18"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray="10 8"
-                opacity="0.96"
+                strokeDasharray="9 7"
+                opacity="0.95"
               />
               <path
                 d={activeTrackPath}
                 fill="none"
                 stroke="#ffffff"
-                strokeWidth="19"
+                strokeWidth="18"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray="8 10"
-                strokeDashoffset="10"
-                opacity="0.94"
+                strokeDasharray="7 9"
+                strokeDashoffset="9"
+                opacity="0.92"
               />
 
               {/* Main Asphalt Race Track Surface */}
@@ -965,7 +947,7 @@ export default function LiveRaceMapTracker({
                 d={activeTrackPath}
                 fill="none"
                 stroke="url(#realAsphaltGrad)"
-                strokeWidth="14.5"
+                strokeWidth="14"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -974,24 +956,50 @@ export default function LiveRaceMapTracker({
               <path
                 d={activeTrackPath}
                 fill="none"
-                stroke="#0a0c12"
+                stroke="#090b10"
                 strokeWidth="7"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.88"
+                opacity="0.9"
               />
 
-              {/* Glowing Lime Green DRS Activation Trajectory */}
+              {/* ── F1 MANAGER 24 SIGNATURE TELEMETRY RIBBONS ── */}
+              {/* Neon Green Acceleration / DRS Full-Throttle Zones */}
               <path
                 d={activeTrackPath}
                 fill="none"
                 stroke="#00ff66"
-                strokeWidth="2.8"
+                strokeWidth="3.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray="18 12"
+                strokeDasharray="55 25 70 30 45 20"
                 filter="url(#drsGlow)"
                 opacity="0.98"
+              />
+
+              {/* Neon Red Braking / Deceleration Zones */}
+              <path
+                d={activeTrackPath}
+                fill="none"
+                stroke="#ff2a4d"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="22 68 28 85 24 60"
+                strokeDashoffset="26"
+                filter="url(#drsGlow)"
+                opacity="0.96"
+              />
+
+              {/* Subtle White Track Limit Border Lines */}
+              <path
+                d={activeTrackPath}
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.45)"
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.15"
               />
 
               {/* Start / Finish Line Checkered Grid */}
@@ -1100,31 +1108,31 @@ export default function LiveRaceMapTracker({
                 setSelectedDriverNum(car.num);
               }}
             >
-              {/* Pill Container */}
+              {/* Exact F1 Manager 24 Driver Pill */}
               <div
                 style={{
-                  background: isSelected ? "rgba(8, 12, 18, 0.98)" : "rgba(8, 12, 18, 0.94)",
+                  background: isSelected ? "rgba(10, 14, 22, 0.98)" : "rgba(14, 18, 28, 0.92)",
                   border: isSelected ? "1.5px solid #ffffff" : "1px solid rgba(255, 255, 255, 0.28)",
-                  boxShadow: isSelected ? "0 0 16px rgba(255,255,255,0.65)" : "0 4px 14px rgba(0,0,0,0.7)",
+                  boxShadow: isSelected ? "0 0 16px rgba(255,255,255,0.7), 0 4px 12px rgba(0,0,0,0.8)" : "0 3px 10px rgba(0,0,0,0.75)",
                   borderRadius: "4px",
-                  padding: "2px 7px",
+                  padding: "2px 6px",
                   display: "flex",
                   alignItems: "center",
                   gap: "5px",
-                  fontFamily: "'Orbitron', sans-serif",
+                  fontFamily: "'Orbitron', monospace",
                   fontSize: "0.68rem",
-                  fontWeight: "800",
+                  fontWeight: "900",
                   color: "#ffffff",
                   whiteSpace: "nowrap",
                   userSelect: "none",
-                  transition: "border-color 0.12s ease",
+                  transition: "all 0.12s ease",
                 }}
               >
                 <span style={{ color: isSelected ? "#ffffff" : "#cbd5e1", fontWeight: "900" }}>
                   {car.pos}
                 </span>
-                <div style={{ width: "2.5px", height: "10px", background: teamConf.primary, borderRadius: "1px" }} />
-                <span>{car.code}</span>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontWeight: "400" }}>|</span>
+                <span style={{ color: "#ffffff", letterSpacing: "0.04em" }}>{car.code}</span>
               </div>
 
               {/* Connecting 1px Vertical Leader Pin Line */}
