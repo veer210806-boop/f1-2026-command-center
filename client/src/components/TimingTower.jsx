@@ -41,30 +41,9 @@ const TEAM_CONFIG = {
 };
 
 // ── Default 22 Driver Grid (Official F1 2026 Season Grid with Next-Gen Data) ─
-const DEFAULT_22_GRID = [
-  { pos: 1,  num: 1,  code: "NOR", name: "L. Norris",      team: "McLaren",         flag: "🇬🇧", tire: "M", tireAge: 20, gap: "LEADER",    interval: "1:28.905", arrow: "down", wear: 44, delta: "+0.076", s1: "28.140", s1Type: "purple", s2: "37.915", s2Type: "green",  s3: "22.850", s3Type: "purple", soc: 92, mom: "Z-MODE",  bestLap: "1:28.412", lastLap: "1:28.905", pits: 1, posDelta: "+1", speedTrap: 335, trackPct: 0.92 },
-  { pos: 2,  num: 3,  code: "VER", name: "M. Verstappen",  team: "Red Bull Racing", flag: "🇳🇱", tire: "M", tireAge: 20, gap: "+1.642s",  interval: "1:29.120", arrow: "down", wear: 55, delta: "-0.150", s1: "28.210", s1Type: "green",  s2: "37.890", s2Type: "purple", s3: "23.020", s3Type: "green",  soc: 86, mom: "X-MODE",  bestLap: "1:28.520", lastLap: "1:29.120", pits: 1, posDelta: "-1", speedTrap: 337, trackPct: 0.88 },
-  { pos: 3,  num: 63, code: "RUS", name: "G. Russell",     team: "Mercedes",        flag: "🇬🇧", tire: "M", tireAge: 20, gap: "+3.258s",  interval: "1:29.340", arrow: "up",   wear: 48, delta: "+0.012", s1: "28.320", s1Type: "yellow", s2: "38.040", s2Type: "green",  s3: "22.980", s3Type: "green",  soc: 79, mom: "Z-MODE",  bestLap: "1:28.840", lastLap: "1:29.340", pits: 1, posDelta: "+1", speedTrap: 332, trackPct: 0.84 },
-  { pos: 4,  num: 16, code: "LEC", name: "C. Leclerc",     team: "Ferrari",         flag: "🇲🇨", tire: "M", tireAge: 20, gap: "+5.118s",  interval: "1:29.540", arrow: "down", wear: 52, delta: "-0.220", s1: "28.280", s1Type: "green",  s2: "38.110", s2Type: "yellow", s3: "23.150", s3Type: "yellow", soc: 84, mom: "MOM ON",  bestLap: "1:28.710", lastLap: "1:29.540", pits: 1, posDelta: "0",  speedTrap: 331, trackPct: 0.80 },
-  { pos: 5,  num: 44, code: "HAM", name: "L. Hamilton",    team: "Ferrari",         flag: "🇬🇧", tire: "H", tireAge: 20, gap: "+7.919s",  interval: "1:29.750", arrow: "up",   wear: 42, delta: "-0.040", s1: "28.410", s1Type: "yellow", s2: "38.190", s2Type: "green",  s3: "23.150", s3Type: "yellow", soc: 88, mom: "Z-MODE",  bestLap: "1:28.950", lastLap: "1:29.750", pits: 1, posDelta: "+2", speedTrap: 336, trackPct: 0.76 },
-  { pos: 6,  num: 81, code: "PIA", name: "O. Piastri",     team: "McLaren",         flag: "🇦🇺", tire: "S", tireAge: 16, gap: "+9.850s",  interval: "1:29.962", arrow: "up",   wear: 58, delta: "-0.180", s1: "28.290", s1Type: "green",  s2: "38.250", s2Type: "yellow", s3: "23.422", s3Type: "yellow", soc: 71, mom: "X-MODE",  bestLap: "1:28.780", lastLap: "1:29.962", pits: 1, posDelta: "-1", speedTrap: 330, trackPct: 0.72 },
-  { pos: 7,  num: 55, code: "SAI", name: "C. Sainz Jr.",   team: "Williams",        flag: "🇪🇸", tire: "H", tireAge: 20, gap: "+13.319s", interval: "1:30.175", arrow: "up",   wear: 44, delta: "-0.350", s1: "28.520", s1Type: "yellow", s2: "38.380", s2Type: "yellow", s3: "23.275", s3Type: "yellow", soc: 75, mom: "Z-MODE",  bestLap: "1:29.210", lastLap: "1:30.175", pits: 1, posDelta: "+3", speedTrap: 328, trackPct: 0.68 },
-  { pos: 8,  num: 12, code: "ANT", name: "K. Antonelli",   team: "Mercedes",        flag: "🇮🇹", tire: "H", tireAge: 20, gap: "+16.245s", interval: "1:30.490", arrow: "down", wear: 50, delta: "-0.430", s1: "28.610", s1Type: "yellow", s2: "38.450", s2Type: "yellow", s3: "23.430", s3Type: "yellow", soc: 68, mom: "Z-MODE",  bestLap: "1:29.450", lastLap: "1:30.490", pits: 1, posDelta: "-1", speedTrap: 326, trackPct: 0.64 },
-  { pos: 9,  num: 14, code: "ALO", name: "F. Alonso",      team: "Aston Martin",    flag: "🇪🇸", tire: "M", tireAge: 18, gap: "+18.840s", interval: "1:30.250", arrow: "down", wear: 55, delta: "-0.320", s1: "28.490", s1Type: "yellow", s2: "38.420", s2Type: "yellow", s3: "23.340", s3Type: "yellow", soc: 82, mom: "MOM ON",  bestLap: "1:29.180", lastLap: "1:30.250", pits: 1, posDelta: "0",  speedTrap: 327, trackPct: 0.60 },
-  { pos: 10, num: 23, code: "ALB", name: "A. Albon",       team: "Williams",        flag: "🇹🇭", tire: "H", tireAge: 20, gap: "+20.974s", interval: "1:30.658", arrow: "down", wear: 44, delta: "-0.286", s1: "28.680", s1Type: "yellow", s2: "38.560", s2Type: "yellow", s3: "23.418", s3Type: "yellow", soc: 77, mom: "Z-MODE",  bestLap: "1:29.620", lastLap: "1:30.658", pits: 1, posDelta: "+1", speedTrap: 325, trackPct: 0.56 },
-  { pos: 11, num: 11, code: "PER", name: "S. Pérez",       team: "Cadillac",        flag: "🇲🇽", tire: "H", tireAge: 20, gap: "+22.678s", interval: "1:30.840", arrow: "down", wear: 46, delta: "-0.270", s1: "28.720", s1Type: "yellow", s2: "38.640", s2Type: "yellow", s3: "23.480", s3Type: "yellow", soc: 85, mom: "X-MODE",  bestLap: "1:29.740", lastLap: "1:30.840", pits: 1, posDelta: "+4", speedTrap: 335, trackPct: 0.52 },
-  { pos: 12, num: 6,  code: "HAD", name: "I. Hadjar",      team: "Red Bull Racing", flag: "🇫🇷", tire: "H", tireAge: 20, gap: "+24.700s", interval: "1:31.000", arrow: "up",   wear: 46, delta: "-0.590", s1: "28.780", s1Type: "yellow", s2: "38.710", s2Type: "yellow", s3: "23.510", s3Type: "yellow", soc: 65, mom: "Z-MODE",  bestLap: "1:29.890", lastLap: "1:31.000", pits: 1, posDelta: "-2", speedTrap: 329, trackPct: 0.48 },
-  { pos: 13, num: 27, code: "HUL", name: "N. Hülkenberg",  team: "Audi",            flag: "🇩🇪", tire: "M", tireAge: 20, gap: "+26.197s", interval: "1:31.221", arrow: "up",   wear: 60, delta: "-0.595", s1: "28.840", s1Type: "yellow", s2: "38.790", s2Type: "yellow", s3: "23.591", s3Type: "yellow", soc: 70, mom: "Z-MODE",  bestLap: "1:29.980", lastLap: "1:31.221", pits: 1, posDelta: "+1", speedTrap: 324, trackPct: 0.44 },
-  { pos: 14, num: 18, code: "STR", name: "L. Stroll",      team: "Aston Martin",    flag: "🇨🇦", tire: "H", tireAge: 20, gap: "+27.515s", interval: "1:31.362", arrow: "up",   wear: 44, delta: "-0.579", s1: "28.890", s1Type: "yellow", s2: "38.820", s2Type: "yellow", s3: "23.652", s3Type: "yellow", soc: 73, mom: "Z-MODE",  bestLap: "1:30.120", lastLap: "1:31.362", pits: 1, posDelta: "-1", speedTrap: 322, trackPct: 0.40 },
-  { pos: 15, num: 10, code: "GAS", name: "P. Gasly",       team: "Alpine",          flag: "🇫🇷", tire: "M", tireAge: 20, gap: "+28.800s", interval: "1:31.440", arrow: "up",   wear: 55, delta: "-0.610", s1: "28.910", s1Type: "yellow", s2: "38.860", s2Type: "yellow", s3: "23.670", s3Type: "yellow", soc: 62, mom: "MOM ON",  bestLap: "1:30.250", lastLap: "1:31.440", pits: 1, posDelta: "0",  speedTrap: 321, trackPct: 0.36 },
-  { pos: 16, num: 31, code: "OCO", name: "E. Ocon",        team: "Haas",            flag: "🇫🇷", tire: "M", tireAge: 20, gap: "+30.200s", interval: "1:31.650", arrow: "down", wear: 59, delta: "-0.680", s1: "28.990", s1Type: "yellow", s2: "38.950", s2Type: "yellow", s3: "23.710", s3Type: "yellow", soc: 58, mom: "Z-MODE",  bestLap: "1:30.410", lastLap: "1:31.650", pits: 1, posDelta: "-2", speedTrap: 320, trackPct: 0.32 },
-  { pos: 17, num: 30, code: "LAW", name: "L. Lawson",      team: "Racing Bulls",    flag: "🇳🇿", tire: "M", tireAge: 18, gap: "+31.400s", interval: "1:31.720", arrow: "up",   wear: 58, delta: "-0.710", s1: "29.020", s1Type: "yellow", s2: "38.980", s2Type: "yellow", s3: "23.720", s3Type: "yellow", soc: 69, mom: "Z-MODE",  bestLap: "1:30.520", lastLap: "1:31.720", pits: 1, posDelta: "+1", speedTrap: 323, trackPct: 0.28 },
-  { pos: 18, num: 87, code: "BEA", name: "O. Bearman",     team: "Haas",            flag: "🇬🇧", tire: "S", tireAge: 14, gap: "+32.600s", interval: "1:31.820", arrow: "down", wear: 64, delta: "-0.750", s1: "29.080", s1Type: "yellow", s2: "39.020", s2Type: "yellow", s3: "23.720", s3Type: "yellow", soc: 52, mom: "CHARGING",bestLap: "1:30.650", lastLap: "1:31.820", pits: 2, posDelta: "-3", speedTrap: 319, trackPct: 0.24 },
-  { pos: 19, num: 77, code: "BOT", name: "V. Bottas",      team: "Cadillac",        flag: "🇫🇮", tire: "H", tireAge: 20, gap: "+33.900s", interval: "1:32.020", arrow: "up",   wear: 45, delta: "-0.820", s1: "29.120", s1Type: "yellow", s2: "39.110", s2Type: "yellow", s3: "23.790", s3Type: "yellow", soc: 78, mom: "X-MODE",  bestLap: "1:30.780", lastLap: "1:32.020", pits: 1, posDelta: "+2", speedTrap: 325, trackPct: 0.20 },
-  { pos: 20, num: 5,  code: "BOR", name: "G. Bortoleto",   team: "Audi",            flag: "🇧🇷", tire: "M", tireAge: 20, gap: "+35.100s", interval: "1:32.190", arrow: "up",   wear: 64, delta: "-0.950", s1: "29.180", s1Type: "yellow", s2: "39.180", s2Type: "yellow", s3: "23.830", s3Type: "yellow", soc: 48, mom: "Z-MODE",  bestLap: "1:30.890", lastLap: "1:32.190", pits: 1, posDelta: "-1", speedTrap: 317, trackPct: 0.16 },
-  { pos: 21, num: 43, code: "COL", name: "F. Colapinto",   team: "Alpine",          flag: "🇦🇷", tire: "H", tireAge: 20, gap: "+36.500s", interval: "1:32.400", arrow: "down", wear: 48, delta: "-0.990", s1: "29.240", s1Type: "yellow", s2: "39.260", s2Type: "yellow", s3: "23.900", s3Type: "yellow", soc: 60, mom: "Z-MODE",  bestLap: "1:31.020", lastLap: "1:32.400", pits: 1, posDelta: "0",  speedTrap: 318, trackPct: 0.12 },
-  { pos: 22, num: 41, code: "LIN", name: "A. Lindblad",    team: "Racing Bulls",    flag: "🇬🇧", tire: "S", tireAge: 12, gap: "+38.200s", interval: "1:32.750", arrow: "up",   wear: 70, delta: "-1.150", s1: "29.350", s1Type: "yellow", s2: "39.380", s2Type: "yellow", s3: "24.020", s3Type: "yellow", soc: 42, mom: "CHARGING",bestLap: "1:31.250", lastLap: "1:32.750", pits: 2, posDelta: "-1", speedTrap: 316, trackPct: 0.08 },
-];
+const DEFAULT_22_GRID = buildTimingTowerGridForCircuit("australia", 1);
+
+
 
 export const DRIVER_IOC_MAP = {
   NOR: "GBR", PIA: "AUS", VER: "NLD", HAD: "FRA", RUS: "GBR", ANT: "ITA",
@@ -308,6 +287,23 @@ export const TEAM_RACE_ENGINEERS = {
   "Cadillac": "Hugh Bird",
 };
 function SectorBadge({ time = "28.140", type = "green" }) {
+  if (time === "—" || time === "-" || !time || type === "empty") {
+    return (
+      <span
+        style={{
+          fontFamily: "'Orbitron', monospace",
+          fontSize: "0.70rem",
+          fontWeight: "600",
+          color: "rgba(255, 255, 255, 0.35)",
+          display: "inline-block",
+          textAlign: "center",
+          minWidth: "46px",
+        }}
+      >
+        —
+      </span>
+    );
+  }
   const color = type === "purple" ? "#cc44ff" : type === "green" ? "#00e676" : "#ffeb3b";
   const bg = type === "purple" ? "rgba(204,68,255,0.18)" : type === "green" ? "rgba(0,230,118,0.15)" : "rgba(255,235,59,0.12)";
   const border = type === "purple" ? "1px solid rgba(204,68,255,0.45)" : type === "green" ? "1px solid rgba(0,230,118,0.35)" : "1px solid rgba(255,235,59,0.25)";
@@ -700,6 +696,30 @@ function TimingTower({
   const [selectedDriverIdx, setSelectedDriverIdx] = useState(0);
   const [drivers, setDrivers] = useState(() => (externalDrivers && externalDrivers.length > 0 ? externalDrivers : buildTimingTowerGridForCircuit("australia", 1)));
 
+  const effectiveLap = controlledLap !== undefined ? controlledLap : currentLap;
+
+  // Dynamic Fastest Lap across the entire Grand Prix (tracks live and highlights purple throughout whole race)
+  const fastestLapInfo = useMemo(() => {
+    if (effectiveLap <= 1) return { driverCode: null, timeSec: Infinity, lapStr: null };
+    let minSec = Infinity;
+    let fastestCode = null;
+    let fastestLapStr = null;
+
+    drivers.forEach((d) => {
+      if (d.bestLap && d.bestLap !== "NO TIME" && d.bestLap !== "—" && d.bestLap.includes(":")) {
+        const parts = d.bestLap.split(":");
+        const sec = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+        if (!isNaN(sec) && sec < minSec) {
+          minSec = sec;
+          fastestCode = d.code;
+          fastestLapStr = d.bestLap;
+        }
+      }
+    });
+
+    return { driverCode: fastestCode, timeSec: minSec, lapStr: fastestLapStr };
+  }, [drivers, effectiveLap]);
+
   // Synchronize internal drivers with externalDrivers from App.jsx / StrategyAdvisor
   const lastExternalSyncRef = useRef(null);
   useEffect(() => {
@@ -803,10 +823,19 @@ function TimingTower({
         wear: 4,
         pits: 0,
         pitState: "RACING",
-        gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
-        interval: i === 0 ? "1:28.412" : `+0.650s`,
+        gap: i === 0 ? "LEADER" : "—",
+        gapSec: 0,
+        interval: "—",
+        s1: "—",
+        s2: "—",
+        s3: "—",
+        s1Type: "empty",
+        s2Type: "empty",
+        s3Type: "empty",
+        bestLap: "NO TIME",
+        lastLap: "—",
         posDelta: "0",
-        arrow: "neutral",
+        arrow: "none",
       }));
       setDrivers(newGrid);
       setSelectedDriverIdx(0);
@@ -892,15 +921,15 @@ function TimingTower({
 
         const prevAhead = i > 0 ? updated[i - 1] : null;
         const intervalVal = isLead
-          ? d.bestLap || "1:28.412"
-          : `+${(d.gapSec - (prevAhead?.gapSec || 0)).toFixed(3)}s`;
+          ? "—"
+          : (effectiveLap <= 1 ? "—" : `+${(d.gapSec - (prevAhead?.gapSec || 0)).toFixed(3)}s`);
 
         return {
           ...d,
           pos: newPos,
           posDelta: posDiff > 0 ? `+${posDiff}` : posDiff < 0 ? `${posDiff}` : "0",
           arrow: posDiff > 0 ? "up" : posDiff < 0 ? "down" : d.arrow || "neutral",
-          gap: isLead ? "LEADER" : `+${relativeGap.toFixed(3)}s`,
+          gap: isLead ? "LEADER" : (effectiveLap <= 1 ? "—" : `+${relativeGap.toFixed(3)}s`),
           gapSec: d.gapSec,
           interval: intervalVal,
           overtaken: posDiff > 0,
@@ -946,12 +975,18 @@ function TimingTower({
       setCurrentLap(controlledLap);
 
       setDrivers((prevDrivers) => {
-        if (!prevDrivers || prevDrivers.length < 2) {
-          return buildTimingTowerGridForCircuit(activeCircuitId, controlledLap);
+        // If controlledLap is 1, maintain or reset to clean pre-race grid without fake gaps/sectors/laptimes
+        if (!prevDrivers || prevDrivers.length < 2 || controlledLap <= 1) {
+          const freshGrid = buildTimingTowerGridForCircuit(activeCircuitId, 1);
+          if (onDriversUpdate) {
+            lastExternalSyncRef.current = freshGrid;
+            onDriversUpdate(freshGrid);
+          }
+          return freshGrid;
         }
 
         const parseGapSec = (gapStr) => {
-          if (!gapStr || gapStr === "LEADER") return 0;
+          if (!gapStr || gapStr === "LEADER" || gapStr === "—") return 0;
           const num = parseFloat(String(gapStr).replace("+", "").replace("s", ""));
           return isNaN(num) ? 0 : num;
         };
@@ -960,7 +995,20 @@ function TimingTower({
         let pitStopReason = "";
         let pitDurationStr = "";
 
-        // 1. Dynamic Tire Degradation, Tactical Push Modes & AI Opponent Autonomous Pit Calls
+        // Circuit benchmark pace for dynamic realistic sector calculations
+        const circuitCfg = getGrandPrixConfig(activeCircuitId);
+        let poleSec = 76.732;
+        if (circuitCfg && circuitCfg.poleTime && circuitCfg.poleTime.includes(":")) {
+          const [pm, ps] = circuitCfg.poleTime.split(":");
+          const parsed = parseFloat(pm) * 60 + parseFloat(ps);
+          if (!isNaN(parsed) && parsed > 0) poleSec = parsed;
+        }
+        const raceBaseSec = poleSec + 9.5;
+        const s1Base = raceBaseSec * 0.318;
+        const s2Base = raceBaseSec * 0.428;
+        const s3Base = raceBaseSec * 0.254;
+
+        // 1. Dynamic Tire Degradation, Tactical Push Modes & Sector Timings
         let updated = prevDrivers.map((d, dIdx) => {
           const isPlayerDriver =
             userRole === "team" &&
@@ -987,10 +1035,6 @@ function TimingTower({
             }
           }
 
-          // Push Mode Modifiers:
-          // Attack: -0.38s lap pace (faster!), but 1.55x wear rate
-          // Conserve: +0.32s lap pace (saving tires), 0.65x wear rate
-          // Balanced: 0.0s, 1.0x wear rate
           const pushWearMult = pushMode === "attack" ? 1.55 : pushMode === "conserve" ? 0.65 : 1.0;
           const pushPaceDelta = pushMode === "attack" ? -0.38 : pushMode === "conserve" ? +0.32 : 0.0;
 
@@ -1055,22 +1099,57 @@ function TimingTower({
             pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
           } else {
             // Authentic F1 Race Physics & Tire Modeling:
-            // 1. Compound Grip Delta: Soft is -0.42s faster; Hard is +0.35s slower
             const compPaceDelta = d.tire === "S" ? -0.42 : d.tire === "H" ? +0.35 : 0.0;
-            // 2. Linear Wear Degradation
             const linearWearLoss = ((newWear - 35) * 0.007);
-            // 3. Pirelli Degradation Cliff (>70% wear triggers steep pace drop-off)
             const cliffPenalty = newWear > 70 ? +((newWear - 70) * 0.085) : 0;
-            // 4. Fresh Tire Out-Lap Advantage (makes strategic undercuts powerful!)
             const freshTireBoost = newTireAge <= 2 ? -0.45 : 0.0;
-            // 5. DRS / Slipstream Advantage (< 1.000s to car ahead)
             const gapToAhead = dIdx > 0 ? (currentGapSec - (prevDrivers[dIdx - 1]?.gapSec || 0)) : 999;
             const drsBonus = (gapToAhead > 0 && gapToAhead < 1.0) ? -0.22 : 0.0;
-            // 6. Natural micro lap variance
             const variance = (Math.random() * 0.06) - 0.03;
 
             const totalLapDelta = pushPaceDelta + compPaceDelta + linearWearLoss + cliffPenalty + freshTireBoost + drsBonus + variance;
             currentGapSec = +(Math.max(0, currentGapSec + totalLapDelta)).toFixed(3);
+          }
+
+          // Dynamic Sector Times & Lap Pace for controlledLap >= 2
+          const compPace = d.tire === "S" ? -0.42 : d.tire === "H" ? +0.35 : 0.0;
+          const tierPace = ["NOR", "VER", "RUS", "LEC", "HAM", "PIA"].includes(d.code) ? -0.25 : ["ALO", "SAI", "ALB", "ANT", "HAD"].includes(d.code) ? -0.05 : 0.25;
+          const wearPace = Math.max(0, (newWear - 25) * 0.007);
+          const drvPaceDelta = tierPace + compPace + pushPaceDelta + wearPace;
+
+          const seed = (d.num || dIdx + 1) * 7 + controlledLap * 13;
+          const v1 = ((Math.sin(seed) * 1000) % 1) * 0.12 - 0.06;
+          const v2 = ((Math.cos(seed) * 1000) % 1) * 0.14 - 0.07;
+          const v3 = ((Math.sin(seed * 2) * 1000) % 1) * 0.10 - 0.05;
+
+          const s1Num = +(s1Base + drvPaceDelta * 0.32 + v1).toFixed(3);
+          const s2Num = +(s2Base + drvPaceDelta * 0.43 + v2).toFixed(3);
+          const pitS3Add = aiPitted ? 18.4 : 0;
+          const s3Num = +(s3Base + drvPaceDelta * 0.25 + v3 + pitS3Add).toFixed(3);
+
+          const s1Val = s1Num.toFixed(3);
+          const s2Val = s2Num.toFixed(3);
+          const s3Val = s3Num.toFixed(3);
+
+          const lapTotalSec = +(s1Num + s2Num + s3Num).toFixed(3);
+          const m = Math.floor(lapTotalSec / 60);
+          const s = (lapTotalSec % 60).toFixed(3);
+          const lapTimeStr = `${m}:${s.padStart(6, "0")}`;
+
+          // Personal best lap check
+          let prevBestSec = Infinity;
+          if (d.bestLap && d.bestLap !== "NO TIME" && d.bestLap !== "—" && d.bestLap.includes(":")) {
+            const [bm, bs] = d.bestLap.split(":");
+            prevBestSec = parseFloat(bm) * 60 + parseFloat(bs);
+          }
+          let driverBestLap = d.bestLap || "NO TIME";
+          let isPersonalBest = false;
+          if (!aiPitted && lapTotalSec < prevBestSec) {
+            driverBestLap = lapTimeStr;
+            isPersonalBest = true;
+          } else if (!d.bestLap || d.bestLap === "NO TIME" || d.bestLap === "—") {
+            driverBestLap = lapTimeStr;
+            isPersonalBest = true;
           }
 
           return {
@@ -1082,8 +1161,35 @@ function TimingTower({
             pitState: currentPitState,
             gapSec: currentGapSec,
             pushMode,
+            s1: s1Val,
+            s2: s2Val,
+            s3: s3Val,
+            s1Num,
+            s2Num,
+            s3Num,
+            lastLap: lapTimeStr,
+            bestLap: driverBestLap,
+            isPersonalBest,
+            aiPitted,
           };
         });
+
+        // Compute session-fastest sector indicators across all drivers
+        let minS1 = Infinity, minS2 = Infinity, minS3 = Infinity;
+        updated.forEach((d) => {
+          if (!d.aiPitted) {
+            if (d.s1Num && d.s1Num < minS1) minS1 = d.s1Num;
+            if (d.s2Num && d.s2Num < minS2) minS2 = d.s2Num;
+            if (d.s3Num && d.s3Num < minS3) minS3 = d.s3Num;
+          }
+        });
+
+        updated = updated.map((d) => ({
+          ...d,
+          s1Type: d.s1Num === minS1 ? "purple" : d.isPersonalBest ? "green" : "yellow",
+          s2Type: d.s2Num === minS2 ? "purple" : d.isPersonalBest ? "green" : "yellow",
+          s3Type: d.s3Num === minS3 ? "purple" : d.isPersonalBest ? "green" : "yellow",
+        }));
 
         // 2. Sort by gapSec strictly so positions represent real physics
         updated.sort((a, b) => a.gapSec - b.gapSec);
@@ -1194,14 +1300,14 @@ function TimingTower({
           const relativeGap = +(d.gapSec - leaderGapSec).toFixed(3);
           const prevAhead = i > 0 ? updated[i - 1] : null;
           const intervalVal = isLead
-            ? d.bestLap || "1:28.412"
-            : `+${(d.gapSec - (prevAhead?.gapSec || 0)).toFixed(3)}s`;
+            ? "—"
+            : (controlledLap <= 1 ? "—" : `+${(d.gapSec - (prevAhead?.gapSec || 0)).toFixed(3)}s`);
 
           return {
             ...d,
             pos: i + 1,
             gapSec: d.gapSec,
-            gap: isLead ? "LEADER" : `+${relativeGap.toFixed(3)}s`,
+            gap: isLead ? "LEADER" : (controlledLap <= 1 ? "—" : `+${relativeGap.toFixed(3)}s`),
             interval: intervalVal,
           };
         });
@@ -1264,8 +1370,8 @@ function TimingTower({
         return {
           ...d,
           pos: i + 1,
-          gap: isLead ? "LEADER" : `+${accum.toFixed(3)}s`,
-          interval: isLead ? d.bestLap : `+${step.toFixed(3)}s`,
+          gap: isLead ? "LEADER" : (effectiveLap <= 1 ? "—" : `+${accum.toFixed(3)}s`),
+          interval: isLead ? "—" : (effectiveLap <= 1 ? "—" : `+${step.toFixed(3)}s`),
         };
       });
 
@@ -1891,8 +1997,14 @@ function TimingTower({
             }}
           >
             <span style={{ color: "#cc44ff" }}>🟣 FASTEST:</span>
-            <span style={{ color: "#ff8700" }}>NOR #1</span>
-            <span style={{ color: "#ffffff" }}>1:28.412</span>
+            {effectiveLap <= 1 || !fastestLapInfo.driverCode ? (
+              <span style={{ color: "var(--text-dim)" }}>NO TIME YET</span>
+            ) : (
+              <>
+                <span style={{ color: "#ffffff", fontWeight: "900" }}>{fastestLapInfo.driverCode}</span>
+                <span style={{ color: "#cc44ff" }}>{fastestLapInfo.lapStr}</span>
+              </>
+            )}
           </div>
 
           {/* Dynamic Weather & Dampness Capsule */}
@@ -2277,30 +2389,38 @@ function TimingTower({
               </div>
 
               {/* Drivers & Delta Interval */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ width: "3px", height: "14px", background: "#ff8700", borderRadius: "2px" }} />
-                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "800", color: "#ffffff" }}>
-                    NOR <span style={{ fontSize: "0.62rem", color: "#ff8700" }}>P1</span>
-                  </span>
-                </div>
+              {(() => {
+                const p1 = drivers[0] || { code: "NOR", pos: 1 };
+                const p2 = drivers[1] || { code: "VER", pos: 2 };
+                const isPreRace = effectiveLap <= 1;
+                const gapText = isPreRace ? "START GRID" : (p2.interval && p2.interval !== "—" ? p2.interval : "+0.850s");
+                return (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ width: "3px", height: "14px", background: "#ff8700", borderRadius: "2px" }} />
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "800", color: "#ffffff" }}>
+                        {p1.code} <span style={{ fontSize: "0.62rem", color: "#ff8700" }}>P1</span>
+                      </span>
+                    </div>
 
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "var(--neon-cyan)", letterSpacing: "0.04em" }}>
-                    +0.742s
-                  </span>
-                  <span style={{ fontSize: "0.56rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace" }}>
-                    CLOSING (-0.08s/L)
-                  </span>
-                </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "var(--neon-cyan)", letterSpacing: "0.04em" }}>
+                        {gapText}
+                      </span>
+                      <span style={{ fontSize: "0.56rem", color: isPreRace ? "var(--text-dim)" : "var(--neon-green)", fontFamily: "'Orbitron', monospace" }}>
+                        {isPreRace ? "AWAITING LIGHTS OUT" : "LIVE TIME DELTA"}
+                      </span>
+                    </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "800", color: "#ffffff" }}>
-                    <span style={{ fontSize: "0.62rem", color: "#3671e8" }}>P2</span> VER
-                  </span>
-                  <span style={{ width: "3px", height: "14px", background: "#3671e8", borderRadius: "2px" }} />
-                </div>
-              </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "800", color: "#ffffff" }}>
+                        <span style={{ fontSize: "0.62rem", color: "#3671e8" }}>P2</span> {p2.code}
+                      </span>
+                      <span style={{ width: "3px", height: "14px", background: "#3671e8", borderRadius: "2px" }} />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* High-tech Head-to-Head Visual Gap Bar */}
               <div style={{ width: "100%", height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden", position: "relative" }}>
@@ -3641,6 +3761,17 @@ function TimingTower({
                           >
                             OUT LAP
                           </span>
+                        ) : effectiveLap <= 1 ? (
+                          <span
+                            style={{
+                              fontFamily: "'Orbitron', monospace",
+                              fontSize: isCompact ? "0.72rem" : "0.76rem",
+                              fontWeight: "700",
+                              color: d.pos === 1 ? "var(--neon-cyan)" : "rgba(255, 255, 255, 0.35)",
+                            }}
+                          >
+                            {d.pos === 1 ? "LEADER" : "—"}
+                          </span>
                         ) : (
                           <span
                             style={{
@@ -3661,10 +3792,14 @@ function TimingTower({
                           <span style={{ fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.62rem" : "0.68rem", color: "#ffaa00", fontWeight: "800" }}>
                             BOX BOX
                           </span>
+                        ) : effectiveLap <= 1 ? (
+                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.70rem" : "0.74rem", color: "rgba(255, 255, 255, 0.35)", fontWeight: "600" }}>
+                            —
+                          </span>
                         ) : (
                           <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "4px", fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.70rem" : "0.74rem", color: "#e8e8f0" }}>
                             <span>{d.pos === 1 ? "—" : d.interval}</span>
-                            {d.pos > 1 && (
+                            {d.pos > 1 && d.interval !== "—" && (
                               <span
                                 style={{
                                   color: d.arrow === "down" ? "var(--neon-green)" : "var(--neon-red)",
@@ -3681,17 +3816,17 @@ function TimingTower({
 
                       {/* Sector 1 */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
-                        <SectorBadge time={d.s1} type={d.s1Type} />
+                        <SectorBadge time={effectiveLap <= 1 ? "—" : d.s1} type={effectiveLap <= 1 ? "empty" : d.s1Type} />
                       </td>
 
                       {/* Sector 2 */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
-                        <SectorBadge time={d.s2} type={d.s2Type} />
+                        <SectorBadge time={effectiveLap <= 1 ? "—" : d.s2} type={effectiveLap <= 1 ? "empty" : d.s2Type} />
                       </td>
 
                       {/* Sector 3 */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
-                        <SectorBadge time={d.s3} type={d.s3Type} />
+                        <SectorBadge time={effectiveLap <= 1 ? "—" : d.s3} type={effectiveLap <= 1 ? "empty" : d.s3Type} />
                       </td>
 
                       {/* 2026 MGU-K Hybrid SOC Battery % */}
@@ -3712,16 +3847,45 @@ function TimingTower({
 
                       {/* Best Lap */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
-                        <span
-                          style={{
-                            fontFamily: "'Orbitron', monospace",
-                            fontSize: isCompact ? "0.68rem" : "0.72rem",
-                            fontWeight: "700",
-                            color: d.bestLap === "1:28.412" ? "#cc44ff" : "rgba(255,255,255,0.85)",
-                          }}
-                        >
-                          {d.bestLap}
-                        </span>
+                        {effectiveLap <= 1 ? (
+                          <span
+                            style={{
+                              fontFamily: "'Orbitron', monospace",
+                              fontSize: isCompact ? "0.68rem" : "0.72rem",
+                              fontWeight: "600",
+                              color: "rgba(255, 255, 255, 0.35)",
+                            }}
+                          >
+                            NO TIME
+                          </span>
+                        ) : (
+                          (() => {
+                            const isOverallFastest = d.code === fastestLapInfo.driverCode && d.bestLap && d.bestLap !== "NO TIME" && d.bestLap !== "—";
+                            return (
+                              <span
+                                style={{
+                                  fontFamily: "'Orbitron', monospace",
+                                  fontSize: isCompact ? "0.68rem" : "0.72rem",
+                                  fontWeight: isOverallFastest ? "900" : "700",
+                                  color: isOverallFastest ? "#cc44ff" : "rgba(255,255,255,0.85)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "4px",
+                                  padding: isOverallFastest ? "1px 6px" : "0",
+                                  background: isOverallFastest ? "rgba(204, 68, 255, 0.16)" : "transparent",
+                                  border: isOverallFastest ? "1px solid rgba(204, 68, 255, 0.45)" : "none",
+                                  borderRadius: "4px",
+                                  boxShadow: isOverallFastest ? "0 0 10px rgba(204, 68, 255, 0.3)" : "none",
+                                }}
+                                title={isOverallFastest ? "Fastest Lap of the Grand Prix (+1 Bonus Point)" : undefined}
+                              >
+                                {isOverallFastest && <span style={{ fontSize: "0.60rem" }}>🟣</span>}
+                                {d.bestLap || "—"}
+                              </span>
+                            );
+                          })()
+                        )}
                       </td>
 
                       {/* Pit Stops */}
@@ -4010,19 +4174,19 @@ function TimingTower({
             <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px", borderRadius: "4px", textAlign: "center" }}>
               <div style={{ fontSize: "0.56rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>GAP DELTA</div>
               <div style={{ fontSize: "0.74rem", color: currentDriver.gap === "LEADER" ? "var(--neon-cyan)" : "#fff", fontWeight: "800", fontFamily: "'Orbitron', monospace", marginTop: "1px" }}>
-                {currentDriver.gap}
+                {effectiveLap <= 1 ? (currentDriver.pos === 1 ? "LEADER" : "—") : currentDriver.gap}
               </div>
             </div>
             <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px", borderRadius: "4px", textAlign: "center" }}>
               <div style={{ fontSize: "0.56rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>BEST LAP</div>
               <div style={{ fontSize: "0.74rem", color: "var(--neon-purple, #cc44ff)", fontWeight: "800", fontFamily: "'Orbitron', monospace", marginTop: "1px" }}>
-                {currentDriver.bestLap}
+                {effectiveLap <= 1 ? "NO TIME" : (currentDriver.bestLap || "—")}
               </div>
             </div>
             <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px", borderRadius: "4px", textAlign: "center" }}>
               <div style={{ fontSize: "0.56rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>LAST LAP</div>
               <div style={{ fontSize: "0.74rem", color: "var(--neon-green)", fontWeight: "800", fontFamily: "'Orbitron', monospace", marginTop: "1px" }}>
-                {currentDriver.lastLap}
+                {effectiveLap <= 1 ? "—" : (currentDriver.lastLap || "—")}
               </div>
             </div>
           </div>

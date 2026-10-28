@@ -974,6 +974,8 @@ export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 1) {
   const targetLapData = raceData.lapHistory[Math.min(atLap, raceData.lapHistory.length - 1)] || raceData.lapHistory[0];
   const orderAtLap = targetLapData.order;
 
+  const isPreRace = atLap <= 1;
+
   let accumulatedGap = 0;
   return orderAtLap.map((code, idx) => {
     const meta = DRIVER_META[code] || {
@@ -1008,25 +1010,26 @@ export function buildTimingTowerGridForCircuit(circuitIdOrRound, atLap = 1) {
       team: meta.team,
       flag: meta.flag,
       tire,
-      tireAge: atLap <= 1 ? 0 : Math.min(22, atLap > 24 ? atLap - 22 : atLap),
-      gap: isLeader ? "LEADER" : `+${accumulatedGap.toFixed(3)}s`,
-      interval: isLeader ? formattedLap : `+${gapStep.toFixed(3)}s`,
-      arrow: posGain > 0 ? "up" : posGain < 0 ? "down" : "none",
-      wear: atLap <= 1 ? 4 : Math.min(85, 20 + atLap * 1.1),
-      delta: posGain > 0 ? `+0.0${posGain * 2}` : `-0.1${Math.abs(posGain)}`,
-      s1: (28.1 + idx * 0.05).toFixed(3),
-      s1Type: idx === 0 ? "purple" : idx < 4 ? "green" : "yellow",
-      s2: (37.8 + idx * 0.08).toFixed(3),
-      s2Type: idx === 1 ? "purple" : idx < 5 ? "green" : "yellow",
-      s3: (22.8 + idx * 0.04).toFixed(3),
-      s3Type: idx === 2 ? "purple" : idx < 6 ? "green" : "yellow",
+      tireAge: isPreRace ? 0 : Math.min(22, atLap > 24 ? atLap - 22 : atLap),
+      gap: isPreRace ? (isLeader ? "LEADER" : "—") : (isLeader ? "LEADER" : `+${accumulatedGap.toFixed(3)}s`),
+      gapSec: isPreRace ? 0 : accumulatedGap,
+      interval: isPreRace ? "—" : (isLeader ? formattedLap : `+${gapStep.toFixed(3)}s`),
+      arrow: isPreRace ? "none" : (posGain > 0 ? "up" : posGain < 0 ? "down" : "none"),
+      wear: isPreRace ? 4 : Math.min(85, 20 + atLap * 1.1),
+      delta: isPreRace ? "0.000" : (posGain > 0 ? `+0.0${posGain * 2}` : `-0.1${Math.abs(posGain)}`),
+      s1: isPreRace ? "—" : (28.1 + idx * 0.05).toFixed(3),
+      s1Type: isPreRace ? "empty" : (idx === 0 ? "purple" : idx < 4 ? "green" : "yellow"),
+      s2: isPreRace ? "—" : (37.8 + idx * 0.08).toFixed(3),
+      s2Type: isPreRace ? "empty" : (idx === 1 ? "purple" : idx < 5 ? "green" : "yellow"),
+      s3: isPreRace ? "—" : (22.8 + idx * 0.04).toFixed(3),
+      s3Type: isPreRace ? "empty" : (idx === 2 ? "purple" : idx < 6 ? "green" : "yellow"),
       soc: Math.max(30, 95 - idx * 2),
       mom: idx < 3 ? "Z-MODE" : idx === 4 ? "MOM ON" : "Z-MODE",
-      bestLap: formattedLap,
-      lastLap: formattedLap,
-      pits: atLap <= 1 ? 0 : atLap >= 20 ? 1 : 0,
-      posDelta: posDeltaStr,
-      speedTrap: 338 - idx * 1.2,
+      bestLap: isPreRace ? "NO TIME" : formattedLap,
+      lastLap: isPreRace ? "—" : formattedLap,
+      pits: isPreRace ? 0 : atLap >= 20 ? 1 : 0,
+      posDelta: isPreRace ? "0" : posDeltaStr,
+      speedTrap: isPreRace ? 0 : (338 - idx * 1.2),
       trackPct: Math.max(0.05, 0.95 - idx * 0.04),
     };
   });
