@@ -19,6 +19,77 @@ import FinalRaceClassificationModal from "./components/FinalRaceClassificationMo
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
 import { f1Audio } from "./utils/f1AudioEngine";
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("F1 Command Center ErrorBoundary caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{
+            minHeight: "100vh",
+            background: "#080a10",
+            color: "#ffffff",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            fontFamily: "'Orbitron', sans-serif",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>⚠️</div>
+          <h2 style={{ color: "#ff1801", margin: "0 0 8px 0", letterSpacing: "0.06em" }}>
+            FIA RACE CONTROL RECOVERY
+          </h2>
+          <p
+            style={{
+              color: "#a4a8bd",
+              maxWidth: "520px",
+              fontSize: "0.85rem",
+              margin: "0 0 20px 0",
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: "600",
+            }}
+          >
+            A telemetry conflict was safely intercepted. Click below to reset mission control cache and resume live command.
+          </p>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            style={{
+              background: "linear-gradient(90deg, #e10600 0%, #ff3b30 100%)",
+              border: "none",
+              color: "#ffffff",
+              padding: "10px 24px",
+              borderRadius: "6px",
+              fontFamily: "'Orbitron', monospace",
+              fontWeight: "900",
+              fontSize: "0.78rem",
+              cursor: "pointer",
+              boxShadow: "0 0 16px rgba(225, 6, 0, 0.5)",
+            }}
+          >
+            🔄 RESUME LIVE COMMAND
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Helpers for Dynamic Team Drivers & Strategy Directives ──
 export function getTeamDriversHelper(teamId, gridList = []) {
   if (!teamId || !gridList || gridList.length === 0) return gridList?.slice(0, 2) || [];
@@ -683,7 +754,8 @@ export default function App() {
   const currentTeamObj = CONSTRUCTORS_2026.find((t) => t.id === selectedTeam) || CONSTRUCTORS_2026[0];
 
   return (
-    <div className="app-wrapper">
+    <ErrorBoundary>
+      <div className="app-wrapper">
       <a className="skip-link" href="#command-main">Skip to command center</a>
 
       {/* ── Unified Futuristic F1 Cockpit Command Bar ── */}
@@ -1147,5 +1219,6 @@ export default function App() {
         nextCircuit={nextCircuit}
       />
     </div>
+    </ErrorBoundary>
   );
 }
