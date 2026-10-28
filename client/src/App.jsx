@@ -26,6 +26,7 @@ import RestartMenuModal from "./components/RestartMenuModal";
 import FinalRaceClassificationModal from "./components/FinalRaceClassificationModal";
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
 import { f1Audio } from "./utils/f1AudioEngine";
+import { getTeamLogo } from "./data/f1MediaAssets2026";
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -233,13 +234,13 @@ const CIRCUIT_IOC_MAP = {
 };
 
 const TABS = [
-  { id: "timing",    label: "🏁 Pit Wall",       subtitle: "Live Timing Matrix" },
-  { id: "strategy",  label: "🧠 Strategy",        subtitle: "Race Tactics & Pit Wall" },
-  { id: "telemetry", label: "📈 Telemetry",       subtitle: "Teammate Comparison" },
-  { id: "paddock",   label: "🏎️ 11 Teams",       subtitle: "2026 Constructors" },
-  { id: "calendar",  label: "📅 Calendar",        subtitle: "24-Round Schedule" },
-  { id: "budget",    label: "💼 Cost Cap",        subtitle: "$135M Cost Cap" },
-  { id: "scoreboard", label: "🏆 Scoreboard",     subtitle: "2026 World Championship Standings" },
+  { id: "timing",    label: "Pit Wall",   icon: "🏁", subtitle: "Live Timing Matrix" },
+  { id: "strategy",  label: "Strategy",   icon: "🧠", subtitle: "Race Tactics & Pit Wall" },
+  { id: "telemetry", label: "Telemetry",  icon: "📈", subtitle: "Teammate Comparison" },
+  { id: "paddock",   label: "Teams",      icon: "🏎️", subtitle: "2026 Constructors" },
+  { id: "calendar",  label: "Calendar",   icon: "📅", subtitle: "24-Round Schedule" },
+  { id: "budget",    label: "Cost Cap",   icon: "💼", subtitle: "$135M Cost Cap" },
+  { id: "scoreboard", label: "Scoreboard", icon: "🏆", subtitle: "2026 World Championship Standings" },
 ];
 
 function CommandLoader({ label }) {
@@ -266,32 +267,34 @@ function FiaClock() {
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.4)",
+        background: "rgba(0,0,0,0.45)",
         border: "1px solid rgba(255,255,255,0.1)",
         borderRadius: "6px",
-        padding: "4px 10px",
+        padding: "3px 8px",
         textAlign: "right",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        flexShrink: 0,
+        whiteSpace: "nowrap",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px" }}>
-        <span style={{ fontSize: "0.55rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-          <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "var(--neon-green)", boxShadow: "0 0 4px var(--neon-green)" }} />
+        <span style={{ fontSize: "0.50rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "800", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+          <span style={{ width: "3.5px", height: "3.5px", borderRadius: "50%", background: "var(--neon-green)", boxShadow: "0 0 4px var(--neon-green)" }} />
           GPS
         </span>
-        <span style={{ fontSize: "0.55rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "'Orbitron', monospace" }}>
+        <span style={{ fontSize: "0.50rem", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "'Orbitron', monospace" }}>
           FIA
         </span>
       </div>
       <div
         style={{
           fontFamily: "'Orbitron', monospace",
-          fontSize: "0.95rem",
+          fontSize: "0.80rem",
           fontWeight: "900",
           color: "#ffffff",
-          letterSpacing: "0.05em",
+          letterSpacing: "0.04em",
           lineHeight: "1.1",
           marginTop: "1px",
         }}
@@ -843,11 +846,12 @@ export default function App() {
       {/* ── Unified Futuristic F1 Cockpit Command Bar ── */}
       <header
         style={{
-          height: "64px",
-          padding: "0 24px",
+          height: "58px",
+          padding: "0 16px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: "10px",
           borderBottom: "1px solid rgba(232,0,45,0.3)",
           background: "linear-gradient(180deg, rgba(14,17,28,0.98) 0%, rgba(9,11,18,0.96) 100%)",
           backdropFilter: "blur(18px)",
@@ -871,16 +875,16 @@ export default function App() {
         />
 
         {/* Left: Brand Identity & Active Grand Prix Selector */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "2px" }}>
             <span
               style={{
                 fontFamily: "'Orbitron', monospace",
-                fontSize: "1.3rem",
+                fontSize: "1.15rem",
                 fontWeight: "900",
                 color: "var(--neon-red)",
                 letterSpacing: "0.06em",
-                textShadow: "0 0 12px rgba(232,0,45,0.6)",
+                textShadow: "0 0 10px rgba(232,0,45,0.6)",
               }}
             >
               GP-
@@ -888,7 +892,7 @@ export default function App() {
             <span
               style={{
                 fontFamily: "'Orbitron', monospace",
-                fontSize: "1.3rem",
+                fontSize: "1.15rem",
                 fontWeight: "900",
                 color: "#ffffff",
                 letterSpacing: "0.06em",
@@ -903,17 +907,18 @@ export default function App() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "5px",
               background: "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: "20px",
-              padding: "3px 10px",
+              borderRadius: "16px",
+              padding: "2px 8px",
+              flexShrink: 0,
             }}
           >
             <span
               style={{
                 fontFamily: "'Orbitron', monospace",
-                fontSize: "0.64rem",
+                fontSize: "0.62rem",
                 fontWeight: "900",
                 color: "var(--neon-yellow)",
               }}
@@ -928,12 +933,12 @@ export default function App() {
                 background: "transparent",
                 border: "none",
                 color: "#ffffff",
-                fontSize: "0.72rem",
+                fontSize: "0.68rem",
                 fontFamily: "'Orbitron', monospace",
                 fontWeight: "800",
                 cursor: "pointer",
                 outline: "none",
-                maxWidth: "140px",
+                maxWidth: "120px",
               }}
             >
               {(circuits.length > 0 ? circuits : [DEFAULT_CIRCUIT]).map((c) => (
@@ -945,16 +950,18 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center: Sleek Cockpit Navigation Pills */}
+        {/* Center: Sleek Cockpit Navigation Pills (Zero-Wrapping & Compact) */}
         <nav
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "6px",
-            background: "rgba(0,0,0,0.35)",
-            padding: "4px 8px",
-            borderRadius: "24px",
+            gap: "3px",
+            background: "rgba(0,0,0,0.45)",
+            padding: "3px 6px",
+            borderRadius: "20px",
             border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "inset 0 1px 4px rgba(0,0,0,0.5)",
+            flexShrink: 0,
           }}
           aria-label="Primary command center navigation"
         >
@@ -967,50 +974,77 @@ export default function App() {
                 style={{
                   all: "unset",
                   cursor: "pointer",
-                  padding: "6px 14px",
-                  borderRadius: "18px",
-                  fontSize: "0.74rem",
+                  padding: "5px 9px",
+                  borderRadius: "14px",
+                  fontSize: "0.68rem",
                   fontFamily: "'Orbitron', monospace",
-                  fontWeight: isActive ? "900" : "600",
-                  letterSpacing: "0.04em",
+                  fontWeight: isActive ? "900" : "700",
+                  letterSpacing: "0.03em",
                   color: isActive ? "#ffffff" : "var(--text-secondary)",
-                  background: isActive ? "linear-gradient(135deg, var(--neon-red), #b3001e)" : "transparent",
-                  boxShadow: isActive ? "0 0 12px rgba(232,0,45,0.4)" : "none",
+                  background: isActive ? "linear-gradient(135deg, var(--neon-red) 0%, #b3001e 100%)" : "transparent",
+                  boxShadow: isActive ? "0 0 12px rgba(232,0,45,0.45)" : "none",
                   transition: "all 0.15s ease",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "5px",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                    e.currentTarget.style.background = "transparent";
+                  }
                 }}
                 title={`${tab.subtitle} (Alt+${TABS.indexOf(tab) + 1})`}
               >
-                <span>{tab.label}</span>
+                <span style={{ fontSize: "0.76rem", lineHeight: 1 }}>{tab.icon}</span>
+                <span style={{ whiteSpace: "nowrap" }}>{tab.label}</span>
               </button>
             );
           })}
         </nav>
 
         {/* Right: Strategy Role Pill + Restart/Switch Button + Race Lap Capsule + GPS Clock */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
           {/* Strategy Role & Team Clearance Pill */}
           <div
+            title={userRole === "team" ? `${currentTeamObj.name} · Lead Race Strategist` : "FIA Race Control Clearance"}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "7px",
-              background: userRole === "team" ? "rgba(255,255,255,0.05)" : "rgba(234, 179, 8, 0.12)",
-              border: userRole === "team" ? `1px solid ${currentTeamObj.color}70` : "1px solid rgba(234, 179, 8, 0.4)",
-              borderRadius: "20px",
-              padding: "4px 10px",
-              boxShadow: userRole === "team" ? `0 0 10px ${currentTeamObj.color}25` : "0 0 10px rgba(234, 179, 8, 0.2)",
+              gap: "6px",
+              background: userRole === "team" ? "rgba(255,255,255,0.04)" : "rgba(234, 179, 8, 0.12)",
+              border: userRole === "team" ? `1px solid ${currentTeamObj.color}66` : "1px solid rgba(234, 179, 8, 0.4)",
+              borderRadius: "16px",
+              padding: "3px 8px",
+              boxShadow: userRole === "team" ? `0 0 8px ${currentTeamObj.color}20` : "none",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: userRole === "team" ? currentTeamObj.color : "#ffd700", boxShadow: `0 0 6px ${userRole === "team" ? currentTeamObj.color : "#ffd700"}` }} />
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", fontWeight: "900", color: "#ffffff", letterSpacing: "0.03em" }}>
-              {userRole === "team" ? currentTeamObj.name.toUpperCase() : "FIA RACE CONTROL"}
+            {userRole === "team" && getTeamLogo(currentTeamObj.id) ? (
+              <img
+                src={getTeamLogo(currentTeamObj.id)}
+                alt={currentTeamObj.id}
+                style={{ width: "16px", height: "16px", objectFit: "contain" }}
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            ) : (
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: userRole === "team" ? currentTeamObj.color : "#ffd700", boxShadow: `0 0 6px ${userRole === "team" ? currentTeamObj.color : "#ffd700"}` }} />
+            )}
+            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", fontWeight: "900", color: "#ffffff", letterSpacing: "0.03em" }}>
+              {userRole === "team" ? (currentTeamObj.short || currentTeamObj.id.toUpperCase()) : "FIA CONTROL"}
             </span>
             <span
               style={{
-                fontSize: "0.58rem",
+                fontSize: "0.54rem",
                 fontFamily: "'Orbitron', monospace",
                 fontWeight: "800",
                 color: userRole === "team" ? "var(--neon-cyan)" : "#ffd700",
@@ -1019,7 +1053,7 @@ export default function App() {
                 borderRadius: "3px",
               }}
             >
-              {userRole === "team" ? "STRATEGIST" : "GOD MODE"}
+              {userRole === "team" ? "STRATEGIST" : "ADMIN"}
             </span>
           </div>
 
@@ -1027,33 +1061,35 @@ export default function App() {
           <button
             onClick={() => setIsRestartMenuOpen(true)}
             style={{
-              background: "linear-gradient(135deg, rgba(232, 0, 45, 0.25) 0%, rgba(20, 24, 38, 0.95) 100%)",
-              border: "1px solid rgba(232, 0, 45, 0.55)",
-              borderRadius: "18px",
-              padding: "4px 11px",
+              background: "linear-gradient(135deg, rgba(232, 0, 45, 0.22) 0%, rgba(20, 24, 38, 0.95) 100%)",
+              border: "1px solid rgba(232, 0, 45, 0.5)",
+              borderRadius: "16px",
+              padding: "4px 9px",
               color: "#ffffff",
               fontFamily: "'Orbitron', monospace",
-              fontSize: "0.66rem",
+              fontSize: "0.64rem",
               fontWeight: "900",
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: "5px",
-              boxShadow: "0 0 12px rgba(232, 0, 45, 0.3)",
+              gap: "4px",
+              boxShadow: "0 0 10px rgba(232, 0, 45, 0.25)",
               transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "var(--neon-red)";
-              e.currentTarget.style.boxShadow = "0 0 18px rgba(232, 0, 45, 0.6)";
+              e.currentTarget.style.boxShadow = "0 0 14px rgba(232, 0, 45, 0.5)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(232, 0, 45, 0.55)";
-              e.currentTarget.style.boxShadow = "0 0 12px rgba(232, 0, 45, 0.3)";
+              e.currentTarget.style.borderColor = "rgba(232, 0, 45, 0.5)";
+              e.currentTarget.style.boxShadow = "0 0 10px rgba(232, 0, 45, 0.25)";
             }}
             title="Reset Race, Switch Constructor, or Toggle FIA Clearance"
           >
             <span>🔄</span>
-            <span>RESTART / SWITCH</span>
+            <span>RESTART</span>
           </button>
 
           {/* Micro Lap Progress Capsule */}
@@ -1061,18 +1097,20 @@ export default function App() {
             style={{
               background: "rgba(0,0,0,0.35)",
               border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              padding: "4px 10px",
+              borderRadius: "6px",
+              padding: "3px 8px",
               display: "flex",
               flexDirection: "column",
               gap: "2px",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", fontSize: "0.64rem", fontFamily: "'Orbitron', monospace" }}>
-              <span style={{ color: "#ffffff", fontWeight: "800" }}>LAP {currentLapNum}/{totalLaps}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "6px", fontSize: "0.58rem", fontFamily: "'Orbitron', monospace" }}>
+              <span style={{ color: "#ffffff", fontWeight: "800" }}>L{currentLapNum}/{totalLaps}</span>
               <span style={{ color: "var(--neon-green)", fontWeight: "700" }}>{lapProgressPct}%</span>
             </div>
-            <div style={{ width: "80px", height: "3px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+            <div style={{ width: "55px", height: "2.5px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
               <div
                 style={{
                   width: `${lapProgressPct}%`,
