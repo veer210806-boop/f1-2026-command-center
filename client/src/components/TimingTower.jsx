@@ -357,12 +357,14 @@ function HybridSocBar({ soc = 80 }) {
 }
 
 // ── 2026 Active Aero & MOM Badge Component ──────────────────────────────────
-function AeroBadge({ mom = "Z-MODE" }) {
+function AeroBadge({ mom = "Z-MODE", isDrs = false }) {
   const isMom = mom === "MOM ON" || mom === "ACTIVE";
-  const isX = mom === "X-MODE";
-  const isZ = mom === "Z-MODE";
-  const color = isMom ? "#ff0055" : isX ? "#00d2be" : isZ ? "#4488ff" : "#ffaa00";
-  const bg = isMom ? "rgba(255,0,85,0.18)" : isX ? "rgba(0,210,190,0.15)" : isZ ? "rgba(68,136,255,0.15)" : "rgba(255,170,0,0.15)";
+  const isDrsActive = isDrs || (typeof mom === "string" && mom.includes("DRS"));
+  const isX = mom === "X-MODE" || isDrsActive;
+  const isZ = mom === "Z-MODE" && !isDrsActive;
+  const color = isMom ? "#ff0055" : isDrsActive ? "#00e676" : isX ? "#00d2be" : isZ ? "#4488ff" : "#ffaa00";
+  const bg = isMom ? "rgba(255,0,85,0.18)" : isDrsActive ? "rgba(0,230,118,0.18)" : isX ? "rgba(0,210,190,0.15)" : isZ ? "rgba(68,136,255,0.15)" : "rgba(255,170,0,0.15)";
+  const label = isDrsActive ? "🟢 X-MODE" : mom;
   return (
     <span
       style={{
@@ -376,9 +378,11 @@ function AeroBadge({ mom = "Z-MODE" }) {
         borderRadius: "3px",
         whiteSpace: "nowrap",
         letterSpacing: "0.04em",
+        boxShadow: isDrsActive ? "0 0 6px rgba(0,230,118,0.35)" : "none",
       }}
+      title={isDrsActive ? "Active Aero: Low-Drag X-MODE Enabled (DRS gap < 1.0s)" : `Active Aero: ${mom}`}
     >
-      {mom}
+      {label}
     </span>
   );
 }
@@ -3227,15 +3231,15 @@ function TimingTower({
                 >
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "38px", textAlign: "center" }}>POS</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "36px", textAlign: "center" }}>NO</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 6px" : "8px 8px", minWidth: "150px" }}>DRIVER</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "78px", textAlign: "center" }}>TYRE / AGE</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "82px", textAlign: "right" }}>GAP</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "78px", textAlign: "right" }}>INT</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 6px" : "8px 8px", minWidth: "220px", textAlign: "left" }}>DRIVER</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "86px", minWidth: "86px", textAlign: "center" }}>TYRE / AGE</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>GAP</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>INT</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "65px", textAlign: "center", color: "#cc44ff" }}>S1</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "65px", textAlign: "center", color: "#00e676" }}>S2</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "65px", textAlign: "center", color: "#ffeb3b" }}>S3</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "88px", textAlign: "center", color: "var(--neon-cyan)" }}>2026 SOC</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "82px", textAlign: "center" }}>ACTIVE AERO</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "88px", minWidth: "88px", textAlign: "center" }}>ACTIVE AERO</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "80px", textAlign: "center" }}>BEST LAP</th>
                   <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "42px", textAlign: "center" }}>PITS</th>
                 </tr>
@@ -3398,7 +3402,7 @@ function TimingTower({
                       </td>
 
                       {/* Driver */}
-                      <td style={{ padding: isCompact ? "2.5px 6px" : "5px 8px" }}>
+                      <td style={{ padding: isCompact ? "2.5px 6px" : "5px 8px", minWidth: "220px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: isCompact ? "6px" : "8px" }}>
                           <div
                             title={d.team}
@@ -3494,110 +3498,92 @@ function TimingTower({
                             {DRIVER_IOC_MAP[d.code] || "FIA"}
                           </span>
 
-                          {/* Planned Strategy Badge (Coordinates Timing Matrix with Strategy Room) */}
+                          {/* Unified Strategy Directive & Push Mode Pill (Zero-collision single pill) */}
                           {(() => {
                             if (!isDriverOnPlayerTeam) return null;
 
                             const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && !s.applied);
+                            const pushMode = driverPlans?.[d.code]?.pushMode || "balanced";
+                            const pushLabel = pushMode === "attack" ? "ATK" : pushMode === "conserve" ? "CNS" : "BAL";
+                            const pushIcon = pushMode === "attack" ? "⚡" : pushMode === "conserve" ? "🛡️" : "🎯";
+                            const pushColor = pushMode === "attack" ? "#ff5555" : pushMode === "conserve" ? "#00f0ff" : "#00e676";
+
                             if (!plannedStop) {
                               if ((d.pits || 0) >= 1) {
                                 return (
                                   <span
                                     style={{
-                                      fontSize: "0.58rem",
+                                      fontSize: "0.56rem",
                                       fontFamily: "'Orbitron', monospace",
                                       fontWeight: "800",
-                                      background: "rgba(0, 230, 118, 0.15)",
-                                      border: "1px solid var(--neon-green)",
+                                      background: "rgba(0, 230, 118, 0.12)",
+                                      border: "1px solid rgba(0, 230, 118, 0.45)",
                                       color: "var(--neon-green)",
                                       padding: "1px 5px",
                                       borderRadius: "3px",
-                                      letterSpacing: "0.04em",
-                                      lineHeight: 1,
+                                      letterSpacing: "0.03em",
+                                      lineHeight: 1.2,
+                                      whiteSpace: "nowrap",
                                       flexShrink: 0,
                                     }}
-                                    title="Mandatory 2-compound rule satisfied. Stint is safe to checkered flag (user can still box optionally if desired)."
+                                    title="Mandatory 2-compound rule satisfied. Stint is safe to checkered flag."
                                   >
-                                    🏁 NO PIT REQ
+                                    🏁 NO PIT · <span style={{ color: pushColor, fontWeight: "900" }}>{pushIcon} {pushLabel}</span>
                                   </span>
                                 );
                               }
-                              return null;
+                              return (
+                                <span
+                                  style={{
+                                    fontSize: "0.56rem",
+                                    fontFamily: "'Orbitron', monospace",
+                                    fontWeight: "800",
+                                    background: "rgba(255, 255, 255, 0.05)",
+                                    border: `1px solid ${pushColor}55`,
+                                    color: pushColor,
+                                    padding: "1px 5px",
+                                    borderRadius: "3px",
+                                    letterSpacing: "0.03em",
+                                    lineHeight: 1.2,
+                                    whiteSpace: "nowrap",
+                                    flexShrink: 0,
+                                  }}
+                                  title={`Driver Push Mode: ${pushMode.toUpperCase()}`}
+                                >
+                                  {pushIcon} {pushLabel}
+                                </span>
+                              );
                             }
+
                             const isThisLap = controlledLap === plannedStop.lap;
                             return (
                               <span
                                 style={{
-                                  fontSize: "0.58rem",
+                                  fontSize: "0.56rem",
                                   fontFamily: "'Orbitron', monospace",
                                   fontWeight: "800",
-                                  background: isThisLap ? "rgba(232, 0, 45, 0.35)" : "rgba(0, 210, 190, 0.15)",
-                                  border: `1px solid ${isThisLap ? "var(--neon-red)" : "var(--neon-cyan)"}`,
+                                  background: isThisLap ? "rgba(232, 0, 45, 0.35)" : "rgba(0, 210, 190, 0.12)",
+                                  border: `1px solid ${isThisLap ? "var(--neon-red)" : "rgba(0, 210, 190, 0.45)"}`,
                                   color: isThisLap ? "#ffffff" : "var(--neon-cyan)",
                                   padding: "1px 5px",
                                   borderRadius: "3px",
-                                  letterSpacing: "0.04em",
-                                  lineHeight: 1,
+                                  letterSpacing: "0.03em",
+                                  lineHeight: 1.2,
+                                  whiteSpace: "nowrap",
                                   flexShrink: 0,
                                   animation: isThisLap ? "f1PulseOvertakeRed 1.2s infinite" : "none",
                                 }}
-                                title={`Planned pit stop from Strategy Room at Lap ${plannedStop.lap}`}
+                                title={`Planned pit stop from Strategy Room at Lap ${plannedStop.lap} (${plannedStop.targetCompound})`}
                               >
-                                {isThisLap ? `🚨 BOX LAP ${plannedStop.lap}!` : `🎯 PIT L${plannedStop.lap} (${plannedStop.targetCompound})`}
+                                {isThisLap ? `🚨 BOX L${plannedStop.lap}!` : `🎯 L${plannedStop.lap} (${plannedStop.targetCompound})`} · <span style={{ color: pushColor, fontWeight: "900" }}>{pushIcon} {pushLabel}</span>
                               </span>
                             );
                           })()}
-
-                          {/* Driver Push Mode Badge */}
-                          {isDriverOnPlayerTeam && (
-                            <span
-                              style={{
-                                fontSize: "0.56rem",
-                                fontFamily: "'Orbitron', monospace",
-                                fontWeight: "900",
-                                padding: "1px 5px",
-                                borderRadius: "3px",
-                                letterSpacing: "0.04em",
-                                lineHeight: 1,
-                                flexShrink: 0,
-                                background:
-                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
-                                    ? "rgba(255, 24, 1, 0.28)"
-                                    : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
-                                    ? "rgba(0, 210, 190, 0.22)"
-                                    : "rgba(0, 230, 118, 0.22)",
-                                border: `1px solid ${
-                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
-                                    ? "#ff1801"
-                                    : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
-                                    ? "#00d2be"
-                                    : "#00e676"
-                                }`,
-                                color:
-                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
-                                    ? "#ff5555"
-                                    : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
-                                    ? "#00f0ff"
-                                    : "#00e676",
-                                boxShadow:
-                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
-                                    ? "0 0 8px rgba(255, 24, 1, 0.45)"
-                                    : "none",
-                              }}
-                              title={`Push Mode: ${(driverPlans?.[d.code]?.pushMode || "balanced").toUpperCase()}`}
-                            >
-                              {(driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
-                                ? "⚡ ATK"
-                                : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
-                                ? "🛡️ CNS"
-                                : "🎯 BAL"}
-                            </span>
-                          )}
                         </div>
                       </td>
 
                       {/* Tyre / Age & Remaining Life % */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center", verticalAlign: "middle" }}>
+                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "86px", minWidth: "86px", textAlign: "center", verticalAlign: "middle" }}>
                         <div style={{ display: "inline-flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "2px" }}>
                           <TireWheel compound={d.tire} laps={d.tireAge} />
                           <span
@@ -3617,7 +3603,7 @@ function TimingTower({
                       </td>
 
                       {/* Gap to Leader */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "right" }}>
+                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>
                         {d.pitState === "IN PIT" ? (
                           <span
                             style={{
@@ -3669,37 +3655,14 @@ function TimingTower({
                         )}
                       </td>
 
-                      {/* Interval to Ahead with Trend Pill & DRS Open Badge */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "right" }}>
+                      {/* Interval to Ahead with Trend Pill */}
+                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>
                         {d.pitState === "IN PIT" ? (
                           <span style={{ fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.62rem" : "0.68rem", color: "#ffaa00", fontWeight: "800" }}>
                             BOX BOX
                           </span>
                         ) : (
                           <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "4px", fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.70rem" : "0.74rem", color: "#e8e8f0" }}>
-                            {d.pos > 1 && (() => {
-                              const gapNum = parseFloat(String(d.interval).replace("+", "").replace("s", ""));
-                              return !isNaN(gapNum) && gapNum > 0 && gapNum < 1.000 ? (
-                                <span
-                                  style={{
-                                    fontSize: "0.52rem",
-                                    fontFamily: "'Orbitron', monospace",
-                                    fontWeight: "900",
-                                    background: "rgba(0, 230, 118, 0.22)",
-                                    border: "1px solid #00e676",
-                                    color: "#00e676",
-                                    padding: "1px 4px",
-                                    borderRadius: "2px",
-                                    letterSpacing: "0.04em",
-                                    boxShadow: "0 0 6px rgba(0, 230, 118, 0.4)",
-                                    lineHeight: 1,
-                                  }}
-                                  title="DRS Open: Gap under 1.000s"
-                                >
-                                  🟢 DRS
-                                </span>
-                              ) : null;
-                            })()}
                             <span>{d.pos === 1 ? "—" : d.interval}</span>
                             {d.pos > 1 && (
                               <span
@@ -3739,8 +3702,12 @@ function TimingTower({
                       </td>
 
                       {/* Active Aero Status */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
-                        <AeroBadge mom={d.mom} />
+                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "88px", minWidth: "88px", textAlign: "center" }}>
+                        {(() => {
+                          const gapNum = parseFloat(String(d.interval).replace("+", "").replace("s", ""));
+                          const isDrs = d.pos > 1 && !isNaN(gapNum) && gapNum > 0 && gapNum < 1.000;
+                          return <AeroBadge mom={d.mom} isDrs={isDrs} />;
+                        })()}
                       </td>
 
                       {/* Best Lap */}
