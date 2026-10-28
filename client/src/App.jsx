@@ -1,7 +1,7 @@
 // ============================================================
 // App.jsx — GP-Command F1 2026 Season Command Center
 // ============================================================
-import { lazy, Suspense, useEffect, useState, useCallback } from "react";
+import React, { Component, lazy, Suspense, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "./index.css";
 import { SEASON_2026_ROUNDS } from "./data/calendar2026";
@@ -19,7 +19,7 @@ import FinalRaceClassificationModal from "./components/FinalRaceClassificationMo
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
 import { f1Audio } from "./utils/f1AudioEngine";
 
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
