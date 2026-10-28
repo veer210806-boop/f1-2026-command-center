@@ -12,6 +12,14 @@ const TeamsPaddock = lazy(() => import("./components/TeamsPaddock"));
 const StrategyAdvisor = lazy(() => import("./components/StrategyAdvisor"));
 const TelemetryViewer = lazy(() => import("./components/TelemetryViewer"));
 const BudgetManager = lazy(() => import("./components/BudgetManager"));
+const ScoreboardManager = lazy(() => import("./components/ScoreboardManager"));
+import {
+  loadSeasonScoreboard,
+  recordRaceResultToScoreboard,
+  revertRaceResultFromScoreboard,
+  resetScoreboardForNewTeam,
+  findFastestLapDriverCode,
+} from "./utils/scoreboardEngine";
 import LiveBroadcastGantry from "./components/LiveBroadcastGantry";
 import StrategyGameGatewayModal, { CONSTRUCTORS_2026 } from "./components/StrategyGameGatewayModal";
 import RestartMenuModal from "./components/RestartMenuModal";
@@ -231,6 +239,7 @@ const TABS = [
   { id: "paddock",   label: "🏎️ 11 Teams",       subtitle: "2026 Constructors" },
   { id: "calendar",  label: "📅 Calendar",        subtitle: "24-Round Schedule" },
   { id: "budget",    label: "💼 Cost Cap",        subtitle: "$135M Cost Cap" },
+  { id: "scoreboard", label: "🏆 Scoreboard",     subtitle: "2026 World Championship Standings" },
 ];
 
 function CommandLoader({ label }) {
@@ -387,6 +396,40 @@ export default function App() {
     return strategies;
   });
 
+  // ── 2026 World Championship Scoreboard & Season Points State ──
+  const [seasonScoreboard, setSeasonScoreboard] = useState(() => {
+    const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
+    return loadSeasonScoreboard(initTeam);
+  });
+
+  const handleRecordRaceResult = useCallback((circuitToRecord, gridDrivers) => {
+    const c = circuitToRecord || selectedCircuit;
+    const d = gridDrivers || drivers;
+    if (!c || !d || d.length === 0) return;
+    setSeasonScoreboard((prev) => {
+      const fastCode = findFastestLapDriverCode(d);
+      return recordRaceResultToScoreboard(prev, c, d, fastCode);
+    });
+  }, [selectedCircuit, drivers]);
+
+  const handleRevertRoundPoints = useCallback((circuitId) => {
+    const targetId = circuitId || selectedCircuit?.circuit_id;
+    if (targetId) {
+      setSeasonScoreboard((prev) => revertRaceResultFromScoreboard(prev, targetId));
+    }
+  }, [selectedCircuit]);
+
+  const handleResetSeasonCampaign = useCallback(() => {
+    const fresh = resetScoreboardForNewTeam(selectedTeam);
+    setSeasonScoreboard(fresh);
+    const round1 = circuits[0] || DEFAULT_CIRCUIT;
+    setSelectedCircuit(round1);
+    setCurrentLapNum(1);
+    setIsAutoSimulating(false);
+    setActiveFlag("GREEN");
+    setRestartSignal((s) => s + 1);
+  }, [selectedTeam, circuits]);
+
   // ── Global Driver Plans State (Dynamic for the active team) ──
   const [driverPlans, setDriverPlans] = useState(() => {
     const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
@@ -400,10 +443,39 @@ export default function App() {
     if (!newTeamId) return;
     setSelectedTeam(newTeamId);
     localStorage.setItem("gp_strategy_team", newTeamId);
-    const { plans, strategies } = createInitialTeamPlans(newTeamId, drivers, totalLaps);
+
+    // Requirement: "if change the team only then whole new points will be srt from 0 1st race"
+    const freshScoreboard = resetScoreboardForNewTeam(newTeamId);
+    setSeasonScoreboard(freshScoreboard);
+
+    // Reset circuit back to Race 1 (Melbourne)
+    const round1 = circuits[0] || DEFAULT_CIRCUIT;
+    setSelectedCircuit(round1);
+    setCurrentLapNum(1);
+    setIsAutoSimulating(false);
+    setActiveFlag("GREEN");
+    setRestartSignal((s) => s + 1);
+
+    const r1Laps = round1.laps || 58;
+    const freshGrid = buildTimingTowerGridForCircuit(round1.circuit_id || "australia", 1).map((d, i) => ({
+      ...d,
+      pos: i + 1,
+      tireAge: 0,
+      wear: 4,
+      pits: 0,
+      pitState: "RACING",
+      gap: i === 0 ? "LEADER" : `+${(0.65 * i).toFixed(3)}s`,
+      interval: i === 0 ? "1:28.412" : "+0.650s",
+      posDelta: "0",
+      arrow: "neutral",
+    }));
+    setDrivers(freshGrid);
+
+    const { plans, strategies } = createInitialTeamPlans(newTeamId, freshGrid, r1Laps);
     setDriverPlans(plans);
     setPlannedStrategies(strategies);
-  }, [drivers, totalLaps]);
+    setOvertakeEvent(`🏎️ NEW CAMPAIGN BEGUN WITH ${newTeamId.toUpperCase()}! Season standings reset to 0 pts for Round 1: Australian GP.`);
+  }, [circuits]);
 
   // Synchronize plans whenever selectedTeam or drivers change
   useEffect(() => {
@@ -426,6 +498,11 @@ export default function App() {
     setIsAutoSimulating(false);
     setActiveFlag("GREEN");
     setRestartSignal((s) => s + 1);
+
+    // Requirement: "if restarted the race points should be reverse back"
+    if (selectedCircuit?.circuit_id) {
+      setSeasonScoreboard((prev) => revertRaceResultFromScoreboard(prev, selectedCircuit.circuit_id));
+    }
 
     const freshGrid = buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1).map((d, i) => ({
       ...d,
@@ -452,6 +529,10 @@ export default function App() {
   // Advance to Next Grand Prix on the 2026 World Championship Calendar
   const handleAdvanceToNextRace = useCallback(() => {
     f1Audio.playRadioBeep();
+
+    // Ensure the current race result is locked in before advancing
+    handleRecordRaceResult(selectedCircuit, drivers);
+
     const currentIdx = circuits.findIndex((c) => c.circuit_id === selectedCircuit?.circuit_id);
     const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % circuits.length : 0;
     const nextC = circuits[nextIdx];
@@ -741,6 +822,7 @@ export default function App() {
           setIsRaceFinishedModalOpen(true);
           setActiveFlag("CHEQUERED");
           f1Audio.playRadioBeep();
+          handleRecordRaceResult(selectedCircuit, drivers);
           return totalLaps;
         }
         return next;
@@ -1165,6 +1247,16 @@ export default function App() {
             />
           )}
           {activeTab === "budget"    && <BudgetManager />}
+          {activeTab === "scoreboard" && (
+            <ScoreboardManager
+              seasonData={seasonScoreboard}
+              playerTeam={selectedTeam}
+              selectedCircuit={selectedCircuit}
+              onGoToPitWall={() => setActiveTab("timing")}
+              onRevertRoundPoints={handleRevertRoundPoints}
+              onResetSeasonCampaign={handleResetSeasonCampaign}
+            />
+          )}
         </Suspense>
       </main>
 
@@ -1217,6 +1309,10 @@ export default function App() {
         onAdvanceToNextRace={handleAdvanceToNextRace}
         onRestartRace={handleDirectRestart}
         nextCircuit={nextCircuit}
+        onGoToScoreboard={() => {
+          setIsRaceFinishedModalOpen(false);
+          setActiveTab("scoreboard");
+        }}
       />
     </div>
     </ErrorBoundary>

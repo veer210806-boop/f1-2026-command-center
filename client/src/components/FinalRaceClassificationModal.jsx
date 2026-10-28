@@ -19,6 +19,7 @@ export default function FinalRaceClassificationModal({
   onAdvanceToNextRace,
   onRestartRace,
   nextCircuit,
+  onGoToScoreboard,
 }) {
   if (!isOpen) return null;
 
@@ -645,6 +646,34 @@ export default function FinalRaceClassificationModal({
               >
                 <span>📊</span>
                 <span>INSPECT TIMING MATRIX</span>
+              </button>
+            )}
+
+            {onGoToScoreboard && (
+              <button
+                onClick={() => {
+                  f1Audio.playRadioBeep();
+                  onGoToScoreboard();
+                }}
+                style={{
+                  background: "rgba(255, 215, 0, 0.12)",
+                  border: "1px solid rgba(255, 215, 0, 0.35)",
+                  borderRadius: "8px",
+                  padding: "9px 16px",
+                  color: "#ffd700",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.72rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.15s ease",
+                }}
+                title="View World Drivers' & Constructors' Championship Standings"
+              >
+                <span>🏆</span>
+                <span>VIEW SCOREBOARD</span>
               </button>
             )}
           </div>
