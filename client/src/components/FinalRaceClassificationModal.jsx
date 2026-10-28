@@ -77,6 +77,68 @@ export default function FinalRaceClassificationModal({
   const playerTeamPts = playerTeamDrivers.reduce((acc, d) => acc + (d.totalPts || 0), 0);
   const playerTeamObj = CONSTRUCTORS_2026.find((c) => c.id.toLowerCase() === playerTeam.toLowerCase()) || CONSTRUCTORS_2026[0];
 
+  // Identify Official Driver of the Day (Max net position gain or race winner)
+  let bestMover = classifiedDrivers[0];
+  let maxPosGain = -999;
+  classifiedDrivers.forEach((d) => {
+    const deltaStr = d.posDelta ? String(d.posDelta).replace("+", "") : "0";
+    const deltaNum = parseInt(deltaStr, 10) || 0;
+    if (deltaNum > maxPosGain) {
+      maxPosGain = deltaNum;
+      bestMover = d;
+    }
+  });
+  if (maxPosGain <= 0) {
+    bestMover = classifiedDrivers[0];
+  }
+  const dotdDriver = bestMover || classifiedDrivers[0];
+  const dotdGain = maxPosGain > 0 ? maxPosGain : 0;
+  const dotdPct = +(36.4 + ((dotdDriver.num * 7) % 18)).toFixed(1);
+
+  // Strategist Performance Index Rating (Score 0-100)
+  let strategyScore = 48; // baseline race execution
+  if (playerTeamPts >= 35) strategyScore += 36;
+  else if (playerTeamPts >= 25) strategyScore += 26;
+  else if (playerTeamPts >= 15) strategyScore += 18;
+  else if (playerTeamPts > 0) strategyScore += 10;
+
+  const hasPodium = playerTeamDrivers.some((d) => d.finishPos <= 3);
+  if (hasPodium) strategyScore += 10;
+
+  const bothInPoints = playerTeamDrivers.length >= 2 && playerTeamDrivers.every((d) => d.finishPos <= 10);
+  if (bothInPoints) strategyScore += 6;
+
+  strategyScore = Math.min(100, Math.max(30, strategyScore));
+
+  const strategyGrade =
+    strategyScore >= 88
+      ? {
+          grade: "S+",
+          color: "#ffd700",
+          title: "MASTERCLASS STRATEGIST",
+          desc: "Clinical pit stop timing and decisive undercut execution outsmarted rival pit walls.",
+        }
+      : strategyScore >= 74
+      ? {
+          grade: "A",
+          color: "#00e676",
+          title: "TACTICAL EXCELLENCE",
+          desc: "Optimal tire life preservation and strong stint execution maximized championship points.",
+        }
+      : strategyScore >= 55
+      ? {
+          grade: "B",
+          color: "#00d2be",
+          title: "SOLID RACE CRAFT",
+          desc: "Consistent pace management, defended track position successfully through pit cycles.",
+        }
+      : {
+          grade: "C",
+          color: "#ff9100",
+          title: "TELEMETRY LEARNINGS GATHERED",
+          desc: "Tire cliff challenges provided key data points for the next Grand Prix upgrade package.",
+        };
+
   const nextRoundTitle = nextCircuit
     ? `ROUND ${String(nextCircuit.round).padStart(2, "0")} · ${nextCircuit.grand_prix_name?.toUpperCase()}`
     : "ROUND 02 · CHINESE GRAND PRIX";
@@ -358,6 +420,102 @@ export default function FinalRaceClassificationModal({
               }}
             >
               {playerTeamPts >= 35 ? "🌟 STRATEGY MASTERCLASS" : playerTeamPts >= 15 ? "🏆 PODIUM CONTENDERS" : playerTeamPts > 0 ? "🎯 SOLID POINTS HAUL" : "🏁 STRATEGY RELEARNING"}
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 2.5: GAME RECOGNITION: DRIVER OF THE DAY & STRATEGIST RATING ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          {/* Driver of the Day */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(32, 20, 48, 0.95) 0%, rgba(16, 12, 28, 0.98) 100%)",
+              border: "1.5px solid #d946ef",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxShadow: "0 0 20px rgba(217, 70, 239, 0.25)",
+            }}
+          >
+            <div style={{ position: "relative" }}>
+              <div style={{ width: "54px", height: "54px", borderRadius: "50%", overflow: "hidden", border: "2px solid #d946ef", boxShadow: "0 0 10px #d946ef" }}>
+                <img
+                  src={getDriverFaceUrl(dotdDriver.code, dotdDriver.photo_url || DRIVER_PHOTOS[dotdDriver.code])}
+                  alt={dotdDriver.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+              <span style={{ position: "absolute", bottom: "-4px", right: "-4px", fontSize: "1rem" }}>🎖️</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.66rem", fontWeight: "900", color: "#d946ef", letterSpacing: "0.08em" }}>
+                  OFFICIAL DRIVER OF THE DAY
+                </span>
+                <span style={{ background: "rgba(217, 70, 239, 0.2)", color: "#f0abfc", border: "1px solid #d946ef", fontSize: "0.58rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", padding: "1px 6px", borderRadius: "3px" }}>
+                  {dotdPct}% VOTES
+                </span>
+              </div>
+              <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.95rem", fontWeight: "900", color: "#ffffff", marginTop: "2px" }}>
+                #{dotdDriver.num} {dotdDriver.name || dotdDriver.code}
+              </div>
+              <div style={{ fontSize: "0.68rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
+                {dotdGain > 0 ? `▲ GAINED +${dotdGain} POSITIONS` : "HEROIC RACE STINT & PACE"} · {dotdDriver.team}
+              </div>
+            </div>
+          </div>
+
+          {/* Strategist Performance Rating */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(20, 36, 48, 0.95) 0%, rgba(10, 18, 28, 0.98) 100%)",
+              border: `1.5px solid ${strategyGrade.color}`,
+              borderRadius: "10px",
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              boxShadow: `0 0 20px ${strategyGrade.color}33`,
+            }}
+          >
+            <div
+              style={{
+                width: "54px",
+                height: "54px",
+                borderRadius: "10px",
+                background: `linear-gradient(135deg, ${strategyGrade.color}33, ${strategyGrade.color}11)`,
+                border: `2px solid ${strategyGrade.color}`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 0 12px ${strategyGrade.color}66`,
+              }}
+            >
+              <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "1.25rem", fontWeight: "900", color: strategyGrade.color, lineHeight: 1 }}>
+                {strategyGrade.grade}
+              </span>
+              <span style={{ fontSize: "0.52rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff", marginTop: "2px" }}>
+                RATING
+              </span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.66rem", fontWeight: "900", color: strategyGrade.color, letterSpacing: "0.08em" }}>
+                  STRATEGIST PERFORMANCE INDEX
+                </span>
+                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.62rem", fontWeight: "900", color: "#ffffff" }}>
+                  SCORE: {strategyScore}/100
+                </span>
+              </div>
+              <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.85rem", fontWeight: "900", color: "#ffffff", marginTop: "2px" }}>
+                {strategyGrade.title}
+              </div>
+              <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600" }}>
+                {strategyGrade.desc}
+              </div>
             </div>
           </div>
         </div>

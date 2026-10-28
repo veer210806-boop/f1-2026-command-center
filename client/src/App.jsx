@@ -1051,6 +1051,7 @@ export default function App() {
               onDriversUpdate={setDrivers}
               plannedStrategies={plannedStrategies}
               driverPlans={driverPlans}
+              onUpdateDriverPlan={handleUpdateDriverPlan}
               onCompletePlanStop={handleCompletePlanStop}
               activePitEvent={activePitEvent}
               onSetPitEvent={setActivePitEvent}

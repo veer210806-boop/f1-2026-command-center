@@ -666,6 +666,7 @@ function TimingTower({
   onDriversUpdate,
   plannedStrategies = [],
   driverPlans,
+  onUpdateDriverPlan,
   onCompletePlanStop,
   activePitEvent: propActivePitEvent,
   onSetPitEvent,
@@ -759,6 +760,25 @@ function TimingTower({
   const [sessionFlag, setSessionFlag] = useState(controlledFlag || "GREEN");
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [isFiaModalOpen, setIsFiaModalOpen] = useState(false);
+  const [dismissedScLap, setDismissedScLap] = useState(null);
+  const [dismissedCliffDriverCode, setDismissedCliffDriverCode] = useState(null);
+
+  // Player Team Drivers for In-Race Tactical Dilemmas & Directives
+  const playerTeamDrivers = useMemo(() => {
+    if (!drivers || drivers.length === 0) return [];
+    return drivers.filter((d) => {
+      if (!d.team) return false;
+      const teamLower = d.team.toLowerCase();
+      const pLower = playerTeam.toLowerCase();
+      return (
+        teamLower.includes(pLower) ||
+        pLower.includes(teamLower) ||
+        (pLower.includes("red") && teamLower.includes("red")) ||
+        (pLower.includes("audi") && teamLower.includes("sauber")) ||
+        (pLower.includes("sauber") && teamLower.includes("audi"))
+      );
+    });
+  }, [drivers, playerTeam]);
 
   // Listen to external overtake triggers from LiveBroadcastGantry
   useEffect(() => {
@@ -793,9 +813,26 @@ function TimingTower({
 
   // ── Tactical Pit Stop Execution Triggered from PitWallStrategyDeck ──
   const handleExecutePitStop = ({ driverCode, targetCompound, reentry }) => {
-    const baseLoss = sessionFlag === "SC" ? 13.5 : sessionFlag === "VSC" ? 15.2 : (selectedCircuit?.pit_loss_green || 22.5);
-    const pitCrewVariance = +((Math.random() * 0.4) - 0.2).toFixed(2);
-    const actualPitLoss = +(baseLoss + pitCrewVariance).toFixed(2);
+    // Authentic Pit Crew Stopwatch RNG
+    const rng = Math.random();
+    let stationarySec = 2.4;
+    let crewRating = "🟢 CLEAN 2.4s STOP";
+    if (rng < 0.15) {
+      stationarySec = +(2.0 + Math.random() * 0.25).toFixed(1);
+      crewRating = `⚡ ${stationarySec}s WORLD RECORD STOP!`;
+    } else if (rng < 0.85) {
+      stationarySec = +(2.3 + Math.random() * 0.35).toFixed(1);
+      crewRating = `🟢 ${stationarySec}s TEXTBOOK STOP`;
+    } else if (rng < 0.95) {
+      stationarySec = +(3.1 + Math.random() * 0.4).toFixed(1);
+      crewRating = `⚠️ ${stationarySec}s RIGHT-REAR HESITATION`;
+    } else {
+      stationarySec = +(4.6 + Math.random() * 0.9).toFixed(1);
+      crewRating = `🔴 ${stationarySec}s CROSS-THREADED NUT!`;
+    }
+    const trackTransitLoss = sessionFlag === "SC" ? 11.2 : sessionFlag === "VSC" ? 13.0 : (selectedCircuit?.pit_loss_green ? selectedCircuit.pit_loss_green - 2.5 : 19.8);
+    const actualPitLoss = +(trackTransitLoss + parseFloat(stationarySec)).toFixed(1);
+    const pitStopDurationStr = `${stationarySec}s stationary (${actualPitLoss}s pit loss) · ${crewRating}`;
 
     const parseGapSec = (gapStr) => {
       if (!gapStr || gapStr === "LEADER") return 0;
@@ -871,7 +908,7 @@ function TimingTower({
 
       const aheadNotice = carAhead ? ` behind ${carAhead.code} (#${carAhead.num})` : " in clean air";
       const compName = targetCompound === "S" ? "Soft" : targetCompound === "M" ? "Medium" : targetCompound === "I" ? "Intermediate" : "Hard";
-      const eventMsg = `📦 LIVE PIT STOP: LAP ${currentLap}: #${targetDriver.num} ${targetDriver.code} (${targetDriver.team}) BOXES · FITS ${compName} (${actualPitLoss}s stop) · REJOINS P${newTargetPos}${aheadNotice}!`;
+      const eventMsg = `📦 LIVE PIT STOP: LAP ${currentLap}: #${targetDriver.num} ${targetDriver.code} (${targetDriver.team}) BOXES · FITS ${compName} [${pitStopDurationStr}] · REJOINS P${newTargetPos}${aheadNotice}!`;
       setOvertakeEvent(eventMsg);
       setActivePitEvent({
         lap: currentLap,
@@ -881,7 +918,7 @@ function TimingTower({
         team: targetDriver.team,
         tire: targetCompound,
         compoundName: compName,
-        stopDuration: `${actualPitLoss}s stop`,
+        stopDuration: pitStopDurationStr,
         reEntryPos: newTargetPos,
         reason: "Tactical Box Command",
       });
@@ -918,14 +955,45 @@ function TimingTower({
         let pitStopReason = "";
         let pitDurationStr = "";
 
-        // 1. Dynamic Tire Degradation & AI Opponent Autonomous Pit Calls
-        let updated = prevDrivers.map((d) => {
-          const isPlayerDriver = userRole === "team" && d.team && d.team.toLowerCase().includes(playerTeam.toLowerCase());
-          
-          // Compound wear rate
-          const wearRate = d.tire === "S" ? 4.8 : d.tire === "M" ? 2.9 : d.tire === "H" ? 1.8 : 3.0;
-          const wetPenalty = (trackDampness > 30 && (d.tire === "S" || d.tire === "M" || d.tire === "H")) ? 6.0 : 0;
-          const newWear = Math.min(100, Math.round((d.wear || 20) + wearRate + wetPenalty));
+        // 1. Dynamic Tire Degradation, Tactical Push Modes & AI Opponent Autonomous Pit Calls
+        let updated = prevDrivers.map((d, dIdx) => {
+          const isPlayerDriver =
+            userRole === "team" &&
+            d.team &&
+            (d.team.toLowerCase().includes(playerTeam.toLowerCase()) ||
+              playerTeam.toLowerCase().includes(d.team.toLowerCase()) ||
+              (playerTeam.toLowerCase().includes("red") && d.team.toLowerCase().includes("red")) ||
+              (playerTeam.toLowerCase().includes("audi") && d.team.toLowerCase().includes("sauber")) ||
+              (playerTeam.toLowerCase().includes("sauber") && d.team.toLowerCase().includes("audi")));
+
+          // Driver Push Mode (Tactical Engine Delta)
+          const plan = driverPlans?.[d.code];
+          let pushMode = plan?.pushMode || "balanced";
+
+          // AI Opponent Push Dynamics
+          if (!isPlayerDriver) {
+            const gapToAhead = dIdx > 0 ? ((d.gapSec || 0) - (prevDrivers[dIdx - 1]?.gapSec || 0)) : 999;
+            if (gapToAhead < 0.95 && (d.wear || 20) < 60) {
+              pushMode = "attack";
+            } else if ((d.wear || 20) > 68) {
+              pushMode = "conserve";
+            } else {
+              pushMode = "balanced";
+            }
+          }
+
+          // Push Mode Modifiers:
+          // Attack: -0.38s lap pace (faster!), but 1.55x wear rate
+          // Conserve: +0.32s lap pace (saving tires), 0.65x wear rate
+          // Balanced: 0.0s, 1.0x wear rate
+          const pushWearMult = pushMode === "attack" ? 1.55 : pushMode === "conserve" ? 0.65 : 1.0;
+          const pushPaceDelta = pushMode === "attack" ? -0.38 : pushMode === "conserve" ? +0.32 : 0.0;
+
+          // Compound base wear rate & wet penalty
+          const baseWearRate = d.tire === "S" ? 4.8 : d.tire === "M" ? 2.9 : d.tire === "H" ? 1.8 : 3.0;
+          const wetPenalty = (trackDampness > 30 && (d.tire === "S" || d.tire === "M" || d.tire === "H")) ? 6.5 : 0;
+          const appliedWear = (baseWearRate * pushWearMult) + wetPenalty;
+          const newWear = Math.min(100, Math.round((d.wear || 20) + appliedWear));
           const newTireAge = (d.tireAge || 0) + 1;
 
           let aiPitted = false;
@@ -933,6 +1001,24 @@ function TimingTower({
           let currentPitState = d.pitState === "IN PIT" ? "RACING" : (d.pitState || "RACING");
           let currentPits = d.pits || 0;
           let currentGapSec = d.gapSec !== undefined ? d.gapSec : parseGapSec(d.gap);
+
+          // Realistic Pit Crew Stationary Stopwatch RNG
+          const getPitCrewTime = () => {
+            const rng = Math.random();
+            if (rng < 0.15) {
+              const sec = +(2.0 + Math.random() * 0.25).toFixed(1);
+              return { sec, label: `⚡ ${sec}s WORLD RECORD STOP` };
+            } else if (rng < 0.85) {
+              const sec = +(2.3 + Math.random() * 0.35).toFixed(1);
+              return { sec, label: `🟢 ${sec}s CLEAN STOP` };
+            } else if (rng < 0.95) {
+              const sec = +(3.1 + Math.random() * 0.4).toFixed(1);
+              return { sec, label: `⚠️ ${sec}s RIGHT-REAR HESITATION` };
+            } else {
+              const sec = +(4.6 + Math.random() * 0.9).toFixed(1);
+              return { sec, label: `🔴 ${sec}s STUCK WHEEL NUT!` };
+            }
+          };
 
           // Check if this driver has a planned strategy directive for this exact lap!
           const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && s.lap === controlledLap && !s.applied);
@@ -942,26 +1028,44 @@ function TimingTower({
             currentPits += 1;
             currentPitState = "IN PIT";
             aiNewTire = plannedStop.targetCompound;
-            const pitLoss = sessionFlag === "SC" ? 13.5 : (selectedCircuit?.pit_loss_green || 22.5);
-            currentGapSec += pitLoss;
+            const crew = getPitCrewTime();
+            const trackTransitLoss = sessionFlag === "SC" ? 11.2 : (selectedCircuit?.pit_loss_green || 19.8);
+            const totalPitLoss = +(trackTransitLoss + crew.sec).toFixed(1);
+            currentGapSec += totalPitLoss;
             onCompletePlanStop?.(d.code, plannedStop.stopNum || 1);
             pittedDriverCode = d.code;
             pitStopReason = "Planned Strategy Call";
-            pitDurationStr = `${pitLoss.toFixed(1)}s stop`;
+            pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
           } else if (!isPlayerDriver && (newWear > 74 || (sessionFlag === "SC" && newTireAge > 14 && Math.random() > 0.45))) {
             aiPitted = true;
             currentPits += 1;
             currentPitState = "IN PIT";
             aiNewTire = trackDampness > 30 ? "I" : d.tire === "M" ? "H" : "M";
-            const pitLoss = sessionFlag === "SC" ? 13.5 : (selectedCircuit?.pit_loss_green || 22.5);
-            currentGapSec += pitLoss;
+            const crew = getPitCrewTime();
+            const trackTransitLoss = sessionFlag === "SC" ? 11.2 : (selectedCircuit?.pit_loss_green || 19.8);
+            const totalPitLoss = +(trackTransitLoss + crew.sec).toFixed(1);
+            currentGapSec += totalPitLoss;
             pittedDriverCode = d.code;
             pitStopReason = sessionFlag === "SC" ? "Free SC Pit Stop" : "Tire Degradation Cliff";
-            pitDurationStr = `${(2.2 + Math.random() * 0.4).toFixed(1)}s stop (${pitLoss.toFixed(1)}s)`;
+            pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
           } else {
-            // Authentic lap delta: fresh tires (<30% wear) have pace advantage; old tires (>65% wear) drop tenths
-            const paceDelta = ((newWear - 40) * 0.008) + ((Math.random() * 0.08) - 0.04);
-            currentGapSec = +(Math.max(0, currentGapSec + paceDelta)).toFixed(3);
+            // Authentic F1 Race Physics & Tire Modeling:
+            // 1. Compound Grip Delta: Soft is -0.42s faster; Hard is +0.35s slower
+            const compPaceDelta = d.tire === "S" ? -0.42 : d.tire === "H" ? +0.35 : 0.0;
+            // 2. Linear Wear Degradation
+            const linearWearLoss = ((newWear - 35) * 0.007);
+            // 3. Pirelli Degradation Cliff (>70% wear triggers steep pace drop-off)
+            const cliffPenalty = newWear > 70 ? +((newWear - 70) * 0.085) : 0;
+            // 4. Fresh Tire Out-Lap Advantage (makes strategic undercuts powerful!)
+            const freshTireBoost = newTireAge <= 2 ? -0.45 : 0.0;
+            // 5. DRS / Slipstream Advantage (< 1.000s to car ahead)
+            const gapToAhead = dIdx > 0 ? (currentGapSec - (prevDrivers[dIdx - 1]?.gapSec || 0)) : 999;
+            const drsBonus = (gapToAhead > 0 && gapToAhead < 1.0) ? -0.22 : 0.0;
+            // 6. Natural micro lap variance
+            const variance = (Math.random() * 0.06) - 0.03;
+
+            const totalLapDelta = pushPaceDelta + compPaceDelta + linearWearLoss + cliffPenalty + freshTireBoost + drsBonus + variance;
+            currentGapSec = +(Math.max(0, currentGapSec + totalLapDelta)).toFixed(3);
           }
 
           return {
@@ -972,6 +1076,7 @@ function TimingTower({
             pits: currentPits,
             pitState: currentPitState,
             gapSec: currentGapSec,
+            pushMode,
           };
         });
 
@@ -1048,7 +1153,14 @@ function TimingTower({
               "outbraking at the Hairpin",
               "due to Fresh Tire Grip Advantage",
             ];
-            const reason = duelReasons[controlledLap % duelReasons.length];
+            let reason = duelReasons[controlledLap % duelReasons.length];
+            if (carBehind.tireAge <= 2 && (carAhead.wear || 20) > 55) {
+              reason = "⚡ UNDERCUT SUCCESS: Slices past via Fresh Tire Grip Delta!";
+            } else if (carBehind.pushMode === "attack") {
+              reason = "🔥 ATTACK MODE OVERTAKE: Blasts past with 350kW MGU-K Boost!";
+            } else if ((carAhead.wear || 20) > 72) {
+              reason = "capitalizing on opponent's severe tire degradation cliff";
+            }
 
             const newBehindPos = updated.findIndex((d) => d.code === carBehind.code) + 1;
             const newAheadPos = updated.findIndex((d) => d.code === carAhead.code) + 1;
@@ -2782,6 +2894,295 @@ function TimingTower({
             </div>
           )}
 
+          {/* ── SAFETY CAR TACTICAL FREE PIT WINDOW DILEMMA CARD ── */}
+          {(sessionFlag === "SC" || sessionFlag === "VSC" || controlledFlag === "SC" || controlledFlag === "VSC") && dismissedScLap !== currentLap && (
+            <div
+              style={{
+                background: "linear-gradient(90deg, rgba(34, 28, 10, 0.98) 0%, rgba(20, 18, 12, 0.98) 100%)",
+                border: "2px solid #ffd700",
+                borderLeft: "8px solid #ffd700",
+                borderRadius: "6px",
+                padding: "10px 14px",
+                boxShadow: "0 0 24px rgba(255, 215, 0, 0.4), 0 8px 30px rgba(0,0,0,0.8)",
+                margin: "4px 0 8px 0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                animation: "f1BroadcastBannerIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "1.2rem", animation: "f1PillPulse 1s infinite" }}>🟡</span>
+                  <div>
+                    <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "#ffd700", letterSpacing: "0.06em" }}>
+                      SAFETY CAR TACTICAL WINDOW OPEN · LAP {currentLap}
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "#d0d5e5", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600" }}>
+                      Free pit stop delta! Pitting now costs only ~13.5s (Save 9.0s vs green flag pit stop).
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", color: "#ffd700", background: "rgba(255,215,0,0.15)", border: "1px solid #ffd700", padding: "2px 8px", borderRadius: "3px", fontWeight: "800" }}>
+                    DELTA ADVANTAGE: +9.0s
+                  </span>
+                  <button
+                    onClick={() => setDismissedScLap(currentLap)}
+                    style={{ background: "transparent", border: "none", color: "#a0a5b8", cursor: "pointer", fontSize: "0.95rem", fontWeight: "700" }}
+                    title="Dismiss SC Window card"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons for Player Drivers */}
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                {playerTeamDrivers.map((driver) => {
+                  const isPitted = driver.pitState === "IN PIT";
+                  const targetComp = driver.tire === "M" ? "H" : "M";
+                  return (
+                    <div
+                      key={driver.code}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        background: "rgba(0,0,0,0.5)",
+                        border: "1px solid rgba(255,215,0,0.35)",
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "900", color: "#ffffff" }}>
+                        #{driver.num} {driver.code} (P{driver.pos} · {driver.tireAge}L {driver.tire}):
+                      </span>
+                      <button
+                        onClick={() => handleExecutePitStop({ driverCode: driver.code, targetCompound: targetComp })}
+                        disabled={isPitted}
+                        style={{
+                          background: "linear-gradient(90deg, #ffd700 0%, #ffaa00 100%)",
+                          border: "none",
+                          color: "#000000",
+                          fontFamily: "'Orbitron', monospace",
+                          fontSize: "0.66rem",
+                          fontWeight: "900",
+                          padding: "4px 10px",
+                          borderRadius: "4px",
+                          cursor: isPitted ? "not-allowed" : "pointer",
+                          boxShadow: "0 0 10px rgba(255,215,0,0.5)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <span>📦</span>
+                        <span>BOX FOR {targetComp === "H" ? "HARD (C2)" : "MEDIUM (C3)"}</span>
+                      </button>
+                      <button
+                        onClick={() => setDismissedScLap(currentLap)}
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          color: "#d0d5e5",
+                          fontFamily: "'Orbitron', monospace",
+                          fontSize: "0.62rem",
+                          fontWeight: "800",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        🛡️ STAY OUT
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── CRITICAL TIRE CLIFF WARNING DILEMMA ── */}
+          {(() => {
+            const cliffDriver = playerTeamDrivers.find((d) => (d.wear || 20) >= 70 && d.pitState !== "IN PIT" && dismissedCliffDriverCode !== d.code);
+            if (!cliffDriver) return null;
+            const targetComp = cliffDriver.pits >= 1 ? "H" : "M";
+            return (
+              <div
+                style={{
+                  background: "linear-gradient(90deg, rgba(42, 14, 18, 0.98) 0%, rgba(24, 10, 14, 0.98) 100%)",
+                  border: "2px solid #ff1801",
+                  borderLeft: "8px solid #ff1801",
+                  borderRadius: "6px",
+                  padding: "10px 14px",
+                  boxShadow: "0 0 24px rgba(255, 24, 1, 0.45), 0 8px 30px rgba(0,0,0,0.8)",
+                  margin: "4px 0 8px 0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                  animation: "f1BroadcastBannerIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "1.3rem", animation: "f1PillPulse 0.8s infinite" }}>🚨</span>
+                  <div>
+                    <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "#ff4d4d", letterSpacing: "0.05em" }}>
+                      CRITICAL TIRE CLIFF: #{cliffDriver.num} {cliffDriver.code} AT {cliffDriver.wear}% WEAR!
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "#d0d5e5", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600" }}>
+                      Grip cliff active: losing ~1.2s/lap! Rivals with fresh rubber are closing in rapidly.
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    onClick={() => handleExecutePitStop({ driverCode: cliffDriver.code, targetCompound: targetComp })}
+                    style={{
+                      background: "linear-gradient(90deg, #ff1801 0%, #ff5555 100%)",
+                      border: "none",
+                      color: "#ffffff",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.68rem",
+                      fontWeight: "900",
+                      padding: "5px 12px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      boxShadow: "0 0 12px rgba(255, 24, 1, 0.6)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <span>⚡</span>
+                    <span>EMERGENCY BOX THIS LAP ({targetComp === "H" ? "HARD" : "MEDIUM"})</span>
+                  </button>
+                  <button
+                    onClick={() => setDismissedCliffDriverCode(cliffDriver.code)}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      color: "#d0d5e5",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.62rem",
+                      fontWeight: "800",
+                      padding: "5px 10px",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ⚠️ GAMBLE & EXTEND
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── PIT WALL PUSH DIRECTIVES & QUICK-COMMAND BAR ── */}
+          {playerTeamDrivers.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(90deg, rgba(16, 22, 36, 0.95) 0%, rgba(12, 16, 28, 0.95) 100%)",
+                border: "1px solid rgba(0, 210, 190, 0.35)",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                margin: "4px 0 8px 0",
+                flexWrap: "wrap",
+                gap: "8px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "0.95rem" }}>🎮</span>
+                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", fontWeight: "900", color: "var(--neon-cyan)", letterSpacing: "0.06em" }}>
+                  PIT WALL TACTICAL DIRECTIVES:
+                </span>
+                <span style={{ fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Rajdhani', sans-serif" }}>
+                  (Command pace & tire degradation live from the pit wall)
+                </span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+                {playerTeamDrivers.map((driver) => {
+                  const currentPush = driverPlans?.[driver.code]?.pushMode || "balanced";
+                  return (
+                    <div key={driver.code} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.72rem", fontWeight: "900", color: "#ffffff" }}>
+                        #{driver.num} {driver.code}:
+                      </span>
+                      <div style={{ display: "flex", gap: "3px" }}>
+                        <button
+                          onClick={() => onUpdateDriverPlan && onUpdateDriverPlan(driver.code, { pushMode: "attack" })}
+                          style={{
+                            background: currentPush === "attack" ? "linear-gradient(90deg, #ff1801, #ff5555)" : "rgba(255,255,255,0.06)",
+                            border: `1px solid ${currentPush === "attack" ? "#ff1801" : "rgba(255,255,255,0.12)"}`,
+                            color: currentPush === "attack" ? "#ffffff" : "var(--text-secondary)",
+                            fontFamily: "'Orbitron', monospace",
+                            fontSize: "0.58rem",
+                            fontWeight: "900",
+                            padding: "2px 7px",
+                            borderRadius: "3px",
+                            cursor: "pointer",
+                            boxShadow: currentPush === "attack" ? "0 0 10px rgba(255,24,1,0.5)" : "none",
+                            transition: "all 0.15s ease",
+                          }}
+                          title="Attack: -0.38s lap pace advantage, 1.55x tire degradation rate"
+                        >
+                          ⚡ ATTACK
+                        </button>
+                        <button
+                          onClick={() => onUpdateDriverPlan && onUpdateDriverPlan(driver.code, { pushMode: "balanced" })}
+                          style={{
+                            background: currentPush === "balanced" ? "linear-gradient(90deg, #00e676, #00b0ff)" : "rgba(255,255,255,0.06)",
+                            border: `1px solid ${currentPush === "balanced" ? "#00e676" : "rgba(255,255,255,0.12)"}`,
+                            color: currentPush === "balanced" ? "#000000" : "var(--text-secondary)",
+                            fontFamily: "'Orbitron', monospace",
+                            fontSize: "0.58rem",
+                            fontWeight: "900",
+                            padding: "2px 7px",
+                            borderRadius: "3px",
+                            cursor: "pointer",
+                            boxShadow: currentPush === "balanced" ? "0 0 10px rgba(0,230,118,0.5)" : "none",
+                            transition: "all 0.15s ease",
+                          }}
+                          title="Balanced: Target delta pace, standard 1.0x tire wear"
+                        >
+                          🎯 BALANCED
+                        </button>
+                        <button
+                          onClick={() => onUpdateDriverPlan && onUpdateDriverPlan(driver.code, { pushMode: "conserve" })}
+                          style={{
+                            background: currentPush === "conserve" ? "linear-gradient(90deg, #00d2be, #0088ff)" : "rgba(255,255,255,0.06)",
+                            border: `1px solid ${currentPush === "conserve" ? "#00d2be" : "rgba(255,255,255,0.12)"}`,
+                            color: currentPush === "conserve" ? "#ffffff" : "var(--text-secondary)",
+                            fontFamily: "'Orbitron', monospace",
+                            fontSize: "0.58rem",
+                            fontWeight: "900",
+                            padding: "2px 7px",
+                            borderRadius: "3px",
+                            cursor: "pointer",
+                            boxShadow: currentPush === "conserve" ? "0 0 10px rgba(0,210,190,0.5)" : "none",
+                            transition: "all 0.15s ease",
+                          }}
+                          title="Conserve: +0.32s lap pace delta, saves 35% tire wear"
+                        >
+                          🛡️ CONSERVE
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Unified Table with Sticky Header */}
           <div
             style={{
@@ -3143,13 +3544,72 @@ function TimingTower({
                               </span>
                             );
                           })()}
+
+                          {/* Driver Push Mode Badge */}
+                          {isDriverOnPlayerTeam && (
+                            <span
+                              style={{
+                                fontSize: "0.56rem",
+                                fontFamily: "'Orbitron', monospace",
+                                fontWeight: "900",
+                                padding: "1px 5px",
+                                borderRadius: "3px",
+                                letterSpacing: "0.04em",
+                                lineHeight: 1,
+                                flexShrink: 0,
+                                background:
+                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
+                                    ? "rgba(255, 24, 1, 0.28)"
+                                    : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
+                                    ? "rgba(0, 210, 190, 0.22)"
+                                    : "rgba(0, 230, 118, 0.22)",
+                                border: `1px solid ${
+                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
+                                    ? "#ff1801"
+                                    : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
+                                    ? "#00d2be"
+                                    : "#00e676"
+                                }`,
+                                color:
+                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
+                                    ? "#ff5555"
+                                    : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
+                                    ? "#00f0ff"
+                                    : "#00e676",
+                                boxShadow:
+                                  (driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
+                                    ? "0 0 8px rgba(255, 24, 1, 0.45)"
+                                    : "none",
+                              }}
+                              title={`Push Mode: ${(driverPlans?.[d.code]?.pushMode || "balanced").toUpperCase()}`}
+                            >
+                              {(driverPlans?.[d.code]?.pushMode || "balanced") === "attack"
+                                ? "⚡ ATK"
+                                : (driverPlans?.[d.code]?.pushMode || "balanced") === "conserve"
+                                ? "🛡️ CNS"
+                                : "🎯 BAL"}
+                            </span>
+                          )}
                         </div>
                       </td>
 
-                      {/* Tyre / Age */}
+                      {/* Tyre / Age & Remaining Life % */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center", verticalAlign: "middle" }}>
-                        <div style={{ display: "inline-flex", justifyContent: "center", alignItems: "center" }}>
+                        <div style={{ display: "inline-flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "2px" }}>
                           <TireWheel compound={d.tire} laps={d.tireAge} />
+                          <span
+                            style={{
+                              fontSize: "0.56rem",
+                              fontFamily: "'Orbitron', monospace",
+                              fontWeight: "800",
+                              color: (d.wear || 20) > 70 ? "#ff2a2a" : (d.wear || 20) > 45 ? "#ffaa00" : "#00e676",
+                              letterSpacing: "0.02em",
+                              lineHeight: 1,
+                            }}
+                            title={`Tire Life Remaining: ${Math.max(0, 100 - (d.wear || 20))}%`}
+                          >
+                            {Math.max(0, 100 - (d.wear || 20))}%
+                          </span>
                         </div>
                       </td>
 
@@ -3206,14 +3666,37 @@ function TimingTower({
                         )}
                       </td>
 
-                      {/* Interval to Ahead with Trend Pill */}
+                      {/* Interval to Ahead with Trend Pill & DRS Open Badge */}
                       <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "right" }}>
                         {d.pitState === "IN PIT" ? (
                           <span style={{ fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.62rem" : "0.68rem", color: "#ffaa00", fontWeight: "800" }}>
                             BOX BOX
                           </span>
                         ) : (
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.70rem" : "0.74rem", color: "#e8e8f0" }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "4px", fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.70rem" : "0.74rem", color: "#e8e8f0" }}>
+                            {d.pos > 1 && (() => {
+                              const gapNum = parseFloat(String(d.interval).replace("+", "").replace("s", ""));
+                              return !isNaN(gapNum) && gapNum > 0 && gapNum < 1.000 ? (
+                                <span
+                                  style={{
+                                    fontSize: "0.52rem",
+                                    fontFamily: "'Orbitron', monospace",
+                                    fontWeight: "900",
+                                    background: "rgba(0, 230, 118, 0.22)",
+                                    border: "1px solid #00e676",
+                                    color: "#00e676",
+                                    padding: "1px 4px",
+                                    borderRadius: "2px",
+                                    letterSpacing: "0.04em",
+                                    boxShadow: "0 0 6px rgba(0, 230, 118, 0.4)",
+                                    lineHeight: 1,
+                                  }}
+                                  title="DRS Open: Gap under 1.000s"
+                                >
+                                  🟢 DRS
+                                </span>
+                              ) : null;
+                            })()}
                             <span>{d.pos === 1 ? "—" : d.interval}</span>
                             {d.pos > 1 && (
                               <span
