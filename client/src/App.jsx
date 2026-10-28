@@ -154,7 +154,7 @@ export function createInitialTeamPlans(teamId, gridList = [], totalLaps = 58) {
       stop2SetId: "S2",
       stop2Completed: false,
       pushMode: "balanced",
-      nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+      nextRecommendedWindow: "Laps 22 - 27 (Hard)",
     },
     [d2.code]: {
       stopsCount: 1,
@@ -165,7 +165,7 @@ export function createInitialTeamPlans(teamId, gridList = [], totalLaps = 58) {
       stop2SetId: "S1",
       stop2Completed: false,
       pushMode: "balanced",
-      nextRecommendedWindow: "Laps 25 - 28 (Hard C2)",
+      nextRecommendedWindow: "Laps 25 - 28 (Hard)",
     },
   };
 
@@ -610,7 +610,7 @@ export default function App() {
         stop2SetId: "S1",
         stop2Completed: false,
         pushMode: "balanced",
-        nextRecommendedWindow: "Laps 22 - 27 (Hard C2)",
+        nextRecommendedWindow: "Laps 22 - 27 (Hard)",
       };
       const merged = { ...current, ...updatedFields };
 
@@ -620,7 +620,7 @@ export default function App() {
         const newPlanned = [];
 
         if (!merged.stop1Completed && merged.stop1Lap) {
-          const comp = merged.stop1SetId?.startsWith("S") ? "S" : merged.stop1SetId?.startsWith("M") ? "M" : "H";
+          const comp = merged.stop1SetId?.startsWith("S") ? "S" : merged.stop1SetId?.startsWith("M") ? "M" : merged.stop1SetId?.startsWith("I") ? "I" : merged.stop1SetId?.startsWith("W") ? "W" : "H";
           newPlanned.push({
             id: `stop1_${driverCode}`,
             driverCode,
@@ -633,7 +633,7 @@ export default function App() {
           });
         }
         if (merged.stopsCount === 2 && !merged.stop2Completed && merged.stop2Lap) {
-          const comp = merged.stop2SetId?.startsWith("S") ? "S" : merged.stop2SetId?.startsWith("M") ? "M" : "H";
+          const comp = merged.stop2SetId?.startsWith("S") ? "S" : merged.stop2SetId?.startsWith("M") ? "M" : merged.stop2SetId?.startsWith("I") ? "I" : merged.stop2SetId?.startsWith("W") ? "W" : "H";
           newPlanned.push({
             id: `stop2_${driverCode}`,
             driverCode,
@@ -727,7 +727,7 @@ export default function App() {
 
         const prevAhead = i > 0 ? updated[i - 1] : null;
         const intervalVal = isLead
-          ? d.bestLap || "1:28.412"
+          ? "—"
           : `+${(d.gapSec - (prevAhead?.gapSec || 0)).toFixed(3)}s`;
 
         return {

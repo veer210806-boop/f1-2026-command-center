@@ -9,11 +9,20 @@ import { getDriverFaceUrl, DRIVER_PHOTOS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
 
+const getCompoundColor = (comp) => {
+  if (comp === "S") return "#FF1801";
+  if (comp === "M") return "#FFD700";
+  if (comp === "H") return "#FFFFFF";
+  if (comp === "I") return "#39B54A";
+  if (comp === "W") return "#00A0DE";
+  return "#FFD700";
+};
+
 // Pirelli 2026 Compound Specifications
 const TIRE_SPECS = {
   S: {
     letter: "S",
-    name: "Soft (C4)",
+    name: "Soft",
     color: "#FF1801",
     paceDelta: "-1.1s",
     optimalLaps: "1 - 15 laps",
@@ -23,7 +32,7 @@ const TIRE_SPECS = {
   },
   M: {
     letter: "M",
-    name: "Medium (C3)",
+    name: "Medium",
     color: "#FFD700",
     paceDelta: "0.0s (Baseline)",
     optimalLaps: "16 - 28 laps",
@@ -33,7 +42,7 @@ const TIRE_SPECS = {
   },
   H: {
     letter: "H",
-    name: "Hard (C2)",
+    name: "Hard",
     color: "#FFFFFF",
     paceDelta: "+0.8s",
     optimalLaps: "28 - 46 laps",
@@ -65,12 +74,13 @@ const TIRE_SPECS = {
 
 // Available Weekend Tire Rack
 const DEFAULT_TIRE_SETS = [
-  { id: "S1", compound: "S", label: "NEW Soft (C4)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Brand new sticker set · 100% grip" },
-  { id: "S2", compound: "S", label: "USED Q3 Soft", condition: "USED", wear: 16, age: 3, lifePct: 84, desc: "Used 3 laps in Q3 Shootout" },
-  { id: "M1", compound: "M", label: "NEW Medium (C3)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Brand new sticker set · Prime race tire" },
-  { id: "M2", compound: "M", label: "SCRUBBED Q2 Medium", condition: "USED", wear: 9, age: 2, lifePct: 91, desc: "Heat-cycled 2 laps in Q2" },
-  { id: "H1", compound: "H", label: "NEW Hard (C2)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Brand new sticker set · 45+ lap longevity" },
-  { id: "I1", compound: "I", label: "NEW Intermediate", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Grooved intermediate wet tire" },
+  { id: "S1", compound: "S", label: "New Soft (100%)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Brand new sticker set · 100% grip" },
+  { id: "S2", compound: "S", label: "Used Soft (84%)", condition: "USED", wear: 16, age: 3, lifePct: 84, desc: "Used 3 laps in Q3 Shootout" },
+  { id: "M1", compound: "M", label: "New Medium (100%)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Brand new sticker set · Prime race tire" },
+  { id: "M2", compound: "M", label: "Scrubbed Medium (91%)", condition: "USED", wear: 9, age: 2, lifePct: 91, desc: "Heat-cycled 2 laps in Q2" },
+  { id: "H1", compound: "H", label: "New Hard (100%)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Brand new sticker set · 45+ lap longevity" },
+  { id: "I1", compound: "I", label: "New Intermediate (100%)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Grooved intermediate wet tire" },
+  { id: "W1", compound: "W", label: "New Full Wet (100%)", condition: "NEW", wear: 0, age: 0, lifePct: 100, desc: "Deep tread wet tire for heavy rain" },
 ];
 
 // Realistic 2026 AI Rival Pit Windows
@@ -527,7 +537,7 @@ export default function StrategyAdvisor({
                 <span style={{ fontSize: "0.68rem", color: "var(--neon-cyan)", fontWeight: "800", fontFamily: "'Orbitron', monospace" }}>
                   P{driver.pos}
                 </span>
-                <span style={{ fontSize: "0.60rem", background: driver.tire === "S" ? "#FF1801" : driver.tire === "M" ? "#FFD700" : "#FFFFFF", color: driver.tire === "H" ? "#000" : "#fff", padding: "1px 5px", borderRadius: "3px", fontWeight: "900" }}>
+                <span style={{ fontSize: "0.60rem", background: getCompoundColor(driver.tire), color: driver.tire === "H" ? "#000" : "#fff", padding: "1px 5px", borderRadius: "3px", fontWeight: "900" }}>
                   {driver.tire || "M"}
                 </span>
                 <span style={{ fontSize: "0.64rem", color: dWear > 70 ? "var(--neon-red)" : "var(--neon-green)", fontWeight: "800", fontFamily: "'Orbitron', monospace" }}>
@@ -646,7 +656,7 @@ export default function StrategyAdvisor({
                     fontWeight: "900",
                     padding: "2px 7px",
                     borderRadius: "4px",
-                    background: driverTire === "S" ? "#FF1801" : driverTire === "M" ? "#FFD700" : driverTire === "H" ? "#FFFFFF" : "#00A0DE",
+                    background: getCompoundColor(driverTire),
                     color: driverTire === "H" ? "#000000" : "#ffffff",
                   }}
                 >
@@ -749,7 +759,7 @@ export default function StrategyAdvisor({
               <div
                 style={{
                   width: `${Math.round((currentPlan.stop1Lap / totalLaps) * 100)}%`,
-                  background: driverTire === "S" ? "#FF1801" : driverTire === "H" ? "#FFFFFF" : "#FFD700",
+                  background: getCompoundColor(driverTire),
                   color: driverTire === "H" ? "#000000" : "#ffffff",
                   fontSize: "0.60rem",
                   fontFamily: "'Orbitron', monospace",
@@ -769,7 +779,7 @@ export default function StrategyAdvisor({
                 <div
                   style={{
                     width: `${100 - Math.round((currentPlan.stop1Lap / totalLaps) * 100)}%`,
-                    background: selectedStop1Set.compound === "S" ? "#FF1801" : selectedStop1Set.compound === "H" ? "#FFFFFF" : "#FFD700",
+                    background: getCompoundColor(selectedStop1Set.compound),
                     color: selectedStop1Set.compound === "H" ? "#000000" : "#ffffff",
                     fontSize: "0.60rem",
                     fontFamily: "'Orbitron', monospace",
@@ -786,7 +796,7 @@ export default function StrategyAdvisor({
                   <div
                     style={{
                       width: `${Math.round(((currentPlan.stop2Lap - currentPlan.stop1Lap) / totalLaps) * 100)}%`,
-                      background: selectedStop1Set.compound === "S" ? "#FF1801" : selectedStop1Set.compound === "H" ? "#FFFFFF" : "#FFD700",
+                      background: getCompoundColor(selectedStop1Set.compound),
                       color: selectedStop1Set.compound === "H" ? "#000000" : "#ffffff",
                       fontSize: "0.60rem",
                       fontFamily: "'Orbitron', monospace",
@@ -802,7 +812,7 @@ export default function StrategyAdvisor({
                   <div
                     style={{
                       width: `${100 - Math.round((currentPlan.stop2Lap / totalLaps) * 100)}%`,
-                      background: selectedStop2Set.compound === "S" ? "#FF1801" : selectedStop2Set.compound === "H" ? "#FFFFFF" : "#FFD700",
+                      background: getCompoundColor(selectedStop2Set.compound),
                       color: selectedStop2Set.compound === "H" ? "#000000" : "#ffffff",
                       fontSize: "0.60rem",
                       fontFamily: "'Orbitron', monospace",
@@ -924,8 +934,8 @@ export default function StrategyAdvisor({
                 {/* Compound Selection Pills */}
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <span style={{ fontSize: "0.64rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>FIT:</span>
-                  {["S1", "M1", "H1", "I1"].map((setId) => {
-                    const s = DEFAULT_TIRE_SETS.find((t) => t.id === setId);
+                  {["S1", "M1", "H1", "I1", "W1"].map((setId) => {
+                    const s = DEFAULT_TIRE_SETS.find((t) => t.id === setId) || DEFAULT_TIRE_SETS[0];
                     const isChosen = currentPlan.stop1SetId === setId;
                     return (
                       <button
@@ -933,7 +943,7 @@ export default function StrategyAdvisor({
                         onClick={() => updatePlanField("stop1SetId", setId)}
                         style={{
                           background: isChosen
-                            ? (s.compound === "S" ? "#FF1801" : s.compound === "M" ? "#FFD700" : s.compound === "H" ? "#FFFFFF" : "#39B54A")
+                            ? getCompoundColor(s.compound)
                             : "rgba(255,255,255,0.05)",
                           color: isChosen ? (s.compound === "H" ? "#000" : "#fff") : "var(--text-secondary)",
                           border: `1px solid ${isChosen ? "#ffffff" : "rgba(255,255,255,0.12)"}`,
@@ -1010,8 +1020,8 @@ export default function StrategyAdvisor({
 
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <span style={{ fontSize: "0.64rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>FIT:</span>
-                {["S2", "M1", "H1", "S1"].map((setId) => {
-                  const s = DEFAULT_TIRE_SETS.find((t) => t.id === setId);
+                {["S1", "M1", "H1", "I1", "W1"].map((setId) => {
+                  const s = DEFAULT_TIRE_SETS.find((t) => t.id === setId) || DEFAULT_TIRE_SETS[0];
                   const isChosen = currentPlan.stop2SetId === setId;
                   return (
                     <button
@@ -1019,7 +1029,7 @@ export default function StrategyAdvisor({
                       onClick={() => updatePlanField("stop2SetId", setId)}
                       style={{
                         background: isChosen
-                          ? (s.compound === "S" ? "#FF1801" : s.compound === "M" ? "#FFD700" : "#FFFFFF")
+                          ? getCompoundColor(s.compound)
                           : "rgba(255,255,255,0.05)",
                         color: isChosen ? (s.compound === "H" ? "#000" : "#fff") : "var(--text-secondary)",
                         border: `1px solid ${isChosen ? "#ffffff" : "rgba(255,255,255,0.12)"}`,
@@ -1108,7 +1118,7 @@ export default function StrategyAdvisor({
                 onChange={(e) => setInstantBoxSetId(e.target.value)}
                 style={{
                   background: "#101420",
-                  color: selectedInstantSet.compound === "S" ? "#FF1801" : selectedInstantSet.compound === "H" ? "#FFFFFF" : "#FFD700",
+                  color: getCompoundColor(selectedInstantSet.compound),
                   border: "1px solid rgba(255,255,255,0.2)",
                   borderRadius: "4px",
                   padding: "5px 8px",
@@ -1354,11 +1364,11 @@ export default function StrategyAdvisor({
               </span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
-              {DEFAULT_TIRE_SETS.slice(0, 6).map((tSet) => (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "6px" }}>
+              {DEFAULT_TIRE_SETS.map((tSet) => (
                 <div key={tSet.id} style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "5px", padding: "6px 8px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", fontWeight: "900", color: tSet.compound === "S" ? "#FF1801" : tSet.compound === "M" ? "#FFD700" : tSet.compound === "H" ? "#FFFFFF" : "#39B54A" }}>
+                    <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", fontWeight: "900", color: getCompoundColor(tSet.compound) }}>
                       {tSet.compound} · {tSet.condition}
                     </span>
                     <span style={{ fontSize: "0.62rem", color: tSet.lifePct > 90 ? "var(--neon-green)" : "#ffd700", fontWeight: "900" }}>

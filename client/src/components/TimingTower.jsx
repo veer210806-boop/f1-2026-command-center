@@ -941,7 +941,7 @@ function TimingTower({
       const carAhead = newTargetIdx > 0 ? finalGrid[newTargetIdx - 1] : null;
 
       const aheadNotice = carAhead ? ` behind ${carAhead.code} (#${carAhead.num})` : " in clean air";
-      const compName = targetCompound === "S" ? "Soft" : targetCompound === "M" ? "Medium" : targetCompound === "I" ? "Intermediate" : "Hard";
+      const compName = targetCompound === "S" ? "Soft" : targetCompound === "M" ? "Medium" : targetCompound === "I" ? "Intermediate" : targetCompound === "W" ? "Full Wet" : "Hard";
       const eventMsg = `📦 LIVE PIT STOP: LAP ${currentLap}: #${targetDriver.num} ${targetDriver.code} (${targetDriver.team}) BOXES · FITS ${compName} [${pitStopDurationStr}] · REJOINS P${newTargetPos}${aheadNotice}!`;
       setOvertakeEvent(eventMsg);
       setActivePitEvent({
@@ -3104,7 +3104,7 @@ function TimingTower({
                         }}
                       >
                         <span>📦</span>
-                        <span>BOX FOR {targetComp === "H" ? "HARD (C2)" : "MEDIUM (C3)"}</span>
+                        <span>BOX FOR {targetComp === "H" ? "HARD" : targetComp === "M" ? "MEDIUM" : targetComp === "W" ? "FULL WET" : targetComp === "I" ? "INTERMEDIATE" : "SOFT"}</span>
                       </button>
                       <button
                         onClick={() => setDismissedScLap(currentLap)}
