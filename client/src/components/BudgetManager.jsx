@@ -386,7 +386,7 @@ function BudgetManager() {
   const handleResetTeam = () => {
     const defaultTeam = OFFICIAL_11_TEAMS[selectedTeamIdx];
     setTeams((prev) =>
-      prev.map((t, i) => (i === selectedTeamIdx ? structuredClone(defaultTeam) : t))
+      prev.map((t, i) => (i === selectedTeamIdx ? JSON.parse(JSON.stringify(defaultTeam)) : t))
     );
     showNotif(`🔄 ${currentTeam.team} development spec restored to season baseline.`, "success");
     setOptimizerResult(null);

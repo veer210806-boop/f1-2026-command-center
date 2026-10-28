@@ -1,7 +1,7 @@
 // ============================================================
 // App.jsx — GP-Command F1 2026 Season Command Center
 // ============================================================
-import React, { Component, lazy, Suspense, useEffect, useState, useCallback } from "react";
+import React, { Component, lazy, Suspense, useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import "./index.css";
 import { SEASON_2026_ROUNDS } from "./data/calendar2026";
