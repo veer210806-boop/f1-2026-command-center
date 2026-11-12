@@ -172,28 +172,30 @@ export default function LiveBroadcastGantry({
             </button>
           )}
 
-          {/* Instant Overtake Trigger Button */}
+          {/* AWS Overtake Opportunity Simulator Button */}
           <button
             onClick={handleTriggerBattleOvertake}
             style={{
-              background: "rgba(0, 240, 255, 0.12)",
-              border: "1px solid var(--neon-cyan)",
-              color: "var(--neon-cyan)",
+              background: "linear-gradient(135deg, rgba(255, 153, 0, 0.22) 0%, rgba(255, 94, 0, 0.14) 100%)",
+              border: "1px solid #ff9900",
+              color: "#ffffff",
               padding: "4px 10px",
               borderRadius: "5px",
               fontFamily: "'Orbitron', monospace",
-              fontSize: "0.68rem",
-              fontWeight: "800",
+              fontSize: "0.66rem",
+              fontWeight: "900",
+              letterSpacing: "0.05em",
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: "5px",
-              boxShadow: "0 0 8px rgba(0, 240, 255, 0.2)",
+              gap: "6px",
+              boxShadow: "0 0 10px rgba(255, 153, 0, 0.35)",
               transition: "all 0.15s ease",
             }}
-            title="Trigger dynamic lead overtake and audio telemetry fanfare"
+            title="AWS Overtake Opportunity Simulator: Trigger predictive intercept pass"
           >
-            <span>⚔️ OVERTAKE</span>
+            <span style={{ background: "#ff9900", color: "#000", fontWeight: "900", fontSize: "0.55rem", padding: "1px 4px", borderRadius: "2px" }}>AWS</span>
+            <span>OVERTAKE OPPORTUNITY SIMULATOR</span>
           </button>
 
           {/* Quick Direct Restart Race to Lap 1 Button */}

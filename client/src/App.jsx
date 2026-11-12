@@ -4,6 +4,7 @@
 import React, { Component, lazy, Suspense, useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import "./index.css";
+import RaceBrief from "./components/RaceBrief";
 import { SEASON_2026_ROUNDS } from "./data/calendar2026";
 
 const TimingTower = lazy(() => import("./components/TimingTower"));
@@ -234,13 +235,13 @@ const CIRCUIT_IOC_MAP = {
 };
 
 const TABS = [
-  { id: "timing",    label: "Pit Wall",   icon: "🏁", subtitle: "Live Timing Matrix" },
-  { id: "strategy",  label: "Strategy",   icon: "🧠", subtitle: "Race Tactics & Pit Wall" },
-  { id: "telemetry", label: "Telemetry",  icon: "📈", subtitle: "Teammate Comparison" },
-  { id: "paddock",   label: "Teams",      icon: "🏎️", subtitle: "2026 Constructors" },
-  { id: "calendar",  label: "Calendar",   icon: "📅", subtitle: "24-Round Schedule" },
-  { id: "budget",    label: "Cost Cap",   icon: "💼", subtitle: "$135M Cost Cap" },
-  { id: "scoreboard", label: "Scoreboard", icon: "🏆", subtitle: "2026 World Championship Standings" },
+  { id: "timing",     label: "TIMING // T-1",           subtitle: "Live Timing Matrix" },
+  { id: "strategy",   label: "STRATEGY // ST-2",        subtitle: "Race Tactics & Pit Wall" },
+  { id: "telemetry",  label: "TELEMETRY // TL-3",       subtitle: "Teammate Comparison" },
+  { id: "paddock",    label: "CONSTRUCTORS // C-4",     subtitle: "2026 Constructors" },
+  { id: "calendar",   label: "CALENDAR // R-5",         subtitle: "24-Round Schedule" },
+  { id: "budget",     label: "FIA FINANCIAL // CC-6",   subtitle: "$135M Cost Cap" },
+  { id: "scoreboard", label: "CHAMPIONSHIP // WDC-WCC", subtitle: "2026 World Championship Standings" },
 ];
 
 function CommandLoader({ label }) {
@@ -307,6 +308,7 @@ function FiaClock() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("timing");
+  const [isBriefOpen, setIsBriefOpen] = useState(true);
   const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
   const [selectedCircuit, setSelectedCircuit] = useState(SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT);
 
@@ -1010,7 +1012,6 @@ export default function App() {
                 }}
                 title={`${tab.subtitle} (Alt+${TABS.indexOf(tab) + 1})`}
               >
-                <span style={{ fontSize: "0.76rem", lineHeight: 1 }}>{tab.icon}</span>
                 <span style={{ whiteSpace: "nowrap" }}>{tab.label}</span>
               </button>
             );
@@ -1094,8 +1095,8 @@ export default function App() {
             }}
             title="Reset Race, Switch Constructor, or Toggle FIA Clearance"
           >
-            <span>🔄</span>
-            <span>RESTART</span>
+            <span style={{ color: "var(--neon-red)", fontWeight: "900" }}>⟲</span>
+            <span>RESTART / SWITCH</span>
           </button>
 
           {/* Micro Lap Progress Capsule */}
@@ -1132,6 +1133,68 @@ export default function App() {
           <FiaClock />
         </div>
       </header>
+
+      {/* ── Authentic FIA Telemetry System Status Ribbon ── */}
+      <div
+        className="fia-system-telemetry-ribbon"
+        style={{
+          position: "sticky",
+          top: "58px",
+          zIndex: 99,
+          background: "linear-gradient(90deg, #070912 0%, #0d121f 50%, #070912 100%)",
+          borderBottom: "1px solid rgba(0, 240, 255, 0.2)",
+          padding: "4px 18px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: "0.60rem",
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: "0.06em",
+          color: "var(--text-secondary)",
+          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.55)",
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {/* Left: Authentic System Status Telemetry Badges */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "var(--neon-green)", fontWeight: "800" }}>
+            <span
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: "var(--neon-green)",
+                boxShadow: "0 0 8px var(--neon-green)",
+              }}
+            />
+            SECURE TELEMETRY FEED: <strong style={{ color: "#ffffff" }}>20Hz</strong>
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+          <span>
+            LATENCY: <strong style={{ color: "var(--neon-cyan)" }}>14ms</strong>
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+          <span>
+            ENCRYPTION: <strong style={{ color: "#ffffff" }}>FIA-AES256</strong>
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+          <span>
+            SERVER: <strong style={{ color: "var(--neon-yellow)" }}>{selectedCircuit?.city ? `${selectedCircuit.city.toUpperCase()} GATEWAY` : "MELBOURNE GATEWAY"}</strong>
+          </span>
+        </div>
+
+        {/* Right: Operational Status */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+          <span style={{ color: "var(--text-dim)", fontSize: "0.56rem", fontFamily: "'Orbitron', monospace" }}>
+            FOM TELEMETRY NODE: <strong style={{ color: "#ffffff" }}>LINK-ACTIVE</strong>
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+          <span style={{ color: "var(--neon-green)", fontWeight: "800", fontSize: "0.58rem", fontFamily: "'Orbitron', monospace" }}>
+            ● PIT WALL ONLINE
+          </span>
+        </div>
+      </div>
 
       {/* ── Official 2026 Live Race Control & Simulation Gantry (Compact/Expanded) ── */}
       <div style={{ marginTop: "10px" }}>
@@ -1231,6 +1294,12 @@ export default function App() {
 
       {/* ── Main Content ── */}
       <main id="command-main" className="main-content" tabIndex="-1" style={{ paddingTop: "4px" }}>
+        <RaceBrief
+          circuit={selectedCircuit}
+          isOpen={isBriefOpen}
+          onToggle={() => setIsBriefOpen((current) => !current)}
+          onNavigate={setActiveTab}
+        />
         <Suspense fallback={<CommandLoader label={activeTabMeta.subtitle} />}>
           {/* Keep TimingTower and StrategyAdvisor mounted persistently to prevent simulation reset or unmounting */}
           <div style={{ display: activeTab === "timing" ? "block" : "none" }}>

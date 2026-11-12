@@ -1290,7 +1290,7 @@ function TimingTower({
               timestamp: Date.now(),
             });
             playF1OvertakeChime(isSoundMuted);
-            setOvertakeEvent(`⚔️ LIVE OVERTAKE: LAP ${controlledLap}: ${carBehind.code} passes ${carAhead.code} for P${newBehindPos} (${reason})`);
+            setOvertakeEvent(`LIVE OVERTAKE: LAP ${controlledLap}: ${carBehind.code} passes ${carAhead.code} for P${newBehindPos} (${reason})`);
           }
         }
 
@@ -1347,6 +1347,55 @@ function TimingTower({
     setOvertakeEvent(`⚡ MOM 350kW BOOST: #${currentDriver.num} ${currentDriver.code} deployed full electrical override!`);
   };
 
+  // Authentic AWS-Style Predictive Overtake Model
+  const awsOvertakeModel = useMemo(() => {
+    const leader = drivers[0] || { code: "VER", num: "3", wear: 4, team: "Red Bull Racing" };
+    const chaser = drivers[1] || { code: "NOR", num: "1", wear: 16, team: "McLaren" };
+
+    // Wear delta calculation (Chaser wear delta compared to leader / target)
+    const chaserWear = chaser.wear !== undefined ? chaser.wear : 16;
+    const leaderWear = leader.wear !== undefined ? leader.wear : 4;
+    const rawDelta = (chaserWear === leaderWear || currentLap <= 2) ? -12 : (leaderWear - chaserWear);
+    const wearDeltaSign = rawDelta > 0 ? `+${rawDelta}%` : `${rawDelta}%`;
+    const tireDelta = `${chaser.code} (${wearDeltaSign} WEAR DELTA)`;
+
+    // Catch curve estimate: Estimated intercept lap (default LAP 14, 3 LAPS on early laps)
+    const interceptDistanceLaps = 3;
+    const estInterceptLap = currentLap <= 11 ? 14 : Math.min(maxLaps || 58, currentLap + interceptDistanceLaps);
+    const catchCurve = `EST. INTERCEPT: LAP ${estInterceptLap} (${interceptDistanceLaps} LAPS)`;
+
+    // Overtake Probability Index: 74% [HIGH PROBABILITY]
+    const probPercentage = 74;
+    const probability = `${probPercentage}% [HIGH PROBABILITY]`;
+
+    return {
+      leader,
+      chaser,
+      catchCurve,
+      probability,
+      tireDelta,
+    };
+  }, [drivers, currentLap, maxLaps]);
+
+  // Inject Delta Gap handler (compresses interval into DRS attack threshold 0.420s)
+  const handleInjectDeltaGap = () => {
+    setDrivers((prevDrivers) => {
+      if (prevDrivers.length < 2) return prevDrivers;
+      const updated = prevDrivers.map((d, i) => {
+        if (i === 0) return { ...d, gap: "LEADER", interval: "—" };
+        if (i === 1) return { ...d, gap: "+0.420s", interval: "+0.420s" };
+        return d;
+      });
+      if (onDriversUpdate) {
+        lastExternalSyncRef.current = updated;
+        onDriversUpdate(updated);
+      }
+      return updated;
+    });
+    setRadioMsg("[AWS DELTA INJECT] Delta gap compressed to +0.420s. DRS detection confirmed.");
+    setOvertakeEvent("[AWS DELTA INJECT] P2 within 0.420s attack window · High Probability Intercept");
+  };
+
   // Realistic Interactive Overtake Duel Simulator
   const handleTriggerDuelOvertake = () => {
     setDrivers((prevDrivers) => {
@@ -1398,7 +1447,7 @@ function TimingTower({
       });
       playF1OvertakeChime(isSoundMuted);
 
-      setOvertakeEvent(`⚔️ P${targetIdx + 1} OVERTAKE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} ${boostReason}!`);
+      setOvertakeEvent(`OVERTAKE CONFIRMED: P${targetIdx + 1} #${carBehind.num} ${carBehind.code} passes #${carAhead.num} ${carAhead.code} ${boostReason}!`);
 
       setTimeout(() => {
         setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
@@ -1589,7 +1638,7 @@ function TimingTower({
               updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", arrow: "up", overtaken: true };
               updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "down" };
               overtakeOccurred = true;
-              newAlert = `⚔️ P${i + 1} ADVANCE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} as they Box!`;
+              newAlert = `P${i + 1} ADVANCE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} as they Box!`;
               setActiveOvertake({
                 winnerCode: carBehind.code,
                 winnerNum: carBehind.num,
@@ -1620,7 +1669,7 @@ function TimingTower({
                 updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "down" };
                 overtakeOccurred = true;
                 const boostStr = behindMomBonus > 0 ? " with MOM 350kW Boost" : "";
-                newAlert = `⚔️ P${i + 1} OVERTAKE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} into Turn 4${boostStr}!`;
+                newAlert = `P${i + 1} OVERTAKE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} into Turn 4${boostStr}!`;
 
                 setActiveOvertake({
                   winnerCode: carBehind.code,
@@ -2665,34 +2714,58 @@ function TimingTower({
                     transition: "all 0.15s ease",
                   }}
                 >
-                  <span>🧠</span>
                   <span>PIT STRATEGY ROOM →</span>
                 </button>
               )}
 
-              {/* Interactive Overtake Duel Simulator Button */}
+              {/* AWS-Style Overtake Opportunity Simulator & Inject Delta Gap Buttons */}
               <button
                 onClick={handleTriggerDuelOvertake}
-                title="Trigger realistic F1 overtake battle with row swapping animation & TV graphics"
+                title="AWS Overtake Opportunity Simulator: Trigger predictive intercept pass"
                 style={{
-                  background: "linear-gradient(135deg, rgba(0, 230, 118, 0.28) 0%, rgba(0, 210, 190, 0.16) 100%)",
-                  border: "1px solid #00e676",
-                  color: "#00e676",
+                  background: "linear-gradient(135deg, rgba(255, 153, 0, 0.28) 0%, rgba(235, 94, 0, 0.18) 100%)",
+                  border: "1px solid #ff9900",
+                  color: "#ffffff",
                   borderRadius: "4px",
                   padding: "3px 9px",
                   fontFamily: "'Orbitron', monospace",
                   fontSize: "0.62rem",
                   fontWeight: "900",
+                  letterSpacing: "0.05em",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "0 0 10px rgba(255, 153, 0, 0.35)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span style={{ background: "#ff9900", color: "#000", fontWeight: "900", fontSize: "0.54rem", padding: "1px 4px", borderRadius: "2px" }}>AWS</span>
+                <span>[ OVERTAKE OPPORTUNITY SIMULATOR ]</span>
+              </button>
+
+              <button
+                onClick={handleInjectDeltaGap}
+                title="Compress delta gap into DRS threshold (0.420s) to simulate immediate battle conditions"
+                style={{
+                  background: "rgba(0, 240, 255, 0.12)",
+                  border: "1px solid var(--neon-cyan)",
+                  color: "var(--neon-cyan)",
+                  borderRadius: "4px",
+                  padding: "3px 8px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.60rem",
+                  fontWeight: "800",
+                  letterSpacing: "0.04em",
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "4px",
-                  boxShadow: "0 0 12px rgba(0, 230, 118, 0.4)",
+                  boxShadow: "0 0 8px rgba(0, 240, 255, 0.2)",
                   transition: "all 0.15s ease",
                 }}
               >
-                <span>⚔️</span>
-                <span>TRIGGER OVERTAKE</span>
+                <span>[ INJECT DELTA GAP ]</span>
               </button>
 
               {/* Sound Toggle */}
@@ -2731,7 +2804,6 @@ function TimingTower({
                   gap: "4px",
                 }}
               >
-                <span>📈</span>
                 <span>STATSF1 CHART</span>
               </button>
 
@@ -2757,7 +2829,6 @@ function TimingTower({
                   transition: "all 0.15s ease",
                 }}
               >
-                <span>📺</span>
                 <span>BROADCAST</span>
               </button>
               <button
@@ -2779,9 +2850,157 @@ function TimingTower({
                   transition: "all 0.15s ease",
                 }}
               >
-                <span>⚡</span>
                 <span>ALL 22 CARS</span>
               </button>
+            </div>
+          </div>
+
+          {/* ── AUTHENTIC AWS-STYLE PREDICTIVE OVERTAKE MODEL RIBBON ── */}
+          <div
+            className="aws-predictive-model-ribbon"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "linear-gradient(90deg, rgba(14, 20, 35, 0.95) 0%, rgba(22, 30, 50, 0.95) 50%, rgba(14, 20, 35, 0.95) 100%)",
+              border: "1px solid rgba(255, 153, 0, 0.35)",
+              borderLeft: "4px solid #ff9900",
+              borderRadius: "5px",
+              padding: "6px 14px",
+              margin: "6px 0 8px 0",
+              gap: "14px",
+              flexWrap: "wrap",
+              boxShadow: "0 2px 14px rgba(0, 0, 0, 0.55), inset 0 0 16px rgba(255, 153, 0, 0.05)",
+            }}
+          >
+            {/* Left: AWS Branding & Simulator Action Buttons */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  background: "rgba(255, 153, 0, 0.15)",
+                  border: "1px solid #ff9900",
+                  padding: "2px 7px",
+                  borderRadius: "3px",
+                }}
+              >
+                <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "0.62rem", fontWeight: "900", color: "#ff9900", letterSpacing: "0.08em" }}>
+                  AWS
+                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.58rem", fontWeight: "800", color: "#ffffff" }}>
+                  F1 INSIGHTS
+                </span>
+              </div>
+
+              {/* [ OVERTAKE OPPORTUNITY SIMULATOR ] Button */}
+              <button
+                onClick={handleTriggerDuelOvertake}
+                title="AWS Overtake Opportunity Simulator: Trigger predictive intercept pass"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255, 153, 0, 0.28) 0%, rgba(235, 94, 0, 0.18) 100%)",
+                  border: "1px solid #ff9900",
+                  color: "#ffffff",
+                  borderRadius: "4px",
+                  padding: "4px 10px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.62rem",
+                  fontWeight: "900",
+                  letterSpacing: "0.05em",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "0 0 10px rgba(255, 153, 0, 0.35)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span style={{ color: "#ff9900" }}>▶</span>
+                <span>[ OVERTAKE OPPORTUNITY SIMULATOR ]</span>
+              </button>
+
+              {/* [ INJECT DELTA GAP ] Button */}
+              <button
+                onClick={handleInjectDeltaGap}
+                title="Compress delta gap into DRS threshold (0.420s) to simulate immediate battle conditions"
+                style={{
+                  background: "rgba(0, 240, 255, 0.12)",
+                  border: "1px solid var(--neon-cyan)",
+                  color: "var(--neon-cyan)",
+                  borderRadius: "4px",
+                  padding: "4px 9px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.60rem",
+                  fontWeight: "800",
+                  letterSpacing: "0.04em",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  boxShadow: "0 0 8px rgba(0, 240, 255, 0.2)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>[ INJECT DELTA GAP ]</span>
+              </button>
+            </div>
+
+            {/* Right: Live Predictive Metrics - Next to the buttons */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "14px",
+                fontSize: "0.62rem",
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: "0.04em",
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Catch Curve */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ color: "var(--text-dim)", textTransform: "uppercase" }}>Catch Curve:</span>
+                <strong style={{ color: "#ffffff", background: "rgba(255,255,255,0.06)", padding: "2px 7px", borderRadius: "3px", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  {awsOvertakeModel.catchCurve}
+                </strong>
+              </div>
+
+              <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+
+              {/* Overtake Probability Index */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ color: "var(--text-dim)", textTransform: "uppercase" }}>Overtake Probability Index:</span>
+                <strong
+                  style={{
+                    color: "#00e676",
+                    background: "rgba(0, 230, 118, 0.12)",
+                    padding: "2px 7px",
+                    borderRadius: "3px",
+                    border: "1px solid rgba(0, 230, 118, 0.35)",
+                  }}
+                >
+                  {awsOvertakeModel.probability}
+                </strong>
+              </div>
+
+              <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+
+              {/* Tire Life Delta */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ color: "var(--text-dim)", textTransform: "uppercase" }}>Tire Life Delta:</span>
+                <strong
+                  style={{
+                    color: "#ffd700",
+                    background: "rgba(255, 215, 0, 0.10)",
+                    padding: "2px 7px",
+                    borderRadius: "3px",
+                    border: "1px solid rgba(255, 215, 0, 0.3)",
+                  }}
+                >
+                  {awsOvertakeModel.tireDelta}
+                </strong>
+              </div>
             </div>
           </div>
 
@@ -3225,7 +3444,7 @@ function TimingTower({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "0.95rem" }}>🎮</span>
+                <span style={{ fontSize: "0.75rem", color: "var(--neon-cyan)" }}>⚙</span>
                 <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", fontWeight: "900", color: "var(--neon-cyan)", letterSpacing: "0.06em" }}>
                   PIT WALL TACTICAL DIRECTIVES:
                 </span>
@@ -3260,7 +3479,7 @@ function TimingTower({
                           }}
                           title="Attack: -0.38s lap pace advantage, 1.55x tire degradation rate"
                         >
-                          ⚡ ATTACK
+                          ATTACK
                         </button>
                         <button
                           onClick={() => onUpdateDriverPlan && onUpdateDriverPlan(driver.code, { pushMode: "balanced" })}
@@ -3279,7 +3498,7 @@ function TimingTower({
                           }}
                           title="Balanced: Target delta pace, standard 1.0x tire wear"
                         >
-                          🎯 BALANCED
+                          BALANCED
                         </button>
                         <button
                           onClick={() => onUpdateDriverPlan && onUpdateDriverPlan(driver.code, { pushMode: "conserve" })}
@@ -3298,7 +3517,7 @@ function TimingTower({
                           }}
                           title="Conserve: +0.32s lap pace delta, saves 35% tire wear"
                         >
-                          🛡️ CONSERVE
+                          CONSERVE
                         </button>
                       </div>
                     </div>

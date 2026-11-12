@@ -1,9 +1,11 @@
 // ============================================================
 // teamRadioArchive.js — Comprehensive Formula 1 Team Radio Archive
-// Curated from:
+// Research references:
 // - Formula Dream (formuladream.app/f1-interactive/tools/team-radio)
 // - BoxBox Radio Archives (boxbox-radio.com/history/select-gp)
-// - Official FIA Formula 1 Broadcast Transmissions
+// - Formula 1 and FIA public information
+// Historic entries are short, curated references; 2026 entries are
+// in-app strategy simulations and must not be treated as live transcripts.
 // ============================================================
 
 export const RADIO_CATEGORIES = [

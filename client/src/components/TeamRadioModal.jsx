@@ -148,7 +148,7 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
                     margin: 0,
                   }}
                 >
-                  BOX BOX <span style={{ color: "var(--neon-cyan)" }}>TEAM RADIO</span> INTERCEPTOR
+                  BOX BOX <span style={{ color: "var(--neon-cyan)" }}>TEAM RADIO</span> CONSOLE
                 </h2>
                 <span
                   style={{
@@ -162,11 +162,11 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
                     borderRadius: "4px",
                   }}
                 >
-                  BOXBOX & FORMULA DREAM LIVE ARCHIVE
+                  RESEARCH & SIMULATION ARCHIVE
                 </span>
               </div>
               <p style={{ margin: "3px 0 0 0", fontSize: "0.76rem", color: "var(--text-secondary)" }}>
-                Authentic Formula 1 pit-to-car radio transcripts, tactical strategy calls, and race engineering dialogue.
+                Curated historic reference clips and clearly marked 2026 strategy simulations. Not an official live radio service.
               </p>
             </div>
           </div>
@@ -204,6 +204,7 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
             {/* Close Button */}
             <button
               onClick={onClose}
+              aria-label="Close team radio console"
               style={{
                 width: "36px",
                 height: "36px",
