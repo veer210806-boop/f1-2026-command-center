@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
+import { isDriverBelongingToTeam } from "../data/constructors2026";
 import CircuitSpatialRadar from "./CircuitSpatialRadar";
 
 // ── Official 2026 Team Colors & Badges ─────────────────────────────────────
@@ -137,8 +138,13 @@ export default function LiveRaceMapTracker({
   currentLap = 1,
   maxLaps = 58,
   sessionFlag = "GREEN",
+  userRole = "team",
+  playerTeam = "Ferrari",
   onCloseToTower,
 }) {
+  const effectiveTeam = playerTeam || localStorage.getItem("gp_strategy_team") || "Ferrari";
+  const effectiveRole = userRole || localStorage.getItem("gp_strategy_role") || "team";
+
   const activeCircuitId = selectedCircuit?.circuit_id || "australia";
   const activeTrackPath = OFFICIAL_CIRCUIT_PATHS[activeCircuitId] || OFFICIAL_CIRCUIT_PATHS.australia;
   const isNightRace = NIGHT_CIRCUITS.includes(activeCircuitId);
@@ -158,13 +164,17 @@ export default function LiveRaceMapTracker({
   const [sessionClock, setSessionClock] = useState(() => new Date().toLocaleTimeString("en-GB"));
   const [isPlaying, setIsPlaying] = useState(true);
   const [simSpeed, setSimSpeed] = useState(4); // F1 Manager 24 default 4x speed multiplier
-  // Max Verstappen is strictly #3! Default selection is #3.
-  const [selectedDriverNum, setSelectedDriverNum] = useState(3);
+  // Default driver selection: player team driver if available, else #16 / #3
+  const [selectedDriverNum, setSelectedDriverNum] = useState(() => {
+    const teamCar = (drivers || []).find((d) => isDriverBelongingToTeam(d, effectiveTeam));
+    return teamCar?.num || (effectiveTeam.toLowerCase().includes("ferrari") ? 16 : 3);
+  });
   const [activePaceCommand, setActivePaceCommand] = useState("aggressive");
   const [activeSubTab, setActiveSubTab] = useState("PACE");
   const [showPaceCommands, setShowPaceCommands] = useState(false);
   const [trackRotation, setTrackRotation] = useState(defaultCircuitRotation);
   const [labelDensity, setLabelDensity] = useState("focus");
+
 
   // Sync isNightMode when active circuit changes
   useEffect(() => {
@@ -418,7 +428,8 @@ export default function LiveRaceMapTracker({
           const wp = lut[lutIdx] || lut[0];
 
           let targetFactor = wp.speedFactor;
-          if (isSelected) {
+          const isCarPlayerTeam = effectiveRole === "admin" || isDriverBelongingToTeam(car, effectiveTeam);
+          if (isSelected && isCarPlayerTeam) {
             targetFactor *= paceObj.speedMult;
           } else {
             targetFactor *= (1.0 + (22 - car.pos) * 0.0018);
@@ -576,6 +587,7 @@ export default function LiveRaceMapTracker({
   }, []);
 
   const activeCar = leaderboardCars.find((c) => c.num === selectedDriverNum) || leaderboardCars[0] || {};
+  const isPlayerControlledCar = effectiveRole === "admin" || isDriverBelongingToTeam(activeCar, effectiveTeam);
   const teammateCar = leaderboardCars.find(
     (c) => c.team === activeCar.team && c.num !== activeCar.num
   ) || leaderboardCars[activeCar.pos === 1 ? 1 : 0] || {};
@@ -1534,9 +1546,16 @@ export default function LiveRaceMapTracker({
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px" }}>
-              <span style={{ fontSize: "0.70rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff", letterSpacing: "0.06em" }}>
-                PACE COMMANDS
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "0.70rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff", letterSpacing: "0.06em" }}>
+                  PACE COMMANDS
+                </span>
+                {!isPlayerControlledCar && (
+                  <span style={{ fontSize: "0.58rem", color: "#ff4d4d", background: "rgba(255,59,48,0.18)", padding: "1px 5px", borderRadius: "3px", fontWeight: "800", fontFamily: "'Orbitron', monospace" }}>
+                    🔒 READ ONLY
+                  </span>
+                )}
+              </div>
               <span
                 style={{ fontSize: "0.66rem", color: "var(--text-dim)", cursor: "pointer" }}
                 onClick={() => setShowPaceCommands(false)}
@@ -1546,6 +1565,31 @@ export default function LiveRaceMapTracker({
               </span>
             </div>
 
+            {!isPlayerControlledCar && (
+              <div
+                style={{
+                  background: "rgba(255, 30, 30, 0.12)",
+                  border: "1px solid rgba(255, 59, 48, 0.4)",
+                  borderRadius: "5px",
+                  padding: "5px 8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  margin: "2px 0 4px 0",
+                }}
+              >
+                <span style={{ fontSize: "0.85rem" }}>🔒</span>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "0.62rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: "#ff4d4d", letterSpacing: "0.05em" }}>
+                    ENCRYPTED RIVAL PIT WALL
+                  </span>
+                  <span style={{ fontSize: "0.54rem", color: "var(--text-dim)", fontFamily: "'Rajdhani', sans-serif" }}>
+                    Directives restricted: You manage {effectiveTeam} only
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 42px 48px", fontSize: "0.60rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
               <span>COMMANDS</span>
               <span style={{ textAlign: "center" }}>⏱️ PACE</span>
@@ -1554,10 +1598,19 @@ export default function LiveRaceMapTracker({
 
             {PACE_COMMANDS.map((cmd) => {
               const isSelected = activePaceCommand === cmd.id;
+              const canModify = isPlayerControlledCar;
               return (
                 <div
                   key={cmd.id}
-                  onClick={() => setActivePaceCommand(cmd.id)}
+                  onClick={() => {
+                    if (!canModify) return;
+                    setActivePaceCommand(cmd.id);
+                  }}
+                  title={
+                    canModify
+                      ? `${cmd.name}: Adjust pace directive for #${activeCar?.num} ${activeCar?.code}`
+                      : `Directives Locked: You are managing ${effectiveTeam}. Only rival team pit wall can issue pace orders to #${activeCar?.num} ${activeCar?.code}.`
+                  }
                   style={{
                     display: "grid",
                     gridTemplateColumns: "15px 1fr 42px 48px",
@@ -1567,7 +1620,8 @@ export default function LiveRaceMapTracker({
                     borderRadius: "3px",
                     background: isSelected ? "rgba(255, 255, 255, 0.08)" : "transparent",
                     border: isSelected ? `1px solid ${cmd.color}` : "1px solid transparent",
-                    cursor: "pointer",
+                    cursor: canModify ? "pointer" : "not-allowed",
+                    opacity: canModify ? 1 : 0.42,
                     transition: "all 0.12s ease",
                   }}
                 >
@@ -1801,7 +1855,7 @@ export default function LiveRaceMapTracker({
                   cursor: "pointer",
                 }}
               >
-                {tab}
+                {tab === "PACE" && !isPlayerControlledCar ? "🔒 PACE" : tab}
               </button>
             ))}
           </div>

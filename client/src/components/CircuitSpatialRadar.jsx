@@ -540,13 +540,94 @@ export default function CircuitSpatialRadar({
         roughness: 0.6,
       });
       const footbridge = new THREE.Mesh(bridgeGeo, bridgeMat);
-      footbridge.position.set(0.65, 0.085, 1.2);
-      footbridge.rotation.y = 0.28;
+      footbridge.position.set(0.65, 0.085, 3.2);
+      footbridge.rotation.y = 0.15;
       footbridge.castShadow = true;
       footbridge.receiveShadow = true;
       scene.add(footbridge);
 
-      // ── 6. Clustered Low-Poly Parkland Foliage (180+ Trees) ───────────────
+      // ── 6. Racetrack, Striped Kerbs, DRS Straights & Pit Complex ─────────
+      const trackPoints = sampleCircuitPath(trackPath);
+      const curve = new THREE.CatmullRomCurve3(trackPoints, true, "centripetal", 0.08);
+
+      // Distance clearance validator to guarantee cars never collide with buildings/trees
+      function getMinDistanceToTrack(x, z, points) {
+        let minDistSq = Infinity;
+        for (let idx = 0; idx < points.length; idx += 2) {
+          const dx = x - points[idx].x;
+          const dz = z - points[idx].z;
+          const dSq = dx * dx + dz * dz;
+          if (dSq < minDistSq) minDistSq = dSq;
+        }
+        return Math.sqrt(minDistSq);
+      }
+
+      // Alternating Red & White Apex Kerbs
+      const stripedKerb = makeStripedKerbRibbon(trackPoints, 0.52, 0.66, 0.12);
+      stripedKerb.castShadow = true;
+      stripedKerb.receiveShadow = true;
+      scene.add(stripedKerb);
+
+      // White Track Edge Limit Lines
+      const whiteOuterLine = makeRibbon(trackPoints, 0.535, "#f1f5f9", 0.138);
+      const whiteInnerLine = makeRibbon(trackPoints, 0.495, "#181d24", 0.139);
+      scene.add(whiteOuterLine);
+      scene.add(whiteInnerLine);
+
+      // Main Asphalt Tarmac
+      const asphalt = makeRibbon(trackPoints, 0.50, isNightMode ? "#151920" : "#1e232b", 0.14, {
+        roughness: 0.68,
+        metalness: 0.06,
+      });
+      asphalt.castShadow = true;
+      asphalt.receiveShadow = true;
+      scene.add(asphalt);
+
+      // Glowing Neon Green DRS Activation Straights (Photo 3 Match)
+      // DRS Zone 1: Main Start-Finish Straight
+      const drsMainStraight = makeDrsLine(trackPoints, 275, 318, 0.155);
+      if (drsMainStraight) scene.add(drsMainStraight);
+
+      // DRS Zone 2: Lakeside Drive Sweeping Straight
+      const drsLakeside = makeDrsLine(trackPoints, 75, 135, 0.155);
+      if (drsLakeside) scene.add(drsLakeside);
+
+      // Pit Lane Ribbon Parallel to Main Straight (samples 270 to 318)
+      const pitLanePoints = trackPoints.slice(270, 319).map((pt) =>
+        new THREE.Vector3(pt.x, pt.y, pt.z - 0.65)
+      );
+      if (pitLanePoints.length > 2) {
+        const pitAsphalt = makeRibbon(pitLanePoints, 0.24, isNightMode ? "#1a202a" : "#252c36", 0.135);
+        scene.add(pitAsphalt);
+      }
+
+      // 3D Pit Paddock Building & Team Garages (Safely offset outside track)
+      const pitBuildingGeo = new THREE.BoxGeometry(6.4, 0.65, 0.85);
+      const pitBuildingMat = new THREE.MeshStandardMaterial({
+        color: isNightMode ? "#2a3442" : "#cfd8dc",
+        roughness: 0.55,
+        metalness: 0.15,
+      });
+      const pitBuilding = new THREE.Mesh(pitBuildingGeo, pitBuildingMat);
+      // Positioned safely parallel to pit lane along main straight with >1.4 clearance from cars
+      pitBuilding.position.set(-6.5, 0.325, -4.2);
+      pitBuilding.rotation.y = 0;
+      pitBuilding.castShadow = true;
+      pitBuilding.receiveShadow = true;
+      scene.add(pitBuilding);
+
+      // Pit Gantry Roof Canopy
+      const pitCanopyGeo = new THREE.BoxGeometry(6.5, 0.06, 0.95);
+      const pitCanopyMat = new THREE.MeshStandardMaterial({
+        color: isNightMode ? "#1b2533" : "#90a4ae",
+        roughness: 0.45,
+      });
+      const pitCanopy = new THREE.Mesh(pitCanopyGeo, pitCanopyMat);
+      pitCanopy.position.set(-6.5, 0.67, -4.2);
+      pitCanopy.rotation.y = 0;
+      scene.add(pitCanopy);
+
+      // ── 7. Clustered Low-Poly Parkland Foliage (180+ Trees) ───────────────
       // Using a single InstancedMesh for maximum 60FPS performance
       const treeCount = 185;
       const treeGeo = new THREE.DodecahedronGeometry(0.34, 1);
@@ -566,7 +647,8 @@ export default function CircuitSpatialRadar({
         new THREE.Color(isNightMode ? "#223d24" : "#38612d"),
       ];
 
-      // Procedural distribution along lake shores, golf course & parkland
+      // Procedural distribution along lake shores, golf course & parkland (verified collision-free)
+      let validTreeIndex = 0;
       for (let i = 0; i < treeCount; i++) {
         let tx, tz;
         if (i < 20) {
@@ -592,87 +674,25 @@ export default function CircuitSpatialRadar({
           tz = 8.5 + Math.cos(i * 2.4) * 0.9;
         }
 
+        // Skip any tree placed too close to racing line
+        if (getMinDistanceToTrack(tx, tz, trackPoints) < 1.35) {
+          continue;
+        }
+
         const scale = 0.75 + (Math.sin(i * 5.1) * 0.32 + 0.32);
         dummy.position.set(tx, 0.28 * scale, tz);
         dummy.scale.set(scale, scale * 1.18, scale);
         dummy.rotation.set(0, (i * 0.6) % (Math.PI * 2), 0);
         dummy.updateMatrix();
 
-        treeInstanced.setMatrixAt(i, dummy.matrix);
-        treeInstanced.setColorAt(i, treeColors[i % treeColors.length]);
+        treeInstanced.setMatrixAt(validTreeIndex, dummy.matrix);
+        treeInstanced.setColorAt(validTreeIndex, treeColors[validTreeIndex % treeColors.length]);
+        validTreeIndex++;
       }
+      treeInstanced.count = validTreeIndex;
       treeInstanced.instanceMatrix.needsUpdate = true;
       if (treeInstanced.instanceColor) treeInstanced.instanceColor.needsUpdate = true;
       scene.add(treeInstanced);
-
-      // ── 7. Racetrack, Striped Kerbs, DRS Straights & Pit Complex ─────────
-      const trackPoints = sampleCircuitPath(trackPath);
-      const curve = new THREE.CatmullRomCurve3(trackPoints, true, "centripetal", 0.08);
-
-      // Alternating Red & White Apex Kerbs
-      const stripedKerb = makeStripedKerbRibbon(trackPoints, 0.52, 0.66, 0.12);
-      stripedKerb.castShadow = true;
-      stripedKerb.receiveShadow = true;
-      scene.add(stripedKerb);
-
-      // White Track Edge Limit Lines
-      const whiteOuterLine = makeRibbon(trackPoints, 0.535, "#f1f5f9", 0.138);
-      const whiteInnerLine = makeRibbon(trackPoints, 0.495, "#181d24", 0.139);
-      scene.add(whiteOuterLine);
-      scene.add(whiteInnerLine);
-
-      // Main Asphalt Tarmac
-      const asphalt = makeRibbon(trackPoints, 0.50, isNightMode ? "#151920" : "#1e232b", 0.14, {
-        roughness: 0.68,
-        metalness: 0.06,
-      });
-      asphalt.castShadow = true;
-      asphalt.receiveShadow = true;
-      scene.add(asphalt);
-
-      // Glowing Neon Green DRS Activation Straights (Photo 3 Match)
-      // DRS Zone 1: Main Start-Finish Straight (~samples 0 to 45)
-      const drsMainStraight = makeDrsLine(trackPoints, 0, 48, 0.155);
-      if (drsMainStraight) scene.add(drsMainStraight);
-
-      // DRS Zone 2: Lakeside Drive Sweeping Straight (~samples 110 to 175)
-      const drsLakeside = makeDrsLine(trackPoints, 115, 175, 0.155);
-      if (drsLakeside) scene.add(drsLakeside);
-
-      // Pit Lane Ribbon Parallel to Main Straight
-      const pitLanePoints = trackPoints.slice(0, 52).map((pt) =>
-        new THREE.Vector3(pt.x - 0.72, pt.y, pt.z)
-      );
-      if (pitLanePoints.length > 2) {
-        const pitAsphalt = makeRibbon(pitLanePoints, 0.24, isNightMode ? "#1a202a" : "#252c36", 0.135);
-        scene.add(pitAsphalt);
-      }
-
-      // 3D Pit Paddock Building & Team Garages
-      const pitBuildingGeo = new THREE.BoxGeometry(0.85, 0.65, 8.5);
-      const pitBuildingMat = new THREE.MeshStandardMaterial({
-        color: isNightMode ? "#2a3442" : "#cfd8dc",
-        roughness: 0.55,
-        metalness: 0.15,
-      });
-      const pitBuilding = new THREE.Mesh(pitBuildingGeo, pitBuildingMat);
-      // Positioned directly behind pit lane along main straight
-      pitBuilding.position.set(-6.8, 0.325, 0.8);
-      pitBuilding.rotation.y = 0.06;
-      pitBuilding.castShadow = true;
-      pitBuilding.receiveShadow = true;
-      scene.add(pitBuilding);
-
-      // Pit Gantry Roof Canopy
-      const pitCanopyGeo = new THREE.BoxGeometry(0.95, 0.06, 8.6);
-      const pitCanopyMat = new THREE.MeshStandardMaterial({
-        color: isNightMode ? "#1b2533" : "#90a4ae",
-        roughness: 0.45,
-      });
-      const pitCanopy = new THREE.Mesh(pitCanopyGeo, pitCanopyMat);
-      pitCanopy.position.set(-6.8, 0.67, 0.8);
-      pitCanopy.rotation.y = 0.06;
-      scene.add(pitCanopy);
 
       // ── 8. Melbourne CBD Architectural Skyline (Photo 3 Match) ───────────
       // Structured high-rise city blocks framing North & East horizons
@@ -687,6 +707,7 @@ export default function CircuitSpatialRadar({
       // North Skyline: Melbourne CBD Skyscraper Cluster (Kings Way / Southbank)
       for (let bx = -14; bx <= 14; bx += 2.4) {
         for (let bz = -16; bz <= -11; bz += 2.2) {
+          if (getMinDistanceToTrack(bx, bz, trackPoints) < 2.5) continue;
           const hash = Math.abs(Math.sin(bx * 7.3 + bz * 3.1));
           if (hash > 0.18) {
             const bWidth = 1.3 + (hash * 0.7);
@@ -707,6 +728,7 @@ export default function CircuitSpatialRadar({
       // East Skyline: St Kilda Road & Queens Road Corridor
       for (let bz = -10; bz <= 12; bz += 2.3) {
         for (let bx = 13.5; bx <= 19.5; bx += 2.4) {
+          if (getMinDistanceToTrack(bx, bz, trackPoints) < 2.5) continue;
           const hash = Math.abs(Math.cos(bx * 4.7 + bz * 6.9));
           if (hash > 0.2) {
             const bWidth = 1.2 + (hash * 0.6);
@@ -727,6 +749,7 @@ export default function CircuitSpatialRadar({
       // West & South Outer Commercial Blocks
       for (let bz = -8; bz <= 10; bz += 2.8) {
         const bx = -14.5 - Math.sin(bz) * 0.8;
+        if (getMinDistanceToTrack(bx, bz, trackPoints) < 2.5) continue;
         const bHeight = 1.8 + Math.abs(Math.sin(bz * 2.1)) * 2.4;
         const bGeo = new THREE.BoxGeometry(1.6, bHeight, 1.8);
         const building = new THREE.Mesh(bGeo, buildingMaterials[0]);

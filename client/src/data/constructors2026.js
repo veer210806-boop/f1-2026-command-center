@@ -204,3 +204,57 @@ export const CONSTRUCTORS_2026 = [
     strengths: "The most experienced driver lineup on the grid (70+ podiums combined)",
   },
 ];
+
+/**
+ * Universal FIA Constructor Driver Ownership Validator
+ * Ensures race engineers & strategists can ONLY command and modify pace/tactics
+ * for their chosen team's official drivers, strictly locking out rival cars.
+ */
+export function isDriverBelongingToTeam(driver, playerTeam) {
+  if (!driver || !playerTeam) return false;
+  const target = String(playerTeam).trim().toLowerCase();
+  const driverTeam = String(driver.team || "").trim().toLowerCase();
+  const driverCode = String(driver.code || "").trim().toUpperCase();
+  const driverNum = Number(driver.num);
+
+  const TEAM_DRIVER_MAP = {
+    ferrari: { codes: ["LEC", "HAM"], nums: [16, 44] },
+    mclaren: { codes: ["NOR", "PIA"], nums: [1, 81] },
+    "red bull racing": { codes: ["VER", "HAD"], nums: [3, 6] },
+    redbull: { codes: ["VER", "HAD"], nums: [3, 6] },
+    "red bull": { codes: ["VER", "HAD"], nums: [3, 6] },
+    mercedes: { codes: ["RUS", "ANT"], nums: [63, 12] },
+    aston: { codes: ["ALO", "STR"], nums: [14, 18] },
+    "aston martin": { codes: ["ALO", "STR"], nums: [14, 18] },
+    williams: { codes: ["ALB", "SAI"], nums: [23, 55] },
+    cadillac: { codes: ["PER", "BOT"], nums: [11, 77] },
+    audi: { codes: ["HUL", "BOR"], nums: [27, 5] },
+    sauber: { codes: ["HUL", "BOR"], nums: [27, 5] },
+    alpine: { codes: ["GAS", "COL"], nums: [10, 43] },
+    haas: { codes: ["OCO", "BEA"], nums: [31, 87] },
+    "racing bulls": { codes: ["TSU", "LAW"], nums: [22, 30] },
+    rb: { codes: ["TSU", "LAW"], nums: [22, 30] },
+  };
+
+  for (const [teamKey, meta] of Object.entries(TEAM_DRIVER_MAP)) {
+    if (target.includes(teamKey) || teamKey.includes(target)) {
+      if (meta.codes.includes(driverCode) || meta.nums.includes(driverNum)) {
+        return true;
+      }
+    }
+  }
+
+  // Fallback string matching with guard against Red Bull vs Racing Bulls collisions
+  if (driverTeam && (driverTeam.includes(target) || target.includes(driverTeam))) {
+    if (target.includes("racing bulls") || target === "rb") {
+      return driverTeam.includes("racing bulls") || driverTeam === "rb";
+    }
+    if (target.includes("red bull") || target === "redbull") {
+      return driverTeam.includes("red bull") && !driverTeam.includes("racing bulls");
+    }
+    return true;
+  }
+
+  return false;
+}
+

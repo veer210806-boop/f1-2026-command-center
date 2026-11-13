@@ -21,6 +21,8 @@ import {
   buildTimingTowerGridForCircuit,
   getGrandPrixConfig,
 } from "../data/raceWeekendGrids2026";
+import { isDriverBelongingToTeam } from "../data/constructors2026";
+
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -790,19 +792,8 @@ function TimingTower({
   // Player Team Drivers for In-Race Tactical Dilemmas & Directives
   const playerTeamDrivers = useMemo(() => {
     if (!drivers || drivers.length === 0) return [];
-    const safePlayerTeam = typeof playerTeam === "string" ? playerTeam.toLowerCase() : "";
-    if (!safePlayerTeam) return [];
-    return drivers.filter((d) => {
-      if (!d.team) return false;
-      const teamLower = d.team.toLowerCase();
-      return (
-        teamLower.includes(safePlayerTeam) ||
-        safePlayerTeam.includes(teamLower) ||
-        (safePlayerTeam.includes("red") && teamLower.includes("red")) ||
-        (safePlayerTeam.includes("audi") && teamLower.includes("sauber")) ||
-        (safePlayerTeam.includes("sauber") && teamLower.includes("audi"))
-      );
-    });
+    const safePlayerTeam = playerTeam || localStorage.getItem("gp_strategy_team") || "Ferrari";
+    return drivers.filter((d) => isDriverBelongingToTeam(d, safePlayerTeam));
   }, [drivers, playerTeam]);
 
   // Listen to external overtake triggers from LiveBroadcastGantry
@@ -2214,6 +2205,8 @@ function TimingTower({
           currentLap={currentLap}
           maxLaps={maxLaps}
           sessionFlag={sessionFlag}
+          userRole={userRole}
+          playerTeam={playerTeam}
           onCloseToTower={() => setActivePitWallTab("tower")}
         />
       ) : activePitWallTab === "lapMatrix" ? (
@@ -3543,15 +3536,9 @@ function TimingTower({
                   const isCompact = tableDensity === "compact";
 
                   // Driver Team Ownership Flag (Row-level Scope)
-                  const safePlayerTeam = typeof playerTeam === "string" ? playerTeam.toLowerCase() : "";
+                  const safePlayerTeam = playerTeam || localStorage.getItem("gp_strategy_team") || "Ferrari";
                   const isDriverOnPlayerTeam =
-                    userRole === "fia" ||
-                    (d.team && safePlayerTeam &&
-                      (d.team.toLowerCase().includes(safePlayerTeam) ||
-                        safePlayerTeam.includes(d.team.toLowerCase()) ||
-                        (safePlayerTeam.includes("red") && d.team.toLowerCase().includes("red")) ||
-                        (safePlayerTeam.includes("audi") && d.team.toLowerCase().includes("sauber")) ||
-                        (safePlayerTeam.includes("sauber") && d.team.toLowerCase().includes("audi"))));
+                    userRole === "fia" || isDriverBelongingToTeam(d, safePlayerTeam);
 
                   // Metallic Position Pill Configuration
                   const posBadgeStyle = d.pos === 1 ? {
