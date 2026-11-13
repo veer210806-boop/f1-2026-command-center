@@ -76,7 +76,7 @@ function makeLabelSprite(text, color) {
   return sprite;
 }
 
-export default function ThreeRaceMap({ trackPath, drivers, selectedDriverNum, onSelectDriver, isNightMode, isPlaying, simSpeed }) {
+export default function CircuitSpatialRadar({ trackPath, drivers, selectedDriverNum, onSelectDriver, isNightMode, isPlaying, simSpeed }) {
   const hostRef = useRef(null);
   const [webglFailed, setWebglFailed] = useState(false);
 
@@ -261,12 +261,12 @@ export default function ThreeRaceMap({ trackPath, drivers, selectedDriverNum, on
     }
   }, [trackPath, drivers, selectedDriverNum, onSelectDriver, isNightMode, isPlaying, simSpeed]);
 
-  if (webglFailed) return <div className="three-race-map-fallback">WebGL race map unavailable on this device.</div>;
+  if (webglFailed) return <div className="spatial-race-map-fallback">3D Satellite map unavailable on this device.</div>;
 
   return (
-    <div className="three-race-map" aria-label="Interactive 3D race map. Drag to orbit, scroll to zoom, and select a car marker.">
-      <div ref={hostRef} className="three-race-map-canvas" />
-      <div className="three-race-map-caption">DRAG TO ORBIT · SCROLL TO ZOOM · SELECT A CAR</div>
+    <div className="spatial-race-map" aria-label="Interactive 3D race map. Drag to orbit, scroll to zoom, and select a car marker.">
+      <div ref={hostRef} className="spatial-race-map-canvas" />
+      <div className="spatial-race-map-caption">DRAG TO ORBIT · SCROLL TO ZOOM · SELECT A CAR</div>
     </div>
   );
 }

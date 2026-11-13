@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
-import ThreeRaceMap from "./ThreeRaceMap";
+import CircuitSpatialRadar from "./CircuitSpatialRadar";
 
 // ── Official 2026 Team Colors & Badges ─────────────────────────────────────
 const TEAM_COLORS = {
@@ -707,8 +707,8 @@ export default function LiveRaceMapTracker({
         }}
       >
         {is3DMode && (
-          <div className="three-race-map-layer">
-            <ThreeRaceMap
+          <div className="spatial-race-map-layer">
+            <CircuitSpatialRadar
               trackPath={activeTrackPath}
               drivers={leaderboardCars}
               selectedDriverNum={selectedDriverNum}

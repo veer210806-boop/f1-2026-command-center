@@ -1668,35 +1668,35 @@ textarea:focus-visible,
   .race-map-labels > [role="button"] { transform: scale(0.88); transform-origin: center; }
 }
 
-/* Three.js WebGL circuit board. */
-.three-race-map-layer {
+/* Circuit Spatial Radar WebGL Layer */
+.spatial-race-map-layer {
   position: absolute;
   inset: 0;
   z-index: 18;
 }
 
-.three-race-map,
-.three-race-map-canvas {
+.spatial-race-map,
+.spatial-race-map-canvas {
   width: 100%;
   height: 100%;
 }
 
-.three-race-map {
+.spatial-race-map {
   position: relative;
   overflow: hidden;
   background: radial-gradient(circle at 50% 35%, #142333, #070b12 68%);
 }
 
-.three-race-map canvas {
+.spatial-race-map canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
   cursor: grab;
 }
 
-.three-race-map canvas:active { cursor: grabbing; }
+.spatial-race-map canvas:active { cursor: grabbing; }
 
-.three-race-map-caption {
+.spatial-race-map-caption {
   position: absolute;
   left: 50%;
   bottom: 48px;
@@ -1711,7 +1711,7 @@ textarea:focus-visible,
   pointer-events: none;
 }
 
-.three-race-map-fallback {
+.spatial-race-map-fallback {
   display: grid;
   place-items: center;
   width: 100%;
@@ -1722,6 +1722,6 @@ textarea:focus-visible,
 }
 
 @media (max-width: 800px) {
-  .three-race-map-caption { bottom: 40px; font-size: 0.46rem; white-space: nowrap; }
+  .spatial-race-map-caption { bottom: 40px; font-size: 0.46rem; white-space: nowrap; }
 }
 
