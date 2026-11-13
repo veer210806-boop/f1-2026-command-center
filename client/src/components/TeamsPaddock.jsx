@@ -575,7 +575,7 @@ function TeamsPaddock() {
   }, [drivers, driverSearch, driverSortMode, driverFilterCategory, driverFilterTeam]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div className="paddock-workspace" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <style>{`
         @keyframes pulseBeacon {
           0% { transform: scale(1); opacity: 1; }
@@ -585,6 +585,7 @@ function TeamsPaddock() {
       `}</style>
       {/* ════════ TIER 1: UNIFIED PADDOCK MISSION GANTRY DECK ════════ */}
       <div
+        className="paddock-hero"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -677,6 +678,7 @@ function TeamsPaddock() {
 
         {/* Right: 4-Tab View Switcher */}
         <div
+          className="paddock-view-switcher"
           style={{
             display: "flex",
             background: "rgba(0, 0, 0, 0.5)",
@@ -728,6 +730,7 @@ function TeamsPaddock() {
 
       {/* ════════ TIER 2: CONTEXTUAL CONTROL & FILTER DECK ════════ */}
       <div
+        className="paddock-controls"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -1179,10 +1182,10 @@ function TeamsPaddock() {
           MODE 1: ALL 11 TEAMS & OFFICIAL CARS (2026 Paddock Showroom)
           ══════════════════════════════════════════════════════════════ */}
       {viewMode === "teams" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div className="constructors-showroom" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
 
           {/* 11 Constructors Showroom Cards Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "22px" }}>
+          <div className="constructors-garage-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "22px" }}>
             {processedTeams.map((t) => {
               const color = t.primary_color || "var(--neon-red)";
               const carImg = t.car_image_url || getTeamCar(t.team);
@@ -1222,10 +1225,20 @@ function TeamsPaddock() {
               return (
                 <div
                   key={t.team}
-                  className="gpu-card"
+                  className="gpu-card constructor-garage-card"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${t.team} team dossier`}
                   onClick={() => {
                     setSelectedTeamCode(t.team);
                     setViewMode("dossier");
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedTeamCode(t.team);
+                      setViewMode("dossier");
+                    }
                   }}
                   style={{
                     background: "linear-gradient(180deg, rgba(16, 21, 33, 0.94) 0%, rgba(9, 12, 20, 0.98) 100%)",
@@ -1421,6 +1434,7 @@ function TeamsPaddock() {
 
                   {/* ── 2026 CAR HYPER-SHOWROOM STAGE (Pedestal & Underglow) ── */}
                   <div
+                    className="constructor-car-stage"
                     style={{
                       position: "relative",
                       width: "100%",
@@ -1533,7 +1547,7 @@ function TeamsPaddock() {
                   </div>
 
                   {/* ── HERO PILOTS COCKPIT BAR (Driver Duo On Card Face) ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  <div className="constructor-driver-duo" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                     {teamDriverList.map((dr) => {
                       const faceUrl = getDriverFaceUrl(dr.code, dr.photo_url);
                       const drProfile = DRIVER_PROFILES_2026[dr.code] || {};
@@ -1624,6 +1638,7 @@ function TeamsPaddock() {
 
                   {/* ── INTEGRATED TELEMETRY HUD & COST CAP CAPSULE ── */}
                   <div
+                    className="constructor-metrics"
                     style={{
                       background: "rgba(0,0,0,0.4)",
                       border: "1px solid rgba(255,255,255,0.06)",

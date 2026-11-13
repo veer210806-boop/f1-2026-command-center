@@ -439,11 +439,12 @@ export default function StrategyAdvisor({
   const driverWearPct = Math.round(activeDriver.wear != null ? activeDriver.wear : Math.min(95, driverTireAge * 3.5));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "4px 0 24px 0" }}>
+    <div className="strategy-workspace" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "4px 0 24px 0" }}>
       
       {/* ── TOAST NOTIFICATION BANNER ── */}
       {notificationMsg && (
         <div
+          className="strategy-toast"
           style={{
             background: "linear-gradient(90deg, rgba(0, 210, 190, 0.25) 0%, rgba(20, 26, 42, 0.98) 50%, rgba(0, 210, 190, 0.25) 100%)",
             border: "1.5px solid var(--neon-cyan)",
@@ -471,6 +472,7 @@ export default function StrategyAdvisor({
 
       {/* ── TOP COCKPIT BAR: CONSTRUCTOR, DRIVER TABS & TIMING JUMP ── */}
       <div
+        className="strategy-hero"
         style={{
           background: "linear-gradient(135deg, rgba(18, 24, 38, 0.98) 0%, rgba(10, 14, 22, 0.99) 100%)",
           border: `1.5px solid ${currentTeamObj.color || "var(--neon-cyan)"}66`,
@@ -575,13 +577,14 @@ export default function StrategyAdvisor({
       </div>
 
       {/* ── MAIN DUAL-PANEL COMMAND DECK ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "12px", alignItems: "start" }}>
+      <div className="strategy-command-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "12px", alignItems: "start" }}>
         
         {/* ════════ LEFT COLUMN: STINT ARCHITECT & TACTICAL PIT ORDERS ════════ */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div className="strategy-decision-column" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           
           {/* 1. Driver Profile & Live Tire Health Card */}
           <div
+            className="strategy-driver-summary"
             style={{
               background: "linear-gradient(135deg, rgba(16, 22, 36, 0.96) 0%, rgba(10, 14, 24, 0.98) 100%)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -698,6 +701,7 @@ export default function StrategyAdvisor({
 
           {/* 2. Visual Stint Timeline & Strategy Architecture */}
           <div
+            className="strategy-timeline"
             style={{
               background: "rgba(16, 20, 32, 0.92)",
               border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -1166,11 +1170,12 @@ export default function StrategyAdvisor({
         </div>
 
         {/* ════════ RIGHT COLUMN: TACTICAL RE-ENTRY RADAR & INTELLIGENCE ════════ */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div className="strategy-intelligence-column" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           
           {/* 1. Live Re-Entry Radar Board */}
           {simulatedReentry && (
             <div
+              className="strategy-radar"
               style={{
                 background: "linear-gradient(135deg, rgba(14, 20, 32, 0.98) 0%, rgba(8, 12, 20, 0.99) 100%)",
                 border: "1.5px solid rgba(0, 210, 190, 0.4)",
@@ -1269,6 +1274,7 @@ export default function StrategyAdvisor({
 
           {/* 2. 1-Click AI Strategy Blueprints */}
           <div
+            className="strategy-blueprints"
             style={{
               background: "rgba(16, 20, 32, 0.92)",
               border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -1280,7 +1286,7 @@ export default function StrategyAdvisor({
             }}
           >
             <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.74rem", fontWeight: "900", color: "#ffffff" }}>
-              🤖 1-CLICK AI BLUEPRINTS (LOAD & EDIT)
+              RACE BLUEPRINTS
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
@@ -1345,6 +1351,7 @@ export default function StrategyAdvisor({
 
           {/* 3. Available Pirelli Tire Allocation Rack */}
           <div
+            className="strategy-tire-allocation"
             style={{
               background: "rgba(16, 20, 32, 0.92)",
               border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -1388,6 +1395,7 @@ export default function StrategyAdvisor({
 
       {/* ── BOTH DRIVERS SIDE-BY-SIDE TACTICAL SUMMARY FOOTER ── */}
       <div
+        className="strategy-team-footer"
         style={{
           background: "linear-gradient(135deg, rgba(16, 22, 36, 0.95) 0%, rgba(10, 14, 24, 0.98) 100%)",
           border: "1px solid rgba(255, 255, 255, 0.1)",

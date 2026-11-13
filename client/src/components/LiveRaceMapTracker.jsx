@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
+import ThreeRaceMap from "./ThreeRaceMap";
 
 // ── Official 2026 Team Colors & Badges ─────────────────────────────────────
 const TEAM_COLORS = {
@@ -163,6 +164,7 @@ export default function LiveRaceMapTracker({
   const [activeSubTab, setActiveSubTab] = useState("PACE");
   const [showPaceCommands, setShowPaceCommands] = useState(false);
   const [trackRotation, setTrackRotation] = useState(defaultCircuitRotation);
+  const [labelDensity, setLabelDensity] = useState("focus");
 
   // Sync isNightMode when active circuit changes
   useEffect(() => {
@@ -620,6 +622,7 @@ export default function LiveRaceMapTracker({
 
   return (
     <div
+      className="race-director-map"
       ref={mapContainerRef}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
@@ -679,6 +682,7 @@ export default function LiveRaceMapTracker({
 
       {/* Coordinate Telemetry Grid Lines */}
       <div
+        className="race-map-stage"
         style={{
           position: "absolute",
           inset: 0,
@@ -702,6 +706,19 @@ export default function LiveRaceMapTracker({
           overflow: "hidden",
         }}
       >
+        {is3DMode && (
+          <div className="three-race-map-layer">
+            <ThreeRaceMap
+              trackPath={activeTrackPath}
+              drivers={leaderboardCars}
+              selectedDriverNum={selectedDriverNum}
+              onSelectDriver={setSelectedDriverNum}
+              isNightMode={isNightMode}
+              isPlaying={isPlaying}
+              simSpeed={simSpeed}
+            />
+          </div>
+        )}
         <div
           style={{
             width: "100%",
@@ -1077,14 +1094,16 @@ export default function LiveRaceMapTracker({
           ════════════════════════════════════════════════════════════════════════ */}
       <div
         id="pillsOverlay"
+        className="race-map-labels"
         style={{
           position: "absolute",
           inset: 0,
+          display: is3DMode ? "none" : "block",
           pointerEvents: "none",
           zIndex: 20,
         }}
       >
-        {leaderboardCars.map((car) => {
+        {leaderboardCars.filter((car) => labelDensity === "all" || car.num === selectedDriverNum || (labelDensity === "leaders" && car.pos <= 3)).map((car) => {
           const teamConf = TEAM_COLORS[car.team] || { primary: "#ffffff" };
           const isSelected = car.num === selectedDriverNum;
 
@@ -1107,6 +1126,15 @@ export default function LiveRaceMapTracker({
                 e.stopPropagation();
                 setSelectedDriverNum(car.num);
               }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setSelectedDriverNum(car.num);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Focus camera on ${car.code}, position ${car.pos}`}
             >
               {/* Exact F1 Manager 24 Driver Pill */}
               <div
@@ -1155,7 +1183,7 @@ export default function LiveRaceMapTracker({
           (Selected row is pure solid white background with black text)
           ════════════════════════════════════════════════════════════════════════ */}
       <div
-        className="hud-interactive"
+        className="hud-interactive race-map-hud race-map-leaderboard"
         style={{
           position: "absolute",
           top: "16px",
@@ -1282,7 +1310,7 @@ export default function LiveRaceMapTracker({
           TOP-RIGHT HUD: F1 MANAGER AUTHENTIC "RACE VIEW" WIDGET
           ════════════════════════════════════════════════════════════════════════ */}
       <div
-        className="hud-interactive"
+        className="hud-interactive race-map-hud race-map-conditions"
         style={{
           position: "absolute",
           top: "16px",
@@ -1328,15 +1356,17 @@ export default function LiveRaceMapTracker({
             📊
           </button>
           <button
-            title="3D Satellite Race View (Active)"
+            onClick={() => setIs3DMode((current) => !current)}
+            title={`Switch to ${is3DMode ? "flat 2D" : "angled 3D"} circuit view`}
+            aria-label={`Circuit view: ${is3DMode ? "3D" : "2D"}`}
             style={{
               flex: 1,
               padding: "5px 0",
               borderRadius: "4px",
-              background: "#ffffff",
+              background: is3DMode ? "#ffffff" : "rgba(255,255,255,0.08)",
               border: "none",
-              color: "#0a0e16",
-              cursor: "default",
+              color: is3DMode ? "#0a0e16" : "rgba(255,255,255,0.7)",
+              cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1363,6 +1393,28 @@ export default function LiveRaceMapTracker({
             }}
           >
             🔧
+          </button>
+          <button
+            onClick={() => setLabelDensity((current) => current === "focus" ? "leaders" : current === "leaders" ? "all" : "focus")}
+            title={`Track labels: ${labelDensity}. Click to change density.`}
+            aria-label={`Track label density: ${labelDensity}`}
+            style={{
+              flex: 1,
+              padding: "5px 0",
+              borderRadius: "4px",
+              background: labelDensity !== "all" ? "rgba(0, 210, 190, 0.16)" : "transparent",
+              border: "none",
+              color: labelDensity !== "all" ? "#00d2be" : "rgba(255,255,255,0.6)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.52rem",
+              fontWeight: "900",
+            }}
+          >
+            TAG
           </button>
           <button
             onClick={() => setIsNightMode(!isNightMode)}
@@ -1453,7 +1505,7 @@ export default function LiveRaceMapTracker({
           BOTTOM-RIGHT HUD: TACTICAL PACE COMMANDS & ACTIVE TELEMETRY
           ════════════════════════════════════════════════════════════════════════ */}
       <div
-        className="hud-interactive"
+        className="hud-interactive race-map-hud race-map-telemetry"
         style={{
           position: "absolute",
           bottom: "12px",
@@ -1761,7 +1813,7 @@ export default function LiveRaceMapTracker({
           (4x Hero Speed Capsule & Driver Camera Focus)
           ════════════════════════════════════════════════════════════════════════ */}
       <div
-        className="hud-interactive"
+        className="hud-interactive race-map-controller"
         style={{
           position: "absolute",
           bottom: "16px",

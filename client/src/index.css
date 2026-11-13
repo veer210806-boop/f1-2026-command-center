@@ -1303,3 +1303,425 @@ textarea:focus-visible,
   opacity: 0.35;
 }
 
+/* Command cockpit: keep the high-information layout deliberate at every width. */
+.app-command-header {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  justify-content: initial !important;
+  overflow: hidden;
+}
+
+.app-primary-nav {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto !important;
+  justify-self: stretch;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.app-primary-nav::-webkit-scrollbar { display: none; }
+.app-primary-nav button { flex: 0 0 auto; }
+
+.broadcast-gantry {
+  margin: 10px clamp(12px, 2vw, 32px) 12px !important;
+  isolation: isolate;
+}
+
+.broadcast-gantry.is-compact .gantry-secondary-action {
+  display: none !important;
+}
+
+.timing-tower,
+.timing-workspace,
+.timing-panel,
+.timing-sidebar {
+  min-width: 0;
+}
+
+.timing-table-scroll {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  max-height: calc(100vh - 210px);
+}
+
+.race-brief:not(.is-open) {
+  margin-bottom: 8px;
+  border-radius: 8px;
+}
+.race-brief:not(.is-open) .brief-topline {
+  padding: 8px 14px;
+}
+
+@media (max-width: 1480px) {
+  .app-command-header { padding-inline: 11px !important; gap: 7px !important; }
+  .app-primary-nav { gap: 1px !important; padding-inline: 4px !important; }
+  .app-primary-nav button { padding-inline: 7px !important; }
+  .app-header-actions > :first-child > span:last-child { display: none; }
+  .app-header-actions > :nth-child(2) span:last-child { display: none; }
+}
+
+@media (max-width: 1280px) {
+  .gantry-radio-ticker { display: none !important; }
+  .timing-workspace { grid-template-columns: minmax(250px, 290px) minmax(0, 1fr) !important; }
+  .timing-panel { padding: 10px !important; }
+}
+
+@media (max-width: 1040px) {
+  .app-header-brand > :nth-child(2),
+  .app-header-actions > :first-child,
+  .app-header-actions > :nth-child(3) { display: none !important; }
+  .app-primary-nav button { padding-inline: 8px !important; }
+  .timing-workspace { grid-template-columns: 1fr !important; }
+  .timing-sidebar {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-command-header { padding-inline: 9px !important; }
+  .app-header-brand span { font-size: 0.92rem !important; }
+  .app-header-actions > :nth-child(2) { padding-inline: 7px !important; }
+  .app-primary-nav { border-radius: 14px !important; }
+  .broadcast-gantry { margin-inline: 10px !important; }
+  .gantry-toolbar { align-items: flex-start !important; }
+  .gantry-toolbar-controls { margin-left: auto; }
+  .timing-sidebar { grid-template-columns: 1fr; }
+  .timing-panel { padding: 8px !important; }
+  .timing-table-scroll { max-height: 520px !important; }
+}
+
+/* Strategy room: a restrained engineer's desk, not a wall of neon widgets. */
+.strategy-workspace {
+  width: min(100%, 1680px);
+  margin-inline: auto;
+  gap: 16px !important;
+}
+
+.strategy-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-left: 4px solid var(--neon-red) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(105deg, #131a29 0%, #0d1320 56%, rgba(0, 210, 190, 0.12) 100%) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.26) !important;
+}
+
+.strategy-hero::after {
+  content: "RACE ENGINEERING";
+  position: absolute;
+  right: 18px;
+  top: 8px;
+  color: rgba(255, 255, 255, 0.05);
+  font: 900 0.64rem 'Orbitron', monospace;
+  letter-spacing: 0.2em;
+  pointer-events: none;
+}
+
+.strategy-toast {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.strategy-command-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(350px, 0.85fr) !important;
+  gap: 16px !important;
+}
+
+.strategy-decision-column,
+.strategy-intelligence-column {
+  gap: 14px !important;
+  min-width: 0;
+}
+
+.strategy-decision-column > div,
+.strategy-intelligence-column > div,
+.strategy-team-footer {
+  background: linear-gradient(145deg, rgba(17, 23, 36, 0.96), rgba(11, 15, 24, 0.98)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18) !important;
+}
+
+.strategy-driver-summary {
+  min-height: 88px;
+  border-left: 3px solid var(--neon-cyan) !important;
+}
+
+.strategy-timeline {
+  border-left: 3px solid #ffd700 !important;
+}
+
+.strategy-radar {
+  border-color: rgba(0, 210, 190, 0.45) !important;
+  border-left: 3px solid var(--neon-cyan) !important;
+  box-shadow: none !important;
+}
+
+.strategy-blueprints {
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.strategy-blueprints > div:first-child {
+  color: #e9e5ff !important;
+  letter-spacing: 0.08em;
+}
+
+.strategy-tire-allocation {
+  border-left: 3px solid #ffd700 !important;
+}
+
+.strategy-team-footer {
+  border-left: 3px solid var(--neon-green) !important;
+  padding: 13px 16px !important;
+}
+
+.strategy-decision-column button,
+.strategy-intelligence-column button,
+.strategy-team-footer button {
+  min-height: 32px;
+}
+
+@media (max-width: 1180px) {
+  .strategy-command-grid { grid-template-columns: 1fr !important; }
+  .strategy-intelligence-column {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .strategy-radar { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .strategy-workspace { gap: 12px !important; }
+  .strategy-hero { padding: 13px !important; }
+  .strategy-hero::after { display: none; }
+  .strategy-intelligence-column { grid-template-columns: 1fr; }
+  .strategy-radar { grid-column: auto; }
+  .strategy-decision-column > div,
+  .strategy-intelligence-column > div { padding: 12px !important; }
+}
+
+/* Constructors: an interactive garage board with one visual language per team. */
+.paddock-workspace {
+  width: min(100%, 1720px);
+  margin-inline: auto;
+  gap: 16px !important;
+}
+
+.paddock-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 16px !important;
+  border-top: 0 !important;
+  border-left: 4px solid var(--neon-red) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(100deg, #141b2a 0%, #0d121d 60%, rgba(232, 0, 45, 0.14) 100%) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22) !important;
+}
+
+.paddock-hero::after {
+  content: "CONSTRUCTOR NETWORK";
+  position: absolute;
+  right: 16px;
+  top: 7px;
+  color: rgba(255, 255, 255, 0.05);
+  font: 900 0.65rem 'Orbitron', monospace;
+  letter-spacing: 0.16em;
+  pointer-events: none;
+}
+
+.paddock-view-switcher {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.paddock-view-switcher::-webkit-scrollbar { display: none; }
+
+.paddock-controls {
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: rgba(13, 18, 29, 0.92) !important;
+  box-shadow: none !important;
+}
+
+.constructors-showroom { gap: 16px !important; }
+
+.constructors-garage-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch;
+}
+
+.constructor-garage-card {
+  min-width: 0;
+  min-height: 392px;
+  padding: 14px !important;
+  gap: 10px !important;
+  border-radius: 14px !important;
+  border-right-color: rgba(255, 255, 255, 0.1) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+  border-left-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28) !important;
+  outline: none;
+}
+
+.constructor-garage-card:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+.constructor-car-stage {
+  height: 132px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(0, 0, 0, 0.28)) !important;
+}
+
+.constructor-driver-duo { gap: 6px !important; }
+
+.constructor-metrics {
+  margin-top: 1px;
+  background: rgba(6, 9, 15, 0.52) !important;
+  border-radius: 8px !important;
+}
+
+@media (max-width: 1180px) {
+  .constructors-garage-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important; }
+  .paddock-hero::after { display: none; }
+}
+
+@media (max-width: 720px) {
+  .paddock-workspace { gap: 12px !important; }
+  .paddock-hero, .paddock-controls { padding: 11px !important; }
+  .constructors-garage-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .constructor-garage-card { min-height: 0; }
+  .constructor-car-stage { height: 122px !important; }
+}
+
+/* Race director: retain the rich circuit model while reducing label and HUD collisions. */
+.race-director-map {
+  border-radius: 14px !important;
+  border-color: rgba(0, 210, 190, 0.22) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5) !important;
+  isolation: isolate;
+}
+
+.race-director-map::before {
+  content: "LIVE RACE DIRECTOR";
+  position: absolute;
+  left: 50%;
+  top: 15px;
+  transform: translateX(-50%);
+  z-index: 12;
+  color: rgba(255, 255, 255, 0.24);
+  font: 800 0.58rem 'Orbitron', monospace;
+  letter-spacing: 0.18em;
+  pointer-events: none;
+}
+
+.race-map-stage { filter: saturate(1.04) contrast(1.02); }
+
+.race-map-labels > [role="button"] { outline: none; }
+.race-map-labels > [role="button"]:focus-visible > div:first-child {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+.race-map-hud,
+.race-map-controller {
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+
+.race-map-leaderboard {
+  border-top-color: var(--neon-red) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.46) !important;
+}
+
+.race-map-conditions { min-width: 224px !important; }
+
+.race-map-controller {
+  border-color: rgba(0, 210, 190, 0.34) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+}
+
+@media (max-width: 1180px) {
+  .race-director-map { min-height: 650px !important; }
+  .race-map-leaderboard { width: 158px !important; left: 10px !important; top: 10px !important; }
+  .race-map-conditions { right: 10px !important; top: 10px !important; min-width: 190px !important; }
+  .race-map-telemetry { right: 10px !important; bottom: 10px !important; }
+}
+
+@media (max-width: 800px) {
+  .race-director-map { min-height: 590px !important; height: 72vh !important; }
+  .race-director-map::before { display: none; }
+  .race-map-leaderboard { width: 142px !important; }
+  .race-map-conditions > div:last-child { display: none !important; }
+  .race-map-controller { bottom: 9px !important; max-width: calc(100% - 18px); gap: 7px !important; padding-inline: 10px !important; }
+  .race-map-labels > [role="button"] { transform: scale(0.88); transform-origin: center; }
+}
+
+/* Three.js WebGL circuit board. */
+.three-race-map-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+}
+
+.three-race-map,
+.three-race-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.three-race-map {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #142333, #070b12 68%);
+}
+
+.three-race-map canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  cursor: grab;
+}
+
+.three-race-map canvas:active { cursor: grabbing; }
+
+.three-race-map-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  background: rgba(4, 7, 12, 0.68);
+  color: rgba(255, 255, 255, 0.7);
+  font: 800 0.54rem 'Orbitron', monospace;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.three-race-map-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-secondary);
+  font: 700 0.75rem 'Orbitron', monospace;
+  background: #090d14;
+}
+
+@media (max-width: 800px) {
+  .three-race-map-caption { bottom: 40px; font-size: 0.46rem; white-space: nowrap; }
+}
+

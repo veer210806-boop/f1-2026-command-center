@@ -81,6 +81,7 @@ export default function LiveBroadcastGantry({
 
   return (
     <div
+      className={`broadcast-gantry ${isExpanded ? "is-expanded" : "is-compact"}`}
       style={{
         background: "linear-gradient(180deg, rgba(16, 20, 32, 0.95) 0%, rgba(10, 13, 20, 0.95) 100%)",
         border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -96,10 +97,10 @@ export default function LiveBroadcastGantry({
       }}
     >
       {/* ── Compact Streamline Bar (Always Visible) ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+      <div className="gantry-toolbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
         
         {/* Left: Lap Progress + Simulation Quick Trigger */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <div className="gantry-primary-actions" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
           {/* Micro Lap Pill */}
           <div
             style={{
@@ -174,6 +175,7 @@ export default function LiveBroadcastGantry({
 
           {/* AWS Overtake Opportunity Simulator Button */}
           <button
+            className="gantry-secondary-action"
             onClick={handleTriggerBattleOvertake}
             style={{
               background: "linear-gradient(135deg, rgba(255, 153, 0, 0.22) 0%, rgba(255, 94, 0, 0.14) 100%)",
@@ -201,6 +203,7 @@ export default function LiveBroadcastGantry({
           {/* Quick Direct Restart Race to Lap 1 Button */}
           {onRestartRace && (
             <button
+              className="gantry-secondary-action"
               onClick={onRestartRace}
               style={{
                 background: "rgba(255, 215, 0, 0.12)",
@@ -245,7 +248,7 @@ export default function LiveBroadcastGantry({
         </div>
 
         {/* Center: Live Radio Transcript Ticker (Clean) */}
-        <div style={{ flex: 1, minWidth: "220px", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+        <div className="gantry-radio-ticker" style={{ flex: 1, minWidth: "220px", display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
           <button
             onClick={() => handlePlayRadio()}
             style={{
@@ -275,7 +278,7 @@ export default function LiveBroadcastGantry({
         </div>
 
         {/* Right: Audio FX Toggle + Expand/Collapse Button */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="gantry-toolbar-controls" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <button
             onClick={() => setIsAudioMuted(!isAudioMuted)}
             style={{
@@ -323,7 +326,7 @@ export default function LiveBroadcastGantry({
 
       {/* ── Expanded Drawer: Full Simulation, Flag & Radio Station Controls ── */}
       {isExpanded && (
-        <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div className="gantry-expanded" style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: "8px" }}>
           
           {/* Top Row: Speed Selectors + All Race Flags */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>

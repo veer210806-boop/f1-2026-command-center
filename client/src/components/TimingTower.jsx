@@ -1732,7 +1732,7 @@ function TimingTower({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+    <div className="timing-tower" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", minWidth: 0 }}>
       {/* ── Dynamic Broadcast Tooltip & Logo Hover Styles ── */}
       <style>{`
         .team-logo-hover-box:hover .team-tooltip {
@@ -2233,10 +2233,10 @@ function TimingTower({
       ) : (
         <>
           {/* ════════ FRONT / UPPER COCKPIT: 2-COLUMN LAYOUT (LEFT MAP + TIMING TOWER) ════════ */}
-          <div style={{ display: "grid", gridTemplateColumns: "330px 1fr", gap: "12px", alignItems: "start", width: "100%" }}>
+          <div className="timing-workspace" style={{ display: "grid", gridTemplateColumns: "330px minmax(0, 1fr)", gap: "12px", alignItems: "start", width: "100%" }}>
 
         {/* ──── COLUMN 1: EXPANDED LEFT PANEL (Circuit Radar, SVG Map, Sectors & Speed Trap) ──── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="timing-sidebar" style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: 0 }}>
           {/* Circuit Geometry & Sector Radar Telemetry */}
           <div
             style={{
@@ -2651,6 +2651,7 @@ function TimingTower({
 
         {/* ──── COLUMN 2: 2026 MASTER TIMING TOWER MATRIX (SPACIOUS TABLE) ──── */}
         <div
+          className="timing-panel"
           style={{
             background: "linear-gradient(180deg, rgba(16, 18, 28, 0.98) 0%, rgba(12, 14, 22, 0.98) 100%)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -2717,56 +2718,6 @@ function TimingTower({
                   <span>PIT STRATEGY ROOM →</span>
                 </button>
               )}
-
-              {/* AWS-Style Overtake Opportunity Simulator & Inject Delta Gap Buttons */}
-              <button
-                onClick={handleTriggerDuelOvertake}
-                title="AWS Overtake Opportunity Simulator: Trigger predictive intercept pass"
-                style={{
-                  background: "linear-gradient(135deg, rgba(255, 153, 0, 0.28) 0%, rgba(235, 94, 0, 0.18) 100%)",
-                  border: "1px solid #ff9900",
-                  color: "#ffffff",
-                  borderRadius: "4px",
-                  padding: "3px 9px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.62rem",
-                  fontWeight: "900",
-                  letterSpacing: "0.05em",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  boxShadow: "0 0 10px rgba(255, 153, 0, 0.35)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span style={{ background: "#ff9900", color: "#000", fontWeight: "900", fontSize: "0.54rem", padding: "1px 4px", borderRadius: "2px" }}>AWS</span>
-                <span>[ OVERTAKE OPPORTUNITY SIMULATOR ]</span>
-              </button>
-
-              <button
-                onClick={handleInjectDeltaGap}
-                title="Compress delta gap into DRS threshold (0.420s) to simulate immediate battle conditions"
-                style={{
-                  background: "rgba(0, 240, 255, 0.12)",
-                  border: "1px solid var(--neon-cyan)",
-                  color: "var(--neon-cyan)",
-                  borderRadius: "4px",
-                  padding: "3px 8px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.60rem",
-                  fontWeight: "800",
-                  letterSpacing: "0.04em",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  boxShadow: "0 0 8px rgba(0, 240, 255, 0.2)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span>[ INJECT DELTA GAP ]</span>
-              </button>
 
               {/* Sound Toggle */}
               <button
@@ -3529,6 +3480,7 @@ function TimingTower({
 
           {/* Unified Table with Sticky Header */}
           <div
+            className="timing-table-scroll"
             style={{
               maxHeight: tableDensity === "compact" ? "680px" : "635px",
               overflowY: "auto",

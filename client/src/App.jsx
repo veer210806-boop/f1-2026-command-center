@@ -308,7 +308,7 @@ function FiaClock() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("timing");
-  const [isBriefOpen, setIsBriefOpen] = useState(true);
+  const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
   const [selectedCircuit, setSelectedCircuit] = useState(SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT);
 
@@ -853,6 +853,7 @@ export default function App() {
 
       {/* ── Unified Futuristic F1 Cockpit Command Bar ── */}
       <header
+        className="app-command-header"
         style={{
           height: "58px",
           padding: "0 16px",
@@ -883,7 +884,7 @@ export default function App() {
         />
 
         {/* Left: Brand Identity & Active Grand Prix Selector */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+        <div className="app-header-brand" style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "2px" }}>
             <span
               style={{
@@ -960,16 +961,20 @@ export default function App() {
 
         {/* Center: Sleek Cockpit Navigation Pills (Zero-Wrapping & Compact) */}
         <nav
+          className="app-primary-nav"
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "3px",
+            gap: "2px",
             background: "rgba(0,0,0,0.45)",
-            padding: "3px 6px",
-            borderRadius: "20px",
+            padding: "2px 5px",
+            borderRadius: "18px",
             border: "1px solid rgba(255,255,255,0.08)",
             boxShadow: "inset 0 1px 4px rgba(0,0,0,0.5)",
-            flexShrink: 0,
+            flex: "1 1 auto",
+            minWidth: 0,
+            overflowX: "auto",
+            scrollbarWidth: "none",
           }}
           aria-label="Primary command center navigation"
         >
@@ -982,21 +987,21 @@ export default function App() {
                 style={{
                   all: "unset",
                   cursor: "pointer",
-                  padding: "5px 9px",
-                  borderRadius: "14px",
-                  fontSize: "0.68rem",
+                  padding: "4px 8px",
+                  borderRadius: "12px",
+                  fontSize: "0.64rem",
                   fontFamily: "'Orbitron', monospace",
                   fontWeight: isActive ? "900" : "700",
-                  letterSpacing: "0.03em",
+                  letterSpacing: "0.02em",
                   color: isActive ? "#ffffff" : "var(--text-secondary)",
                   background: isActive ? "linear-gradient(135deg, var(--neon-red) 0%, #b3001e 100%)" : "transparent",
                   boxShadow: isActive ? "0 0 12px rgba(232,0,45,0.45)" : "none",
                   transition: "all 0.15s ease",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
+                  gap: "4px",
                   whiteSpace: "nowrap",
-                  flexShrink: 0,
+                  flex: "0 0 auto",
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -1019,7 +1024,7 @@ export default function App() {
         </nav>
 
         {/* Right: Strategy Role Pill + Restart/Switch Button + Race Lap Capsule + GPS Clock */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+        <div className="app-header-actions" style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
           {/* Strategy Role & Team Clearance Pill */}
           <div
             title={userRole === "team" ? `${currentTeamObj.name} · Lead Race Strategist` : "FIA Race Control Clearance"}
@@ -1096,7 +1101,7 @@ export default function App() {
             title="Reset Race, Switch Constructor, or Toggle FIA Clearance"
           >
             <span style={{ color: "var(--neon-red)", fontWeight: "900" }}>⟲</span>
-            <span>RESTART / SWITCH</span>
+            <span>RESTART</span>
           </button>
 
           {/* Micro Lap Progress Capsule */}
@@ -1212,7 +1217,7 @@ export default function App() {
           }}
           onFlagChange={(flag) => setActiveFlag(flag)}
           activeFlag={activeFlag}
-          defaultExpanded={activeTab === "timing"}
+          defaultExpanded={false}
         />
       </div>
 
