@@ -667,20 +667,19 @@ function buildStartingGridGroup(points, frames, pitInfo, texturesToDispose) {
 // Compute driver target progress along track & staggered lane when positioned on Lap-1 Grid vs Live Race
 function computeDriverTrackSlot(driver, index, startLinePct, isGridFormation) {
   const pos = driver.pos || index + 1;
+  const slotIdx = Math.max(0, Math.min(21, pos - 1));
   if (isGridFormation) {
-    const slotIdx = Math.max(0, Math.min(21, pos - 1));
     const backSteps = 0.011 + Math.floor(slotIdx / 2) * 0.0082 + (slotIdx % 2) * 0.0041;
-    const progress = (startLinePct - backSteps + 1) % 1;
+    const totalDistance = -backSteps;
+    const progress = ((startLinePct + totalDistance) % 1 + 1) % 1;
     const lateral = (slotIdx % 2 === 0 ? -1 : 1) * 0.18;
-    return { progress, lateral, tierY: 1.05 + (slotIdx % 3) * 0.34 };
+    return { progress, totalDistance, lateral, tierY: 1.05 + (slotIdx % 3) * 0.34 };
   }
 
-  // Spread pack smoothly from Start/Finish or live position
-  const progress =
-    driver.trackPct !== undefined
-      ? driver.trackPct
-      : (startLinePct - 0.015 - (pos - 1) * 0.041 + 1) % 1;
-  return { progress, lateral: 0, tierY: 1.05 + ((pos - 1) % 2) * 0.22 };
+  // Spread pack cleanly along Sector 3/Pit straight when entering mid-race without sudden snaps
+  const totalDistance = -0.012 - slotIdx * 0.014;
+  const progress = ((startLinePct + totalDistance) % 1 + 1) % 1;
+  return { progress, totalDistance, lateral: 0, tierY: 1.05 + (slotIdx % 2) * 0.22 };
 }
 
 function makeBroadcastDriverSprite(driver, pos, color, isSelected = false) {
@@ -761,9 +760,11 @@ export default function CircuitSpatialRadar({
   selectedDriverNum,
   isNightMode = false,
   isPlaying = false,
-  simSpeed = 4,
+  simSpeed = 1,
   currentLap = 1,
   isAutoSimulating = false,
+  sessionFlag = "GREEN",
+  onLapComplete,
 }) {
   const hostRef = useRef(null);
   const [webglFailed, setWebglFailed] = useState(false);
@@ -781,6 +782,10 @@ export default function CircuitSpatialRadar({
   currentLapRef.current = currentLap;
   const isAutoSimulatingRef = useRef(isAutoSimulating);
   isAutoSimulatingRef.current = isAutoSimulating;
+  const sessionFlagRef = useRef(sessionFlag);
+  sessionFlagRef.current = sessionFlag;
+  const onLapCompleteRef = useRef(onLapComplete);
+  onLapCompleteRef.current = onLapComplete;
 
   const sceneRefs = useRef({
     scene: null,
@@ -791,6 +796,7 @@ export default function CircuitSpatialRadar({
     startLightPods: [],
     selectedHalo: null,
     pitInfo: null,
+    nextLapThreshold: 1.0,
     texturesToDispose: [],
   });
 
@@ -1061,12 +1067,16 @@ export default function CircuitSpatialRadar({
         lap1StartGroup,
         selectedHalo,
         pitInfo,
+        nextLapThreshold: 1.0,
         texturesToDispose: localTextures,
       };
 
       const populateDriversIfReady = (driverList) => {
         if (!driverList || driverList.length === 0 || sceneRefs.current.markers.length > 0) return;
         const carNodeGeo = new THREE.SphereGeometry(0.22, 18, 14);
+        const isGrid = currentLapRef.current <= 1 && !isAutoSimulatingRef.current && !isPlayingRef.current;
+        sceneRefs.current.nextLapThreshold = 1.0;
+
         const builtMarkers = driverList.map((driver, index) => {
           const teamColor = TEAM_COLORS[driver.team] || "#ffffff";
           const carMat = new THREE.MeshStandardMaterial({
@@ -1078,14 +1088,14 @@ export default function CircuitSpatialRadar({
           });
           const carNode = new THREE.Mesh(carNodeGeo, carMat);
           carNode.castShadow = true;
-          const isGrid = currentLapRef.current <= 1 && !isAutoSimulatingRef.current && !isPlayingRef.current;
           const slot = computeDriverTrackSlot(driver, index, pitInfo.startLinePct, isGrid);
 
           carNode.userData.driver = driver;
           carNode.userData.index = index;
+          carNode.userData.totalDistance = slot.totalDistance;
           carNode.userData.progress = slot.progress;
           carNode.userData.lateral = slot.lateral;
-          carNode.userData.speed = 0.0052 + ((22 - (driver.pos || index + 1)) * 0.00018);
+          carNode.userData.pitBlend = driver.pitState === "IN PIT" ? 1 : 0;
           carNode.userData.lastSelState = driver.num === selectedDriverNumRef.current;
           carNode.userData.lastPos = driver.pos || index + 1;
 
@@ -1128,31 +1138,35 @@ export default function CircuitSpatialRadar({
         const lapNum = currentLapRef.current;
         const running = isPlayingRef.current || isAutoSimulatingRef.current;
         const mult = simSpeedRef.current || 1;
+        const flag = sessionFlagRef.current;
+        const flagFactor = flag === "SC" ? 0.55 : flag === "VSC" ? 0.72 : flag === "RED" ? 0.05 : 1.0;
+        const baseLapRate = 0.042 * flagFactor; // ~23.8s full lap at 1x, ~11.9s at 2x, ~6.0s at 4x, ~3.0s at 8x, ~1.5s at 16x
         const isStaticGrid = lapNum <= 1 && !running;
         const activeMarkers = sceneRefs.current.markers;
 
         lap1StartGroup.visible = lapNum <= 1;
         let hasSelectedMarker = false;
         const leaderMarker = activeMarkers.find((m) => (m.userData.driver?.pos || 99) === 1) || activeMarkers[0];
+        const leaderTotal = leaderMarker ? (leaderMarker.userData.totalDistance || 0) : 0;
 
         activeMarkers.forEach((marker, idx) => {
           const driver = marker.userData.driver;
           const curPos = driver.pos || idx + 1;
           if (running) {
-            const dynamicLapSpeed = 0.028 + ((22 - curPos) * 0.00035);
-            marker.userData.progress = (marker.userData.progress + delta * dynamicLapSpeed * mult) % 1;
-            marker.userData.lateral *= 0.95; // Smoothly merge off starting staggered lane after lights out
-            // Gradually fan pack out organically on Lap 2+ behind actual P1 leader
-            if (lapNum >= 2 && activeMarkers.length > 1 && marker !== leaderMarker) {
-              const desiredLag = Math.min(0.90, (curPos - 1) * Math.min(0.044, 0.026 + (lapNum - 2) * 0.006));
-              const targetProg = (leaderMarker.userData.progress - desiredLag + 1) % 1;
-              let diff = targetProg - marker.userData.progress;
-              if (diff > 0.5) diff -= 1;
-              if (diff < -0.5) diff += 1;
-              marker.userData.progress = (marker.userData.progress + diff * Math.min(1, delta * (1.8 + mult * 0.2)) + 1) % 1;
+            let paceMul = 1.0;
+            if (marker !== leaderMarker) {
+              const desiredTotal = leaderTotal - Math.min(0.62, (curPos - 1) * 0.018);
+              const gapError = desiredTotal - (marker.userData.totalDistance || 0);
+              // Gentle forward-only catchup/trim (never reverses or teleports cars across sectors)
+              paceMul = 1.0 + Math.max(-0.18, Math.min(0.24, gapError * 1.1));
             }
+            const distStep = Math.max(0.0001, delta * baseLapRate * paceMul * mult);
+            marker.userData.totalDistance = (marker.userData.totalDistance || 0) + distStep;
+            marker.userData.progress = ((pitInfo.startLinePct + marker.userData.totalDistance) % 1 + 1) % 1;
+            marker.userData.lateral *= 0.95; // Smoothly merge off starting staggered lane after lights out
           } else if (isStaticGrid) {
             const slot = computeDriverTrackSlot(driver, idx, pitInfo.startLinePct, true);
+            marker.userData.totalDistance = slot.totalDistance;
             marker.userData.progress = slot.progress;
             marker.userData.lateral = slot.lateral;
           }
@@ -1162,9 +1176,12 @@ export default function CircuitSpatialRadar({
           const tan = curve.getTangentAt(p).normalize();
           const norm = new THREE.Vector3(-tan.z, 0, tan.x);
 
-          // If driver is actively "IN PIT", route puck neatly through the parallel Pit Lane!
+          // Smoothly transition car laterally into/out of the parallel pit lane when pitting
           const isInPit = driver.pitState === "IN PIT";
-          const pitShift = isInPit ? pitInfo.outwardNormal.clone().multiplyScalar(0.96) : norm.multiplyScalar(marker.userData.lateral);
+          marker.userData.pitBlend = (marker.userData.pitBlend || 0) + ((isInPit ? 1 : 0) - (marker.userData.pitBlend || 0)) * Math.min(1, delta * 5.0);
+          const raceOffset = norm.clone().multiplyScalar(marker.userData.lateral);
+          const pitOffset = pitInfo.outwardNormal.clone().multiplyScalar(0.96);
+          const pitShift = raceOffset.lerp(pitOffset, marker.userData.pitBlend);
 
           marker.position.set(pt.x + pitShift.x, pt.y + 0.28, pt.z + pitShift.z);
 
@@ -1190,6 +1207,15 @@ export default function CircuitSpatialRadar({
             selectedHalo.rotation.z = elapsed * 2.4;
           }
         });
+
+        // Advance Race Lap Counter 1-by-1 ONLY when leader physically completes a full circuit lap
+        if (running && leaderMarker) {
+          const updatedLeaderDist = leaderMarker.userData.totalDistance || 0;
+          if (updatedLeaderDist >= sceneRefs.current.nextLapThreshold) {
+            sceneRefs.current.nextLapThreshold = Math.floor(updatedLeaderDist) + 1.0;
+            onLapCompleteRef.current?.();
+          }
+        }
 
         selectedHalo.visible = hasSelectedMarker;
 
@@ -1240,8 +1266,11 @@ export default function CircuitSpatialRadar({
 
       if (currentLap <= 1 && !isAutoSimulating && !isPlaying && pitInfo) {
         const slot = computeDriverTrackSlot(updatedDriver, idx, pitInfo.startLinePct, true);
+        marker.userData.totalDistance = slot.totalDistance;
         marker.userData.progress = slot.progress;
         marker.userData.lateral = slot.lateral;
+        marker.userData.pitBlend = 0;
+        sceneRefs.current.nextLapThreshold = 1.0;
       }
 
       if (marker.userData.lastSelState !== isSelected || marker.userData.lastPos !== newPos) {

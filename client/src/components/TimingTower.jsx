@@ -663,6 +663,8 @@ function TimingTower({
   simSpeed = 1,
   onToggleAutoSim,
   onChangeSimSpeed,
+  onMapActiveChange,
+  onAdvanceLap,
   triggerOvertakeSignal,
   userRole = "team",
   playerTeam = "Ferrari",
@@ -1330,6 +1332,9 @@ function TimingTower({
   }, [controlledFlag]);
   // Pit Wall Operational View: "tower" (Matrix Timing Grid) by default, "lapMatrix" (StatsF1 Tour-par-tour), or "map" (3D Satellite Tracker)
   const [activePitWallTab, setActivePitWallTab] = useState("tower");
+  useEffect(() => {
+    onMapActiveChange?.(activePitWallTab === "map");
+  }, [activePitWallTab, onMapActiveChange]);
   // Timing Matrix Density Mode: "broadcast" (roomy, rich) vs "compact" (fits all 22 drivers without scroll)
   const [tableDensity, setTableDensity] = useState("broadcast");
   // Selected driver reference
@@ -2215,6 +2220,7 @@ function TimingTower({
           simSpeed={simSpeed}
           onToggleAutoSim={onToggleAutoSim}
           onChangeSimSpeed={onChangeSimSpeed}
+          onAdvanceLap={onAdvanceLap}
           userRole={userRole}
           playerTeam={playerTeam}
         />

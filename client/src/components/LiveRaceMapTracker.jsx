@@ -113,6 +113,7 @@ export default function LiveRaceMapTracker({
   simSpeed: externalSimSpeed = 1,
   onToggleAutoSim,
   onChangeSimSpeed,
+  onAdvanceLap,
   userRole = "team",
   playerTeam = "Ferrari",
 }) {
@@ -289,8 +290,8 @@ export default function LiveRaceMapTracker({
       const flag = sessionFlagRef.current;
 
       if (running && lut.length === LUT_SIZE && cars.length > 0) {
-        const flagFactor = flag === "SC" ? 0.52 : flag === "VSC" ? 0.65 : flag === "RED" ? 0.05 : 1.0;
-        const baseSpeed = 0.000045 * mult * flagFactor;
+        const flagFactor = flag === "SC" ? 0.55 : flag === "VSC" ? 0.72 : flag === "RED" ? 0.05 : 1.0;
+        const baseSpeed = 0.000042 * mult * flagFactor;
 
         for (let i = 0; i < cars.length; i++) {
           const car = cars[i];
@@ -484,6 +485,8 @@ export default function LiveRaceMapTracker({
           simSpeed={simSpeed}
           currentLap={currentLap}
           isAutoSimulating={isPlaying}
+          sessionFlag={sessionFlag}
+          onLapComplete={onAdvanceLap}
         />
       </div>
 

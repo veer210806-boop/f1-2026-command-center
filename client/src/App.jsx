@@ -341,6 +341,9 @@ export default function App() {
     const found = circuits.find((c) => c.circuit_id === circuitId);
     if (found) {
       setSelectedCircuit(found);
+      setCurrentLapNum(1);
+      setIsAutoSimulating(false);
+      setActiveFlag("GREEN");
     }
   }, [circuits]);
 
@@ -350,6 +353,9 @@ export default function App() {
 
   const handleSelectCircuit = useCallback((c) => {
     setSelectedCircuit(c);
+    setCurrentLapNum(1);
+    setIsAutoSimulating(false);
+    setActiveFlag("GREEN");
   }, []);
 
   const handleLaunchPitWall = useCallback((c) => {
@@ -820,27 +826,33 @@ export default function App() {
   driversRef.current = drivers;
   const circuitRef = useRef(selectedCircuit);
   circuitRef.current = selectedCircuit;
+  const currentLapRef = useRef(currentLapNum);
+  currentLapRef.current = currentLapNum;
 
-  // Master race simulation clock: cleanly increments currentLapNum at exact chosen multiplier
+  const [is3DMapActive, setIs3DMapActive] = useState(false);
+  const isMapDrivingLaps = activeTab === "timing" && is3DMapActive;
+
+  const advanceRaceOneLap = useCallback(() => {
+    const next = currentLapRef.current + 1;
+    if (next >= totalLaps) {
+      setCurrentLapNum(totalLaps);
+      setIsAutoSimulating(false);
+      setIsRaceFinishedModalOpen(true);
+      setActiveFlag("CHEQUERED");
+      f1Audio.playRadioBeep();
+      handleRecordRaceResult(circuitRef.current, driversRef.current);
+    } else {
+      setCurrentLapNum(next);
+    }
+  }, [totalLaps]);
+
+  // Master race simulation clock: runs fast lap-by-lap in Timing Matrix, defers to 3D full-lap completion on 3D Map
   useEffect(() => {
-    if (!isAutoSimulating) return;
+    if (!isAutoSimulating || isMapDrivingLaps) return;
     const intervalMs = Math.max(250, Math.round(3600 / Math.max(1, simSpeed)));
-    const timer = setInterval(() => {
-      setCurrentLapNum((prev) => {
-        const next = prev + 1;
-        if (next >= totalLaps) {
-          setIsAutoSimulating(false);
-          setIsRaceFinishedModalOpen(true);
-          setActiveFlag("CHEQUERED");
-          f1Audio.playRadioBeep();
-          handleRecordRaceResult(selectedCircuit, drivers);
-          return totalLaps;
-        }
-        return next;
-      });
-    }, intervalMs);
+    const timer = setInterval(advanceRaceOneLap, intervalMs);
     return () => clearInterval(timer);
-  }, [isAutoSimulating, simSpeed, totalLaps]);
+  }, [isAutoSimulating, isMapDrivingLaps, simSpeed, advanceRaceOneLap]);
 
   const lapProgressPct = Math.round((currentLapNum / totalLaps) * 100);
   const activeTabMeta = TABS.find((tab) => tab.id === activeTab) || TABS[0];
@@ -1318,6 +1330,8 @@ export default function App() {
               simSpeed={simSpeed}
               onToggleAutoSim={() => setIsAutoSimulating((s) => !s)}
               onChangeSimSpeed={(spd) => setSimSpeed(spd)}
+              onMapActiveChange={setIs3DMapActive}
+              onAdvanceLap={advanceRaceOneLap}
               triggerOvertakeSignal={overtakeTriggerCount}
               userRole={userRole}
               playerTeam={selectedTeam}
