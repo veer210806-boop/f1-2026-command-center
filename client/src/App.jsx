@@ -1314,6 +1314,7 @@ export default function App() {
               onGoToStrategy={() => setActiveTab("strategy")}
               controlledLap={currentLapNum}
               controlledFlag={activeFlag}
+              isAutoSimulating={isAutoSimulating}
               triggerOvertakeSignal={overtakeTriggerCount}
               userRole={userRole}
               playerTeam={selectedTeam}

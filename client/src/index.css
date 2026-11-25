@@ -1959,7 +1959,7 @@ textarea:focus-visible,
 }
 
 @media (max-width: 1180px) {
-  .race-director-map { min-height: 650px !important; }
+  .race-director-map { min-height: 540px !important; }
   .race-map-leaderboard { width: 158px !important; left: 10px !important; top: 10px !important; }
   .race-map-conditions { right: 10px !important; top: 10px !important; min-width: 190px !important; }
   .race-map-telemetry { right: 10px !important; bottom: 10px !important; }

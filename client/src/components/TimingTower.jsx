@@ -659,6 +659,7 @@ function TimingTower({
   onGoToStrategy,
   controlledLap,
   controlledFlag,
+  isAutoSimulating = false,
   triggerOvertakeSignal,
   userRole = "team",
   playerTeam = "Ferrari",
@@ -2207,6 +2208,8 @@ function TimingTower({
           currentLap={currentLap}
           maxLaps={maxLaps}
           sessionFlag={sessionFlag}
+          isAutoSimulating={isAutoSimulating}
+          restartSignal={restartSignal}
           userRole={userRole}
           playerTeam={playerTeam}
           onCloseToTower={() => setActivePitWallTab("tower")}

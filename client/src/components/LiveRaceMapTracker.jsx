@@ -139,6 +139,8 @@ export default function LiveRaceMapTracker({
   currentLap = 1,
   maxLaps = 58,
   sessionFlag = "GREEN",
+  isAutoSimulating = false,
+  restartSignal = 0,
   userRole = "team",
   playerTeam = "Ferrari",
   onCloseToTower,
@@ -163,7 +165,8 @@ export default function LiveRaceMapTracker({
   const [isNightMode, setIsNightMode] = useState(isNightRace);
   const [sectorViewMode, setSectorViewMode] = useState("SECTORS"); // "SECTORS" | "GAP"
   const [sessionClock, setSessionClock] = useState(() => new Date().toLocaleTimeString("en-GB"));
-  const [isPlaying, setIsPlaying] = useState(true);
+  // At Lap 1 pre-start, hold on Starting Grid until race sim runs or Play is toggled
+  const [isPlaying, setIsPlaying] = useState(() => currentLap > 1 || isAutoSimulating);
   const [simSpeed, setSimSpeed] = useState(4); // F1 Manager 24 default 4x speed multiplier
   // Default driver selection: player team driver if available, else #16 / #3
   const [selectedDriverNum, setSelectedDriverNum] = useState(() => {
@@ -177,11 +180,23 @@ export default function LiveRaceMapTracker({
   const [labelDensity, setLabelDensity] = useState("focus");
 
 
-  // Sync isNightMode when active circuit changes
+  // Sync isNightMode & Race Launch state when circuit, live sim, or restart changes
   useEffect(() => {
     setIsNightMode(isNightRace);
     setTrackRotation(activeCircuitId === "australia" ? 298 : 0);
   }, [isNightRace, activeCircuitId]);
+
+  useEffect(() => {
+    if (isAutoSimulating || currentLap > 1) {
+      setIsPlaying(true);
+    }
+  }, [isAutoSimulating, currentLap]);
+
+  useEffect(() => {
+    if (restartSignal > 0) {
+      setIsPlaying(false);
+    }
+  }, [restartSignal]);
 
   // Real-time ticking session clock
   useEffect(() => {
@@ -228,13 +243,9 @@ export default function LiveRaceMapTracker({
   const hiddenPathRef = useRef(null);
   const trackLutRef = useRef([]);
 
-  // In-memory simulation state for all 22 cars
-  const carSimStateRef = useRef([]);
-  const [leaderboardCars, setLeaderboardCars] = useState([]);
-
-  // Initialize car simulation state with realistic race packs
-  useEffect(() => {
-    let baseList = drivers.length > 0 ? drivers.map(d => ({ ...d })) : [
+  // In-memory simulation state for all 22 cars (initialized immediately so frame 0 has all cars!)
+  const buildInitialLeaderboard = (inputDrivers) => {
+    let baseList = inputDrivers && inputDrivers.length > 0 ? inputDrivers.map(d => ({ ...d })) : [
       { pos: 1,  code: "VER", num: 3,  team: "Red Bull Racing", name: "Max Verstappen" },
       { pos: 2,  code: "LEC", num: 16, team: "Ferrari",         name: "Charles Leclerc" },
       { pos: 3,  code: "NOR", num: 4,  team: "McLaren",         name: "Lando Norris" },
@@ -259,7 +270,6 @@ export default function LiveRaceMapTracker({
       { pos: 22, code: "LIN", num: 40, team: "Audi",            name: "Arvid Lindblad" },
     ];
 
-    // Ensure Max Verstappen is strictly car #3 and leads in P1
     baseList.forEach(d => {
       if (d.code === "VER") d.num = 3;
     });
@@ -270,7 +280,7 @@ export default function LiveRaceMapTracker({
       baseList.forEach((d, i) => { d.pos = i + 1; });
     }
 
-    const initial = baseList.map((d, idx) => {
+    return baseList.map((d, idx) => {
       const num = d.code === "VER" ? 3 : (d.num || idx + 1);
       let offset = 0.98 - (idx * 0.043);
       if (offset < 0) offset += 1;
@@ -287,6 +297,7 @@ export default function LiveRaceMapTracker({
         wear: d.wear || (38 + (idx * 2) % 25),
         soc: d.soc || (85 - (idx * 3) % 20),
         temp: 82 + (idx % 8),
+        pitState: d.pitState || "RACING",
         trackPct: (offset + 1) % 1,
         currentSpeedFactor: 1.0,
         targetSpeedFactor: 1.0,
@@ -302,9 +313,16 @@ export default function LiveRaceMapTracker({
         stackTier: 0,
       };
     });
+  };
 
-    carSimStateRef.current = initial;
-    setLeaderboardCars(initial);
+  const carSimStateRef = useRef([]);
+  const [leaderboardCars, setLeaderboardCars] = useState(() => buildInitialLeaderboard(drivers));
+
+  // Keep car simulation state in sync whenever upstream drivers update
+  useEffect(() => {
+    const updated = buildInitialLeaderboard(drivers);
+    carSimStateRef.current = updated;
+    setLeaderboardCars(updated);
   }, [drivers]);
 
   // Precompute 1400-Node Track Lookup Table (LUT) with Circuit Rotation baked in
@@ -658,9 +676,9 @@ export default function LiveRaceMapTracker({
       style={{
         position: "relative",
         width: "100%",
-        height: "calc(100vh - 230px)",
-        minHeight: "720px",
-        maxHeight: "920px",
+        height: "clamp(465px, calc(100vh - 360px), 780px)",
+        minHeight: "465px",
+        maxHeight: "820px",
         background: isNightMode
           ? "radial-gradient(ellipse at 50% 40%, #0d1526 0%, #080c16 50%, #04060b 100%)"
           : "radial-gradient(ellipse at 50% 40%, #0d1422 0%, #080c14 60%, #05070c 100%)",
@@ -736,12 +754,15 @@ export default function LiveRaceMapTracker({
           <div className="spatial-race-map-layer">
             <CircuitSpatialRadar
               trackPath={activeTrackPath}
+              circuitId={activeCircuitId}
               drivers={leaderboardCars}
               selectedDriverNum={selectedDriverNum}
               onSelectDriver={setSelectedDriverNum}
               isNightMode={isNightMode}
               isPlaying={isPlaying}
               simSpeed={simSpeed}
+              currentLap={currentLap}
+              isAutoSimulating={isAutoSimulating}
             />
           </div>
         )}
