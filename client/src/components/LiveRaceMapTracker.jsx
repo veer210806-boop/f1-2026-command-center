@@ -10,6 +10,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
 import { isDriverBelongingToTeam } from "../data/constructors2026";
+import { calculateAutoFuelPrediction } from "../utils/fuelPredictionEngine";
 import CircuitSpatialRadar from "./CircuitSpatialRadar";
 
 // ── Official 2026 Team Colors & Badges ─────────────────────────────────────
@@ -588,6 +589,19 @@ export default function LiveRaceMapTracker({
 
   const activeCar = leaderboardCars.find((c) => c.num === selectedDriverNum) || leaderboardCars[0] || {};
   const isPlayerControlledCar = effectiveRole === "admin" || isDriverBelongingToTeam(activeCar, effectiveTeam);
+  const activeCarFuelPred = useMemo(
+    () =>
+      calculateAutoFuelPrediction({
+        circuit: selectedCircuit,
+        driver: activeCar,
+        teamName: activeCar?.team || effectiveTeam,
+        currentLap,
+        maxLaps,
+        activeFlag: sessionFlag,
+        pushMode: activePaceCommand,
+      }),
+    [selectedCircuit, activeCar, effectiveTeam, currentLap, maxLaps, sessionFlag, activePaceCommand]
+  );
   const teammateCar = leaderboardCars.find(
     (c) => c.team === activeCar.team && c.num !== activeCar.num
   ) || leaderboardCars[activeCar.pos === 1 ? 1 : 0] || {};
@@ -1529,8 +1543,8 @@ export default function LiveRaceMapTracker({
           zIndex: 25,
         }}
       >
-        {/* PACE COMMANDS PANEL */}
-        {showPaceCommands && (
+        {/* TACTICAL SUB-PANEL (PACE COMMANDS / READ-ONLY AUTO FUEL / ERS) */}
+        {showPaceCommands && activeSubTab === "PACE" && (
           <div
             style={{
               background: "rgba(10, 14, 22, 0.95)",
@@ -1660,6 +1674,131 @@ export default function LiveRaceMapTracker({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {showPaceCommands && activeSubTab === "FUEL" && (
+          <div
+            style={{
+              background: "rgba(10, 14, 22, 0.95)",
+              border: "1px solid rgba(0, 210, 190, 0.35)",
+              borderRadius: "8px",
+              padding: "9px 11px",
+              boxShadow: "0 8px 30px rgba(0, 0, 0, 0.85)",
+              backdropFilter: "blur(14px)",
+              width: "275px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ fontSize: "0.68rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff" }}>
+                  ⛽ AUTO BIO-FUEL
+                </span>
+                <span style={{ fontSize: "0.52rem", color: "#00d2be", background: "rgba(0,210,190,0.16)", padding: "1px 5px", borderRadius: "3px", fontWeight: "800", fontFamily: "'Orbitron', monospace" }}>
+                  🔒 READ ONLY
+                </span>
+              </div>
+              <span
+                style={{ fontSize: "0.66rem", color: "var(--text-dim)", cursor: "pointer" }}
+                onClick={() => setShowPaceCommands(false)}
+                title="Minimize"
+              >
+                ✕
+              </span>
+            </div>
+
+            <div style={{ fontSize: "0.56rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600" }}>
+              {activeCarFuelPred.fuelPartner} · ECU Auto-Controlled
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px 7px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ fontSize: "0.52rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>REMAINING</div>
+                <div style={{ fontSize: "0.78rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: activeCarFuelPred.statusColor }}>
+                  {activeCarFuelPred.remainingKg} kg ({activeCarFuelPred.remainingPct}%)
+                </div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px 7px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ fontSize: "0.52rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>FINISH DELTA</div>
+                <div style={{ fontSize: "0.78rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: activeCarFuelPred.statusColor }}>
+                  {activeCarFuelPred.predictedDeltaLaps >= 0 ? "+" : ""}{activeCarFuelPred.predictedDeltaLaps} LAPS
+                </div>
+              </div>
+            </div>
+
+            <div style={{ width: "100%", height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden" }}>
+              <div
+                style={{
+                  width: `${activeCarFuelPred.remainingPct}%`,
+                  height: "100%",
+                  background: `linear-gradient(90deg, ${activeCarFuelPred.statusColor}, #00d2be)`,
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.58rem", fontFamily: "'Orbitron', monospace", color: "var(--text-secondary)" }}>
+              <span>BURN: <strong style={{ color: "#ffffff" }}>{activeCarFuelPred.liveBurnPerLapKg} kg/L</strong></span>
+              <span style={{ color: "var(--neon-green)" }}>MASS: -{activeCarFuelPred.weightGainSoFarSec}s/L</span>
+            </div>
+
+            <div style={{ fontSize: "0.52rem", color: activeCarFuelPred.ecuModeColor, fontFamily: "'Orbitron', monospace", fontWeight: "800", background: "rgba(255,255,255,0.03)", padding: "4px 6px", borderRadius: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              ⚡ {activeCarFuelPred.ecuModeLabel} · ART. 29 LOCKED
+            </div>
+          </div>
+        )}
+
+        {showPaceCommands && activeSubTab === "ERS" && (
+          <div
+            style={{
+              background: "rgba(10, 14, 22, 0.95)",
+              border: "1px solid rgba(0, 230, 118, 0.35)",
+              borderRadius: "8px",
+              padding: "9px 11px",
+              boxShadow: "0 8px 30px rgba(0, 0, 0, 0.85)",
+              backdropFilter: "blur(14px)",
+              width: "275px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ fontSize: "0.68rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff" }}>
+                  ⚡ 350kW HYBRID ERS
+                </span>
+                <span style={{ fontSize: "0.52rem", color: "var(--neon-green)", background: "rgba(0,230,118,0.16)", padding: "1px 5px", borderRadius: "3px", fontWeight: "800", fontFamily: "'Orbitron', monospace" }}>
+                  AUTO MGU-K
+                </span>
+              </div>
+              <span
+                style={{ fontSize: "0.66rem", color: "var(--text-dim)", cursor: "pointer" }}
+                onClick={() => setShowPaceCommands(false)}
+                title="Minimize"
+              >
+                ✕
+              </span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px 7px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ fontSize: "0.52rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>BATTERY SOC</div>
+                <div style={{ fontSize: "0.78rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: "var(--neon-green)" }}>
+                  {activeCar.soc || 85}%
+                </div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.03)", padding: "5px 7px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ fontSize: "0.52rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>PEAK OUTPUT</div>
+                <div style={{ fontSize: "0.78rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: "var(--neon-cyan)" }}>
+                  350 kW
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: "0.54rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace", background: "rgba(255,255,255,0.03)", padding: "4px 6px", borderRadius: "4px" }}>
+              MODE: {sessionFlag === "SC" || sessionFlag === "VSC" ? "SC REGENERATION HARVEST" : "AUTO-BALANCED + 2026 X/Z AERO"}
+            </div>
           </div>
         )}
 
@@ -1840,9 +1979,20 @@ export default function LiveRaceMapTracker({
               <button
                 key={tab}
                 onClick={() => {
-                  setActiveSubTab(tab);
-                  if (tab === "PACE") setShowPaceCommands(true);
+                  if (activeSubTab === tab) {
+                    setShowPaceCommands((v) => !v);
+                  } else {
+                    setActiveSubTab(tab);
+                    setShowPaceCommands(true);
+                  }
                 }}
+                title={
+                  tab === "FUEL"
+                    ? "Automated Bio-Fuel Prediction Telemetry (Read-Only)"
+                    : tab === "ERS"
+                      ? "Automated 350kW Hybrid MGU-K Telemetry (Read-Only)"
+                      : "Pace Directives"
+                }
                 style={{
                   background: activeSubTab === tab ? "rgba(255, 255, 255, 0.15)" : "transparent",
                   border: activeSubTab === tab ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.06)",
@@ -1855,7 +2005,7 @@ export default function LiveRaceMapTracker({
                   cursor: "pointer",
                 }}
               >
-                {tab === "PACE" && !isPlayerControlledCar ? "🔒 PACE" : tab}
+                {tab === "PACE" && !isPlayerControlledCar ? "🔒 PACE" : tab === "FUEL" ? "🔒 FUEL" : tab}
               </button>
             ))}
           </div>

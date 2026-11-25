@@ -8,6 +8,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { getDriverFaceUrl, DRIVER_PHOTOS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
+import { calculateAutoFuelPrediction } from "../utils/fuelPredictionEngine";
 
 const getCompoundColor = (comp) => {
   if (comp === "S") return "#FF1801";
@@ -438,6 +439,37 @@ export default function StrategyAdvisor({
   const driverTireAge = activeDriver.tireAge || 0;
   const driverWearPct = Math.round(activeDriver.wear != null ? activeDriver.wear : Math.min(95, driverTireAge * 3.5));
 
+  // Pre-calculated, read-only FIA 2026 Bio-Fuel prediction for selected driver & teammates
+  const fuelPrediction = useMemo(() => {
+    return calculateAutoFuelPrediction({
+      circuit: selectedCircuit,
+      driver: activeDriver,
+      teamName: currentTeamObj?.name || playerTeam,
+      currentLap,
+      maxLaps: totalLaps,
+      activeFlag,
+      pushMode: currentPlan.pushMode || "balanced",
+    });
+  }, [selectedCircuit, activeDriver, currentTeamObj, playerTeam, currentLap, totalLaps, activeFlag, currentPlan.pushMode]);
+
+  const teamFuelPredictions = useMemo(() => {
+    return teamDrivers.map((drv) => {
+      const drvPlan = driverPlans[drv.code] || {};
+      return {
+        driver: drv,
+        pred: calculateAutoFuelPrediction({
+          circuit: selectedCircuit,
+          driver: drv,
+          teamName: currentTeamObj?.name || playerTeam,
+          currentLap,
+          maxLaps: totalLaps,
+          activeFlag,
+          pushMode: drvPlan.pushMode || "balanced",
+        }),
+      };
+    });
+  }, [teamDrivers, driverPlans, selectedCircuit, currentTeamObj, playerTeam, currentLap, totalLaps, activeFlag]);
+
   return (
     <div className="strategy-workspace" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "4px 0 24px 0" }}>
       
@@ -497,7 +529,10 @@ export default function StrategyAdvisor({
               </span>
             </div>
             <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600", marginTop: "2px" }}>
-              Round {selectedCircuit?.round || 1}: {circuitName} · Lap <strong style={{ color: "var(--neon-green)" }}>{currentLap}</strong> of {totalLaps} · Track: <span style={{ color: "var(--neon-green)" }}>GREEN</span>
+              Round {selectedCircuit?.round || 1}: {circuitName} · Lap <strong style={{ color: "var(--neon-green)" }}>{currentLap}</strong> of {totalLaps} · Track:{" "}
+              <span style={{ color: activeFlag === "SC" || activeFlag === "VSC" ? "#ffd700" : activeFlag === "RED" ? "var(--neon-red)" : "var(--neon-green)", fontWeight: "800" }}>
+                {activeFlag}
+              </span>
             </div>
           </div>
         </div>
@@ -651,7 +686,28 @@ export default function StrategyAdvisor({
 
             {/* Tire Capsule & Push Modes */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <span
+                  title="Auto-Predicted Bio-Fuel Telemetry (Read-Only · ECU Managed)"
+                  style={{
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: "0.62rem",
+                    fontWeight: "800",
+                    padding: "2px 7px",
+                    borderRadius: "4px",
+                    background: "rgba(0, 210, 190, 0.12)",
+                    border: `1px solid ${fuelPrediction.statusColor}66`,
+                    color: fuelPrediction.statusColor,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    userSelect: "none",
+                  }}
+                >
+                  <span>⛽</span>
+                  <span>{fuelPrediction.remainingKg}kg</span>
+                  <span>({fuelPrediction.predictedDeltaLaps >= 0 ? "+" : ""}{fuelPrediction.predictedDeltaLaps}L AUTO)</span>
+                </span>
                 <span
                   style={{
                     fontFamily: "'Orbitron', monospace",
@@ -670,31 +726,36 @@ export default function StrategyAdvisor({
                 </span>
               </div>
 
-              {/* Push Mode Segmented Pill */}
-              <div style={{ display: "flex", gap: "2px", background: "rgba(0,0,0,0.4)", padding: "2px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                {["attack", "balanced", "conserve"].map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => updatePlanField("pushMode", mode)}
-                    style={{
-                      background: currentPlan.pushMode === mode
-                        ? (mode === "attack" ? "var(--neon-red)" : mode === "conserve" ? "var(--neon-cyan)" : "var(--neon-green)")
-                        : "transparent",
-                      color: currentPlan.pushMode === mode ? "#0a0c14" : "var(--text-secondary)",
-                      border: "none",
-                      borderRadius: "3px",
-                      padding: "2px 7px",
-                      fontSize: "0.60rem",
-                      fontFamily: "'Orbitron', monospace",
-                      fontWeight: "900",
-                      cursor: "pointer",
-                      transition: "all 0.1s ease",
-                    }}
-                    title={`Set engine & tire deploy mode to ${mode}`}
-                  >
-                    {mode.toUpperCase()}
-                  </button>
-                ))}
+              {/* Tyre Pace Directive Segmented Pill */}
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ fontSize: "0.56rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
+                  TYRE PACE:
+                </span>
+                <div style={{ display: "flex", gap: "2px", background: "rgba(0,0,0,0.4)", padding: "2px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  {["attack", "balanced", "conserve"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => updatePlanField("pushMode", mode)}
+                      style={{
+                        background: currentPlan.pushMode === mode
+                          ? (mode === "attack" ? "var(--neon-red)" : mode === "conserve" ? "var(--neon-cyan)" : "var(--neon-green)")
+                          : "transparent",
+                        color: currentPlan.pushMode === mode ? "#0a0c14" : "var(--text-secondary)",
+                        border: "none",
+                        borderRadius: "3px",
+                        padding: "2px 7px",
+                        fontSize: "0.60rem",
+                        fontFamily: "'Orbitron', monospace",
+                        fontWeight: "900",
+                        cursor: "pointer",
+                        transition: "all 0.1s ease",
+                      }}
+                      title={`Set tyre push directive to ${mode} (Fuel mixture remains ECU auto-managed)`}
+                    >
+                      {mode.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -753,7 +814,7 @@ export default function StrategyAdvisor({
                 </div>
               </div>
               <span style={{ fontSize: "0.64rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>
-                RACE DISTANCE: 58 LAPS
+                RACE DISTANCE: {totalLaps} LAPS
               </span>
             </div>
 
@@ -1393,6 +1454,240 @@ export default function StrategyAdvisor({
         </div>
       </div>
 
+      {/* ── AUTOMATED FIA 2026 BIO-FUEL PREDICTION & ECU TELEMETRY CARD (READ-ONLY) ── */}
+      {(() => {
+        const plotLeft = 36;
+        const plotTop = 24;
+        const plotWidth = 328;
+        const plotHeight = 102;
+        const maxKg = Math.max(20, fuelPrediction.startLoadKg);
+        const getX = (lap) => plotLeft + ((lap - 1) / Math.max(1, totalLaps - 1)) * plotWidth;
+        const getY = (kg) => plotTop + (1 - Math.min(1, Math.max(0, kg / maxKg))) * plotHeight;
+
+        const pts = fuelPrediction.trajectory || [];
+        const predictedPath = pts
+          .map((pt, i) => `${i === 0 ? "M" : "L"} ${getX(pt.lap).toFixed(1)} ${getY(pt.predictedKg).toFixed(1)}`)
+          .join(" ");
+        const targetPath = pts
+          .map((pt, i) => `${i === 0 ? "M" : "L"} ${getX(pt.lap).toFixed(1)} ${getY(pt.optimalLinearKg).toFixed(1)}`)
+          .join(" ");
+
+        const elapsedPts = pts.filter((pt) => pt.lap <= fuelPrediction.currentLap);
+        const areaPath =
+          elapsedPts.length > 0
+            ? `${elapsedPts.map((pt, i) => `${i === 0 ? "M" : "L"} ${getX(pt.lap).toFixed(1)} ${getY(pt.predictedKg).toFixed(1)}`).join(" ")} L ${getX(elapsedPts[elapsedPts.length - 1].lap).toFixed(1)} ${(plotTop + plotHeight).toFixed(1)} L ${getX(elapsedPts[0].lap).toFixed(1)} ${(plotTop + plotHeight).toFixed(1)} Z`
+            : "";
+
+        const currX = getX(fuelPrediction.currentLap);
+        const currY = getY(fuelPrediction.remainingKg);
+        const fiaFloorY = getY(fuelPrediction.fiaReserveKg);
+        const tagAnchorX = Math.max(84, Math.min(312, currX));
+        const tagTop = Math.max(2, currY - 22);
+
+        return (
+          <article className="strategy-fuel-intelligence" aria-label="Automated Race Fuel Prediction and Telemetry">
+            <header className="fuel-intel-header">
+              <div className="fuel-intel-title-block">
+                <div className="fuel-intel-title-row">
+                  <span aria-hidden="true">⛽</span>
+                  <h3>AI BIO-FUEL PREDICTION & AUTOMATED ECU TELEMETRY</h3>
+                  <span
+                    className="fuel-status-chip"
+                    style={{
+                      background: `${fuelPrediction.statusColor}1f`,
+                      borderColor: `${fuelPrediction.statusColor}88`,
+                      color: fuelPrediction.statusColor,
+                    }}
+                  >
+                    {fuelPrediction.statusBadge}
+                  </span>
+                </div>
+                <p className="fuel-intel-subtitle">
+                  {fuelPrediction.fuelPartner} · {fuelPrediction.powerUnit} · Pre-calibrated {totalLaps}-lap autonomous curve
+                </p>
+              </div>
+
+              <div className="fuel-intel-badges">
+                <span
+                  className="fuel-ecu-badge"
+                  style={{
+                    borderColor: `${fuelPrediction.ecuModeColor}66`,
+                    color: fuelPrediction.ecuModeColor,
+                    background: `${fuelPrediction.ecuModeColor}18`,
+                  }}
+                >
+                  ⚡ {fuelPrediction.ecuModeLabel}
+                </span>
+                <span
+                  className="fuel-lock-badge"
+                  title="FIA Article 29 prohibits mid-race refuelling and manual fuel-mix overrides. All fuel telemetry is pre-calculated and managed automatically by the ECU."
+                >
+                  🔒 AUTO-ECU · READ ONLY
+                </span>
+              </div>
+            </header>
+
+            <div className="fuel-intel-body">
+              {/* Zone 1: Read-Only Telemetry Metrics */}
+              <div className="fuel-intel-kpis">
+                <div className="fuel-kpi-tile">
+                  <span className="fuel-kpi-label">PRE-RACE GRID LOAD</span>
+                  <strong className="fuel-kpi-value">{fuelPrediction.startLoadKg} kg</strong>
+                  <span className="fuel-kpi-meta">+{fuelPrediction.startMassPenaltySec}s initial mass</span>
+                </div>
+
+                <div className="fuel-kpi-tile">
+                  <span className="fuel-kpi-label">LIVE REMAINING FUEL</span>
+                  <strong className="fuel-kpi-value" style={{ color: fuelPrediction.statusColor }}>
+                    {fuelPrediction.remainingKg} kg
+                  </strong>
+                  <div className="fuel-tank-bar-track" aria-hidden="true">
+                    <div
+                      className="fuel-tank-bar-fill"
+                      style={{
+                        width: `${fuelPrediction.remainingPct}%`,
+                        background: `linear-gradient(90deg, ${fuelPrediction.statusColor}, #00d2be)`,
+                      }}
+                    />
+                  </div>
+                  <span className="fuel-kpi-meta">{fuelPrediction.remainingPct}% left ({fuelPrediction.usableRemainingKg} kg usable)</span>
+                </div>
+
+                <div className="fuel-kpi-tile">
+                  <span className="fuel-kpi-label">ECU FLOW RATE</span>
+                  <strong className="fuel-kpi-value">{fuelPrediction.liveBurnPerLapKg} kg/L</strong>
+                  <span className="fuel-kpi-meta">Target nominal: {fuelPrediction.targetBurnPerLapKg} kg/L</span>
+                </div>
+
+                <div className="fuel-kpi-tile">
+                  <span className="fuel-kpi-label">PREDICTED FLAG MARGIN</span>
+                  <strong className="fuel-kpi-value" style={{ color: fuelPrediction.statusColor }}>
+                    {fuelPrediction.predictedDeltaLaps >= 0 ? "+" : ""}{fuelPrediction.predictedDeltaLaps} LAPS
+                  </strong>
+                  <span className="fuel-kpi-meta">
+                    {fuelPrediction.predictedMarginKg >= 0 ? "+" : ""}{fuelPrediction.predictedMarginKg} kg above FIA sample
+                  </span>
+                </div>
+
+                <div className="fuel-kpi-tile">
+                  <span className="fuel-kpi-label">WEIGHT DROP PACE GAIN</span>
+                  <strong className="fuel-kpi-value" style={{ color: "var(--neon-green)" }}>
+                    -{fuelPrediction.weightGainSoFarSec}s/lap
+                  </strong>
+                  <span className="fuel-kpi-meta">-{fuelPrediction.burnedKg} kg burned (-{fuelPrediction.remainingMassGainToFlagSec}s left)</span>
+                </div>
+
+                <div className="fuel-kpi-tile">
+                  <span className="fuel-kpi-label">AUTOMATION PROTOCOL</span>
+                  <strong className="fuel-kpi-value" style={{ fontSize: "0.78rem", color: fuelPrediction.ecuModeColor }}>
+                    ZERO MANUAL INPUT
+                  </strong>
+                  <span className="fuel-kpi-meta">{fuelPrediction.ecuModeDetail}</span>
+                </div>
+              </div>
+
+              {/* Zone 2: Predictive Burn Curve (SVG Telemetry Plot) */}
+              <div className="fuel-intel-chart-card">
+                <div className="fuel-chart-head">
+                  <span>PREDICTED BIO-FUEL BURN TRAJECTORY (L1–L{totalLaps})</span>
+                  <span style={{ color: "var(--neon-cyan)" }}>FIA SAMPLE FLOOR: 1.0 kg</span>
+                </div>
+
+                <svg viewBox="0 0 380 152" className="fuel-curve-svg" role="img" aria-label={`Predicted bio-fuel burn curve for ${activeDriver.code} from Lap 1 to Lap ${totalLaps}`}>
+                  <defs>
+                    <linearGradient id="fuelBurnFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={fuelPrediction.statusColor} stopOpacity="0.34" />
+                      <stop offset="100%" stopColor={fuelPrediction.statusColor} stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+
+                  {[0.25, 0.5, 0.75, 1].map((pct) => {
+                    const gy = plotTop + (1 - pct) * plotHeight;
+                    const labelKg = Math.round(maxKg * pct);
+                    return (
+                      <g key={pct}>
+                        <line x1={plotLeft} y1={gy} x2={plotLeft + plotWidth} y2={gy} stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+                        <text x={plotLeft - 6} y={gy + 3} textAnchor="end" fill="rgba(255,255,255,0.45)" fontSize="8" fontFamily="'Orbitron', monospace">
+                          {labelKg}kg
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  <line x1={plotLeft} y1={fiaFloorY} x2={plotLeft + plotWidth} y2={fiaFloorY} stroke="rgba(255,59,48,0.65)" strokeWidth="1" strokeDasharray="4 3" />
+                  <text x={plotLeft + 4} y={fiaFloorY - 4} fill="#ff6b6b" fontSize="7.5" fontFamily="'Orbitron', monospace" fontWeight="700">
+                    1.0 kg MANDATORY FIA SCRUTINEERING RESERVE
+                  </text>
+
+                  {targetPath && (
+                    <path d={targetPath} fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" strokeDasharray="3 3" />
+                  )}
+                  {areaPath && <path d={areaPath} fill="url(#fuelBurnFill)" />}
+                  {predictedPath && (
+                    <path d={predictedPath} fill="none" stroke={fuelPrediction.statusColor} strokeWidth="2.2" strokeLinecap="round" />
+                  )}
+
+                  <line x1={currX} y1={plotTop} x2={currX} y2={plotTop + plotHeight} stroke="rgba(0,210,190,0.55)" strokeWidth="1" strokeDasharray="2 2" />
+                  <circle cx={currX} cy={currY} r="4.5" fill="#ffffff" stroke={fuelPrediction.statusColor} strokeWidth="2.5" />
+                  <rect x={tagAnchorX - 42} y={tagTop} width="84" height="14" rx="3" fill="rgba(10,14,24,0.92)" stroke={fuelPrediction.statusColor} strokeWidth="0.9" />
+                  <text x={tagAnchorX} y={tagTop + 10} textAnchor="middle" fill="#ffffff" fontSize="7.5" fontFamily="'Orbitron', monospace" fontWeight="800">
+                    L{fuelPrediction.currentLap}: {fuelPrediction.remainingKg}kg
+                  </text>
+
+                  {[1, Math.round(totalLaps * 0.25), Math.round(totalLaps * 0.5), Math.round(totalLaps * 0.75), totalLaps].map((lapTick) => (
+                    <text key={lapTick} x={getX(lapTick)} y={plotTop + plotHeight + 14} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="8" fontFamily="'Orbitron', monospace">
+                      L{lapTick}
+                    </text>
+                  ))}
+                </svg>
+
+                <div className="fuel-chart-legend">
+                  <span><i style={{ background: fuelPrediction.statusColor }} />ECU Predicted Burn</span>
+                  <span><i style={{ background: "rgba(255,255,255,0.45)" }} />Linear Target</span>
+                  <span><i style={{ background: "#ff6b6b" }} />1.0kg FIA Floor</span>
+                </div>
+              </div>
+
+              {/* Zone 3: Both Team Cars Auto Comparison */}
+              <div className="fuel-intel-drivers">
+                <div className="fuel-drivers-head">CONSTRUCTOR DUAL-CAR PROJECTION</div>
+                <div className="fuel-driver-rows">
+                  {teamFuelPredictions.map(({ driver: drv, pred }) => (
+                    <div key={drv.code} className="fuel-driver-card">
+                      <div className="fuel-driver-card-top">
+                        <span className="fuel-driver-name">
+                          #{drv.num} {drv.code} <small>(P{drv.pos})</small>
+                        </span>
+                        <span style={{ color: pred.statusColor, fontWeight: "900", fontFamily: "'Orbitron', monospace", fontSize: "0.70rem" }}>
+                          {pred.predictedDeltaLaps >= 0 ? "+" : ""}{pred.predictedDeltaLaps}L
+                        </span>
+                      </div>
+                      <div className="fuel-driver-metrics">
+                        <span>{pred.remainingKg} kg left</span>
+                        <span>{pred.liveBurnPerLapKg} kg/L</span>
+                        <span style={{ color: "var(--neon-green)" }}>-{pred.weightGainSoFarSec}s</span>
+                      </div>
+                      <div className="fuel-tank-bar-track" aria-hidden="true">
+                        <div
+                          className="fuel-tank-bar-fill"
+                          style={{
+                            width: `${pred.remainingPct}%`,
+                            background: pred.statusColor,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="fuel-readonly-note">
+                  Automated read-only projection. Fuel burn steadily reduces car mass (-0.034s/lap per kg) and ECU regulates flow automatically under Green, VSC, and Safety Car phases.
+                </p>
+              </div>
+            </div>
+          </article>
+        );
+      })()}
+
       {/* ── BOTH DRIVERS SIDE-BY-SIDE TACTICAL SUMMARY FOOTER ── */}
       <div
         className="strategy-team-footer"
@@ -1415,16 +1710,22 @@ export default function StrategyAdvisor({
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
           {teamDrivers.map((d) => {
             const p = driverPlans[d.code] || { stopsCount: 1, stop1Lap: 24, stop1SetId: "H1" };
             const set = DEFAULT_TIRE_SETS.find((s) => s.id === p.stop1SetId) || DEFAULT_TIRE_SETS[4];
+            const fPred = teamFuelPredictions.find((item) => item.driver.code === d.code)?.pred;
             return (
-              <div key={d.code} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", fontFamily: "'Orbitron', monospace" }}>
+              <div key={d.code} style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "0.70rem", fontFamily: "'Orbitron', monospace" }}>
                 <span style={{ color: "#ffffff", fontWeight: "900" }}>#{d.num} {d.code} (P{d.pos}):</span>
                 <span style={{ color: (d.pits || 0) >= 1 ? "var(--neon-green)" : "var(--neon-cyan)" }}>
                   {(d.pits || 0) >= 1 ? `Pitted (Stop Completed) · Run to Flag 🟢` : `Planned Stop: Lap ${p.stop1Lap} (${set.label})`}
                 </span>
+                {fPred && (
+                  <span style={{ color: fPred.statusColor, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", padding: "1px 6px", borderRadius: "4px", fontSize: "0.62rem" }}>
+                    ⛽ {fPred.remainingKg}kg ({fPred.predictedDeltaLaps >= 0 ? "+" : ""}{fPred.predictedDeltaLaps}L AUTO)
+                  </span>
+                )}
               </div>
             );
           })}

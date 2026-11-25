@@ -1437,6 +1437,16 @@ textarea:focus-visible,
 .strategy-intelligence-column {
   gap: 14px !important;
   min-width: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 440px;
+}
+
+@supports not (content-visibility: auto) {
+  .strategy-decision-column,
+  .strategy-intelligence-column,
+  .strategy-fuel-intelligence {
+    contain: layout style paint;
+  }
 }
 
 .strategy-decision-column > div,
@@ -1479,6 +1489,302 @@ textarea:focus-visible,
 .strategy-team-footer {
   border-left: 3px solid var(--neon-green) !important;
   padding: 13px 16px !important;
+}
+
+/* Automated FIA Bio-Fuel Prediction Card (Read-Only, container-query responsive) */
+.strategy-fuel-intelligence {
+  container-type: inline-size;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 290px;
+  background: linear-gradient(145deg, rgba(14, 21, 34, 0.97), rgba(9, 13, 22, 0.99));
+  border: 1px solid rgba(0, 210, 190, 0.28);
+  border-left: 4px solid var(--neon-cyan);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fuel-intel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.fuel-intel-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fuel-intel-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fuel-intel-title-row h3 {
+  margin: 0;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.84rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+}
+
+.fuel-status-chip {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.60rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.fuel-intel-subtitle {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.fuel-intel-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fuel-ecu-badge,
+.fuel-lock-badge {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.fuel-lock-badge {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.fuel-intel-body {
+  display: grid;
+  grid-template-columns: minmax(290px, 1.15fr) minmax(300px, 1.1fr) minmax(240px, 0.85fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.fuel-intel-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fuel-kpi-tile {
+  background: rgba(0, 0, 0, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.fuel-kpi-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+.fuel-kpi-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.90rem;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.fuel-kpi-meta {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.25;
+}
+
+.fuel-tank-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.fuel-tank-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.35s ease;
+}
+
+.fuel-intel-chart-card {
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(0, 210, 190, 0.18);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.fuel-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.60rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.fuel-curve-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.fuel-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.fuel-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fuel-chart-legend i {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.fuel-intel-drivers {
+  background: rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fuel-drivers-head {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.60rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+}
+
+.fuel-driver-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fuel-driver-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fuel-driver-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.fuel-driver-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.fuel-driver-name small {
+  color: var(--neon-cyan);
+  font-weight: 700;
+}
+
+.fuel-driver-metrics {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.60rem;
+  color: var(--text-secondary);
+}
+
+.fuel-readonly-note {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  line-height: 1.3;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 6px;
+}
+
+@container (max-width: 980px) {
+  .fuel-intel-body {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fuel-intel-drivers {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (max-width: 620px) {
+  .fuel-intel-body {
+    grid-template-columns: 1fr;
+  }
+  .fuel-intel-kpis {
+    grid-template-columns: 1fr;
+  }
 }
 
 .strategy-decision-column button,

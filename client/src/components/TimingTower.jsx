@@ -1103,10 +1103,12 @@ function TimingTower({
           }
 
           // Dynamic Sector Times & Lap Pace for controlledLap >= 2
+          // Includes automatic progressive fuel mass burn advantage (~0.028s/lap lighter chassis)
           const compPace = d.tire === "S" ? -0.42 : d.tire === "H" ? +0.35 : 0.0;
           const tierPace = ["NOR", "VER", "RUS", "LEC", "HAM", "PIA"].includes(d.code) ? -0.25 : ["ALO", "SAI", "ALB", "ANT", "HAD"].includes(d.code) ? -0.05 : 0.25;
           const wearPace = Math.max(0, (newWear - 25) * 0.007);
-          const drvPaceDelta = tierPace + compPace + pushPaceDelta + wearPace;
+          const autoFuelMassGain = -Math.min(1.65, Math.max(0, controlledLap - 1) * 0.028);
+          const drvPaceDelta = tierPace + compPace + pushPaceDelta + wearPace + autoFuelMassGain;
 
           const seed = (d.num || dIdx + 1) * 7 + controlledLap * 13;
           const v1 = ((Math.sin(seed) * 1000) % 1) * 0.12 - 0.06;
