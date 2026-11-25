@@ -7,7 +7,6 @@
 // ============================================================
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const TEAM_COLORS = {
   McLaren: "#ff8700",
@@ -760,7 +759,6 @@ export default function CircuitSpatialRadar({
   circuitId = "australia",
   drivers = [],
   selectedDriverNum,
-  onSelectDriver,
   isNightMode = false,
   isPlaying = false,
   simSpeed = 4,
@@ -770,7 +768,7 @@ export default function CircuitSpatialRadar({
   const hostRef = useRef(null);
   const [webglFailed, setWebglFailed] = useState(false);
 
-  // Live Refs so interactions (clicking drivers, Play/Pause, 4x speed, Lap transitions) NEVER rebuild WebGL!
+  // Live Refs so upstream Lap transitions & highlight sync NEVER rebuild WebGL!
   const driversRef = useRef(drivers);
   driversRef.current = drivers;
   const selectedDriverNumRef = useRef(selectedDriverNum);
@@ -783,8 +781,6 @@ export default function CircuitSpatialRadar({
   currentLapRef.current = currentLap;
   const isAutoSimulatingRef = useRef(isAutoSimulating);
   isAutoSimulatingRef.current = isAutoSimulating;
-  const onSelectDriverRef = useRef(onSelectDriver);
-  onSelectDriverRef.current = onSelectDriver;
 
   const sceneRefs = useRef({
     scene: null,
@@ -836,6 +832,7 @@ export default function CircuitSpatialRadar({
         camTarget = pitInfo.midPoint.clone().multiplyScalar(0.24);
       }
       camera.position.copy(camPos);
+      camera.lookAt(camTarget);
 
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
@@ -843,16 +840,6 @@ export default function CircuitSpatialRadar({
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       host.replaceChildren(renderer.domElement);
-
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.target.copy(camTarget);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.06;
-      controls.minDistance = 10;
-      controls.maxDistance = 56;
-      controls.maxPolarAngle = Math.PI * 0.44;
-      controls.minPolarAngle = Math.PI * 0.16;
-      controls.enablePan = true;
 
       // Sunlight + Parkland Hemisphere Ambient
       const skyLight = new THREE.HemisphereLight(
@@ -1121,29 +1108,6 @@ export default function CircuitSpatialRadar({
       sceneRefs.current.populateDrivers = populateDriversIfReady;
       populateDriversIfReady(driversRef.current);
 
-      // Pointer Hit-Testing (Select Any Car by Clicking Puck or Label!)
-      const raycaster = new THREE.Raycaster();
-      const pointer = new THREE.Vector2();
-      const onPointerDown = (event) => {
-        const currentMarkers = sceneRefs.current.markers;
-        if (!currentMarkers || currentMarkers.length === 0) return;
-        const rect = renderer.domElement.getBoundingClientRect();
-        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(pointer, camera);
-        const hits = raycaster.intersectObjects(currentMarkers, true);
-        if (hits.length > 0) {
-          let target = hits[0].object;
-          while (target && !target.userData?.driver && target.parent) {
-            target = target.parent;
-          }
-          if (target?.userData?.driver) {
-            onSelectDriverRef.current?.(target.userData.driver.num);
-          }
-        }
-      };
-      renderer.domElement.addEventListener("pointerdown", onPointerDown);
-
       const handleResize = () => {
         const { width, height } = host.getBoundingClientRect();
         if (!width || !height) return;
@@ -1228,7 +1192,6 @@ export default function CircuitSpatialRadar({
 
         selectedHalo.visible = hasSelectedMarker;
 
-        controls.update();
         renderer.render(scene, camera);
         animationId = requestAnimationFrame(animate);
       };
@@ -1237,8 +1200,6 @@ export default function CircuitSpatialRadar({
       return () => {
         cancelAnimationFrame(animationId);
         observer.disconnect();
-        renderer.domElement.removeEventListener("pointerdown", onPointerDown);
-        controls.dispose();
         localTextures.forEach((tex) => tex.dispose());
         scene.traverse((obj) => {
           if (obj.geometry) obj.geometry.dispose();
@@ -1314,12 +1275,9 @@ export default function CircuitSpatialRadar({
   return (
     <div
       className="spatial-race-map"
-      aria-label="Interactive 3D Satellite Radar. Drag to orbit, scroll to zoom, and select a car marker."
+      aria-label="Read-only 3D live race view showing track layout, pit complex, and live car positions."
     >
       <div ref={hostRef} className="spatial-race-map-canvas" />
-      <div className="spatial-race-map-caption">
-        DRAG TO ORBIT · SCROLL TO ZOOM · SELECT A CAR
-      </div>
     </div>
   );
 }

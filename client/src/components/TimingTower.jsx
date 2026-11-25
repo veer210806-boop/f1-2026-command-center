@@ -2209,10 +2209,8 @@ function TimingTower({
           maxLaps={maxLaps}
           sessionFlag={sessionFlag}
           isAutoSimulating={isAutoSimulating}
-          restartSignal={restartSignal}
           userRole={userRole}
           playerTeam={playerTeam}
-          onCloseToTower={() => setActivePitWallTab("tower")}
         />
       ) : activePitWallTab === "lapMatrix" ? (
         <StatsF1LapMatrix

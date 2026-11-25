@@ -1940,10 +1940,10 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
-.race-map-hud,
-.race-map-controller {
+.race-map-hud {
   backdrop-filter: blur(16px) saturate(1.12);
   -webkit-backdrop-filter: blur(16px) saturate(1.12);
+  pointer-events: none;
 }
 
 .race-map-leaderboard {
@@ -1951,27 +1951,26 @@ textarea:focus-visible,
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.46) !important;
 }
 
-.race-map-conditions { min-width: 224px !important; }
-
-.race-map-controller {
-  border-color: rgba(0, 210, 190, 0.34) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45) !important;
+.race-map-right-dock {
+  pointer-events: none;
 }
 
+.race-map-conditions { min-width: 220px !important; }
+
 @media (max-width: 1180px) {
-  .race-director-map { min-height: 540px !important; }
-  .race-map-leaderboard { width: 158px !important; left: 10px !important; top: 10px !important; }
-  .race-map-conditions { right: 10px !important; top: 10px !important; min-width: 190px !important; }
-  .race-map-telemetry { right: 10px !important; bottom: 10px !important; }
+  .race-director-map { min-height: 510px !important; }
+  .race-map-leaderboard { width: 158px !important; inset-inline-start: 10px !important; inset-block-start: 10px !important; }
+  .race-map-right-dock { inset-inline-end: 10px !important; inset-block: 10px !important; }
+  .race-map-conditions { min-width: 196px !important; width: 204px !important; }
+  .race-map-telemetry { width: 236px !important; }
 }
 
 @media (max-width: 800px) {
-  .race-director-map { min-height: 590px !important; height: 72vh !important; }
+  .race-director-map { min-height: 540px !important; height: 70vh !important; }
   .race-director-map::before { display: none; }
   .race-map-leaderboard { width: 142px !important; }
-  .race-map-conditions > div:last-child { display: none !important; }
-  .race-map-controller { bottom: 9px !important; max-width: calc(100% - 18px); gap: 7px !important; padding-inline: 10px !important; }
-  .race-map-labels > [role="button"] { transform: scale(0.88); transform-origin: center; }
+  .race-map-conditions { width: 176px !important; min-width: 0 !important; }
+  .race-map-telemetry { display: none !important; }
 }
 
 /* Circuit Spatial Radar WebGL Layer */
@@ -1979,17 +1978,19 @@ textarea:focus-visible,
   position: absolute;
   inset: 0;
   z-index: 18;
+  pointer-events: none;
 }
 
 .spatial-race-map,
 .spatial-race-map-canvas {
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 .spatial-race-map {
   position: relative;
-  overflow: hidden;
+  overflow: clip;
   background: radial-gradient(circle at 50% 35%, #142333, #070b12 68%);
 }
 
@@ -1997,23 +1998,7 @@ textarea:focus-visible,
   display: block;
   width: 100% !important;
   height: 100% !important;
-  cursor: grab;
-}
-
-.spatial-race-map canvas:active { cursor: grabbing; }
-
-.spatial-race-map-caption {
-  position: absolute;
-  left: 50%;
-  bottom: 48px;
-  transform: translateX(-50%);
-  padding: 5px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 4px;
-  background: rgba(4, 7, 12, 0.68);
-  color: rgba(255, 255, 255, 0.7);
-  font: 800 0.54rem 'Orbitron', monospace;
-  letter-spacing: 0.1em;
+  cursor: default !important;
   pointer-events: none;
 }
 
@@ -2025,9 +2010,5 @@ textarea:focus-visible,
   color: var(--text-secondary);
   font: 700 0.75rem 'Orbitron', monospace;
   background: #090d14;
-}
-
-@media (max-width: 800px) {
-  .spatial-race-map-caption { bottom: 40px; font-size: 0.46rem; white-space: nowrap; }
 }
 
