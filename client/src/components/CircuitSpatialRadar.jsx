@@ -748,7 +748,8 @@ function makeBroadcastDriverSprite(driver, pos, color, isSelected = false) {
       depthWrite: false,
     })
   );
-  sprite.scale.set(2.35, 0.9, 1);
+  sprite.center.set(0.5, 0.04);
+  sprite.scale.set(2.1, 0.92, 1);
   sprite.renderOrder = isSelected ? 200 : Math.max(10, 50 - pos);
   return { sprite, texture };
 }
@@ -1073,7 +1074,7 @@ export default function CircuitSpatialRadar({
 
       const populateDriversIfReady = (driverList) => {
         if (!driverList || driverList.length === 0 || sceneRefs.current.markers.length > 0) return;
-        const carNodeGeo = new THREE.SphereGeometry(0.22, 18, 14);
+        const carNodeGeo = new THREE.SphereGeometry(0.19, 18, 14);
         const isGrid = currentLapRef.current <= 1 && !isAutoSimulatingRef.current && !isPlayingRef.current;
         sceneRefs.current.nextLapThreshold = 1.0;
 
@@ -1095,7 +1096,7 @@ export default function CircuitSpatialRadar({
           carNode.userData.totalDistance = slot.totalDistance;
           carNode.userData.progress = slot.progress;
           carNode.userData.lateral = slot.lateral;
-          carNode.userData.pitBlend = driver.pitState === "IN PIT" ? 1 : 0;
+          carNode.userData.pitBlend = 0;
           carNode.userData.lastSelState = driver.num === selectedDriverNumRef.current;
           carNode.userData.lastPos = driver.pos || index + 1;
 
@@ -1106,7 +1107,7 @@ export default function CircuitSpatialRadar({
             carNode.userData.lastSelState
           );
           localTextures.push(texture);
-          sprite.position.y = slot.tierY;
+          sprite.position.y = 0.2;
           carNode.add(sprite);
           carNode.userData.label = sprite;
           carNode.userData.labelTexture = texture;
@@ -1148,6 +1149,7 @@ export default function CircuitSpatialRadar({
         let hasSelectedMarker = false;
         const leaderMarker = activeMarkers.find((m) => (m.userData.driver?.pos || 99) === 1) || activeMarkers[0];
         const leaderTotal = leaderMarker ? (leaderMarker.userData.totalDistance || 0) : 0;
+        let minCarDist = Infinity;
 
         activeMarkers.forEach((marker, idx) => {
           const driver = marker.userData.driver;
@@ -1155,10 +1157,10 @@ export default function CircuitSpatialRadar({
           if (running) {
             let paceMul = 1.0;
             if (marker !== leaderMarker) {
-              const desiredTotal = leaderTotal - Math.min(0.62, (curPos - 1) * 0.018);
+              // Keep coherent pack spread (~0.26 lap P1->P22) so every car crosses S/F 1-by-1 cleanly
+              const desiredTotal = leaderTotal - Math.min(0.28, (curPos - 1) * 0.012);
               const gapError = desiredTotal - (marker.userData.totalDistance || 0);
-              // Gentle forward-only catchup/trim (never reverses or teleports cars across sectors)
-              paceMul = 1.0 + Math.max(-0.18, Math.min(0.24, gapError * 1.1));
+              paceMul = 1.0 + Math.max(-0.14, Math.min(0.18, gapError * 1.15));
             }
             const distStep = Math.max(0.0001, delta * baseLapRate * paceMul * mult);
             marker.userData.totalDistance = (marker.userData.totalDistance || 0) + distStep;
@@ -1169,52 +1171,56 @@ export default function CircuitSpatialRadar({
             marker.userData.totalDistance = slot.totalDistance;
             marker.userData.progress = slot.progress;
             marker.userData.lateral = slot.lateral;
+            marker.userData.pitBlend = 0;
           }
+
+          const td = marker.userData.totalDistance || 0;
+          if (td < minCarDist) minCarDist = td;
 
           const p = marker.userData.progress;
           const pt = curve.getPointAt(p);
           const tan = curve.getTangentAt(p).normalize();
           const norm = new THREE.Vector3(-tan.z, 0, tan.x);
 
-          // Smoothly transition car laterally into/out of the parallel pit lane when pitting
-          const isInPit = driver.pitState === "IN PIT";
-          marker.userData.pitBlend = (marker.userData.pitBlend || 0) + ((isInPit ? 1 : 0) - (marker.userData.pitBlend || 0)) * Math.min(1, delta * 5.0);
+          // Shift into pit lane ONLY while physically traversing the Pit Straight corridor
+          const sampleIdx = p * 320;
+          const inPitStraight = sampleIdx >= pitInfo.sStart && sampleIdx <= pitInfo.sEnd;
+          const wantsPitLane = driver.pitState === "IN PIT" && inPitStraight;
+          marker.userData.pitBlend = (marker.userData.pitBlend || 0) + ((wantsPitLane ? 1 : 0) - (marker.userData.pitBlend || 0)) * Math.min(1, delta * 6.0);
           const raceOffset = norm.clone().multiplyScalar(marker.userData.lateral);
           const pitOffset = pitInfo.outwardNormal.clone().multiplyScalar(0.96);
           const pitShift = raceOffset.lerp(pitOffset, marker.userData.pitBlend);
 
-          marker.position.set(pt.x + pitShift.x, pt.y + 0.28, pt.z + pitShift.z);
+          // Rest car sphere squarely on the asphalt surface (y = 0.14 surface + 0.17 radius height = 0.31)
+          marker.position.set(pt.x + pitShift.x, 0.31, pt.z + pitShift.z);
 
           const isSelected = driver.num === activeSel;
-          marker.scale.setScalar(isSelected ? 1.5 : 1.0);
+          marker.scale.setScalar(isSelected ? 1.38 : 1.0);
           marker.material.emissiveIntensity = isSelected ? 1.4 : 0.6;
 
           if (marker.userData.label) {
-            // On tightly packed static grid show clean staggered front pack (P1, P3, P5, P8, P12) + selected driver
+            // Anchored pin height right above car dot on asphalt (zero disconnected air-floating pills)
             const showOnGrid = isSelected || curPos === 1 || curPos === 3 || curPos === 6 || curPos === 10 || curPos === 15;
             marker.userData.label.visible = isStaticGrid ? showOnGrid : (isSelected || curPos <= 14);
             marker.userData.label.renderOrder = isSelected ? 200 : Math.max(10, 50 - curPos);
             marker.userData.label.position.y = isStaticGrid
-              ? (isSelected ? 1.65 : 0.95 + ((curPos % 3) * 0.35))
+              ? (isSelected ? 0.42 : 0.2 + ((curPos % 3) * 0.16))
               : isSelected
-                ? 1.72
-                : 0.96 + ((curPos - 1) % 3) * 0.28;
+                ? 0.45
+                : 0.18 + ((curPos - 1) % 3) * 0.16;
           }
 
           if (isSelected) {
             hasSelectedMarker = true;
-            selectedHalo.position.set(marker.position.x, pt.y + 0.14, marker.position.z);
+            selectedHalo.position.set(marker.position.x, 0.155, marker.position.z);
             selectedHalo.rotation.z = elapsed * 2.4;
           }
         });
 
-        // Advance Race Lap Counter 1-by-1 ONLY when leader physically completes a full circuit lap
-        if (running && leaderMarker) {
-          const updatedLeaderDist = leaderMarker.userData.totalDistance || 0;
-          if (updatedLeaderDist >= sceneRefs.current.nextLapThreshold) {
-            sceneRefs.current.nextLapThreshold = Math.floor(updatedLeaderDist) + 1.0;
-            onLapCompleteRef.current?.();
-          }
+        // Wait until EVERY car (P1 through P22) has physically completed the full lap before advancing the Lap Counter
+        if (running && activeMarkers.length > 0 && minCarDist >= sceneRefs.current.nextLapThreshold) {
+          sceneRefs.current.nextLapThreshold = Math.floor(minCarDist) + 1.0;
+          onLapCompleteRef.current?.();
         }
 
         selectedHalo.visible = hasSelectedMarker;

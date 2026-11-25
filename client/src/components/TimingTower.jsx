@@ -1005,6 +1005,9 @@ function TimingTower({
         const s2Base = raceBaseSec * 0.428;
         const s3Base = raceBaseSec * 0.254;
 
+        // Check if incoming drivers still have Lap-1 zeroed gaps so we initialize clean F1 grid spacing instead of P1->P22 shuffle
+        const needsGridGapInit = prevDrivers.every((pd) => !pd.gapSec || pd.gapSec === 0);
+
         // 1. Dynamic Tire Degradation, Tactical Push Modes & Sector Timings
         let updated = prevDrivers.map((d, dIdx) => {
           const isPlayerDriver =
@@ -1016,14 +1019,24 @@ function TimingTower({
               (playerTeam.toLowerCase().includes("audi") && d.team.toLowerCase().includes("sauber")) ||
               (playerTeam.toLowerCase().includes("sauber") && d.team.toLowerCase().includes("audi")));
 
+          const initialStaggeredGap = +(dIdx * 0.48).toFixed(3);
+          let currentGapSec = needsGridGapInit
+            ? initialStaggeredGap
+            : d.gapSec !== undefined
+              ? d.gapSec
+              : parseGapSec(d.gap);
+          const aheadStaggeredGap = dIdx > 0
+            ? (needsGridGapInit ? +((dIdx - 1) * 0.48).toFixed(3) : (prevDrivers[dIdx - 1]?.gapSec || 0))
+            : 0;
+          const gapToAhead = dIdx > 0 ? currentGapSec - aheadStaggeredGap : 999;
+
           // Driver Push Mode (Tactical Engine Delta)
           const plan = driverPlans?.[d.code];
           let pushMode = plan?.pushMode || "balanced";
 
-          // AI Opponent Push Dynamics
+          // AI Opponent Push Dynamics (realistic moderate deltas)
           if (!isPlayerDriver) {
-            const gapToAhead = dIdx > 0 ? ((d.gapSec || 0) - (prevDrivers[dIdx - 1]?.gapSec || 0)) : 999;
-            if (gapToAhead < 0.95 && (d.wear || 20) < 60) {
+            if (gapToAhead > 0.15 && gapToAhead < 0.85 && (d.wear || 20) < 60 && controlledLap >= 3) {
               pushMode = "attack";
             } else if ((d.wear || 20) > 68) {
               pushMode = "conserve";
@@ -1032,11 +1045,11 @@ function TimingTower({
             }
           }
 
-          const pushWearMult = pushMode === "attack" ? 1.55 : pushMode === "conserve" ? 0.65 : 1.0;
-          const pushPaceDelta = pushMode === "attack" ? -0.38 : pushMode === "conserve" ? +0.32 : 0.0;
+          const pushWearMult = pushMode === "attack" ? 1.45 : pushMode === "conserve" ? 0.7 : 1.0;
+          const pushPaceDelta = pushMode === "attack" ? -0.18 : pushMode === "conserve" ? +0.18 : 0.0;
 
           // Compound base wear rate & wet penalty
-          const baseWearRate = d.tire === "S" ? 4.8 : d.tire === "M" ? 2.9 : d.tire === "H" ? 1.8 : 3.0;
+          const baseWearRate = d.tire === "S" ? 4.5 : d.tire === "M" ? 2.8 : d.tire === "H" ? 1.8 : 3.0;
           const wetPenalty = (trackDampness > 30 && (d.tire === "S" || d.tire === "M" || d.tire === "H")) ? 6.5 : 0;
           const appliedWear = (baseWearRate * pushWearMult) + wetPenalty;
           const newWear = Math.min(100, Math.round((d.wear || 20) + appliedWear));
@@ -1046,7 +1059,6 @@ function TimingTower({
           let aiNewTire = d.tire;
           let currentPitState = d.pitState === "IN PIT" ? "RACING" : (d.pitState || "RACING");
           let currentPits = d.pits || 0;
-          let currentGapSec = d.gapSec !== undefined ? d.gapSec : parseGapSec(d.gap);
 
           // Realistic Pit Crew Stationary Stopwatch RNG
           const getPitCrewTime = () => {
@@ -1096,13 +1108,12 @@ function TimingTower({
             pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
           } else {
             // Authentic F1 Race Physics & Tire Modeling:
-            const compPaceDelta = d.tire === "S" ? -0.42 : d.tire === "H" ? +0.35 : 0.0;
-            const linearWearLoss = ((newWear - 35) * 0.007);
+            const compPaceDelta = d.tire === "S" ? -0.22 : d.tire === "H" ? +0.20 : 0.0;
+            const linearWearLoss = Math.max(0, (newWear - 25) * 0.007);
             const cliffPenalty = newWear > 70 ? +((newWear - 70) * 0.085) : 0;
-            const freshTireBoost = newTireAge <= 2 ? -0.45 : 0.0;
-            const gapToAhead = dIdx > 0 ? (currentGapSec - (prevDrivers[dIdx - 1]?.gapSec || 0)) : 999;
-            const drsBonus = (gapToAhead > 0 && gapToAhead < 1.0) ? -0.22 : 0.0;
-            const variance = (Math.random() * 0.06) - 0.03;
+            const freshTireBoost = currentPits > 0 && newTireAge <= 2 ? -0.35 : 0.0;
+            const drsBonus = controlledLap >= 3 && gapToAhead > 0 && gapToAhead < 0.9 ? -0.15 : 0.0;
+            const variance = Math.random() * 0.06 - 0.03;
 
             const totalLapDelta = pushPaceDelta + compPaceDelta + linearWearLoss + cliffPenalty + freshTireBoost + drsBonus + variance;
             currentGapSec = +(Math.max(0, currentGapSec + totalLapDelta)).toFixed(3);
