@@ -1133,22 +1133,23 @@ export default function CircuitSpatialRadar({
 
         lap1StartGroup.visible = lapNum <= 1;
         let hasSelectedMarker = false;
+        const leaderMarker = activeMarkers.find((m) => (m.userData.driver?.pos || 99) === 1) || activeMarkers[0];
 
         activeMarkers.forEach((marker, idx) => {
           const driver = marker.userData.driver;
           const curPos = driver.pos || idx + 1;
           if (running) {
-            marker.userData.progress = (marker.userData.progress + delta * marker.userData.speed * mult) % 1;
+            const dynamicLapSpeed = 0.028 + ((22 - curPos) * 0.00035);
+            marker.userData.progress = (marker.userData.progress + delta * dynamicLapSpeed * mult) % 1;
             marker.userData.lateral *= 0.95; // Smoothly merge off starting staggered lane after lights out
-            // Gradually fan pack out organically on Lap 2+ based on position gap (prevents bunched grid pill pileups)
-            if (lapNum >= 2 && activeMarkers.length > 1) {
-              const p1Marker = activeMarkers[0];
+            // Gradually fan pack out organically on Lap 2+ behind actual P1 leader
+            if (lapNum >= 2 && activeMarkers.length > 1 && marker !== leaderMarker) {
               const desiredLag = Math.min(0.90, (curPos - 1) * Math.min(0.044, 0.026 + (lapNum - 2) * 0.006));
-              const targetProg = (p1Marker.userData.progress - desiredLag + 1) % 1;
+              const targetProg = (leaderMarker.userData.progress - desiredLag + 1) % 1;
               let diff = targetProg - marker.userData.progress;
               if (diff > 0.5) diff -= 1;
               if (diff < -0.5) diff += 1;
-              marker.userData.progress = (marker.userData.progress + diff * Math.min(1, delta * 2.2) + 1) % 1;
+              marker.userData.progress = (marker.userData.progress + diff * Math.min(1, delta * (1.8 + mult * 0.2)) + 1) % 1;
             }
           } else if (isStaticGrid) {
             const slot = computeDriverTrackSlot(driver, idx, pitInfo.startLinePct, true);

@@ -821,10 +821,10 @@ export default function App() {
   const circuitRef = useRef(selectedCircuit);
   circuitRef.current = selectedCircuit;
 
-  // Master race simulation clock: cleanly increments currentLapNum
+  // Master race simulation clock: cleanly increments currentLapNum at exact chosen multiplier
   useEffect(() => {
     if (!isAutoSimulating) return;
-    const intervalMs = simSpeed === 5 ? 800 : simSpeed === 2 ? 1800 : 3500;
+    const intervalMs = Math.max(250, Math.round(3600 / Math.max(1, simSpeed)));
     const timer = setInterval(() => {
       setCurrentLapNum((prev) => {
         const next = prev + 1;
@@ -1315,6 +1315,7 @@ export default function App() {
               controlledLap={currentLapNum}
               controlledFlag={activeFlag}
               isAutoSimulating={isAutoSimulating}
+              simSpeed={simSpeed}
               onToggleAutoSim={() => setIsAutoSimulating((s) => !s)}
               onChangeSimSpeed={(spd) => setSimSpeed(spd)}
               triggerOvertakeSignal={overtakeTriggerCount}

@@ -660,6 +660,7 @@ function TimingTower({
   controlledLap,
   controlledFlag,
   isAutoSimulating = false,
+  simSpeed = 1,
   onToggleAutoSim,
   onChangeSimSpeed,
   triggerOvertakeSignal,
@@ -2211,6 +2212,7 @@ function TimingTower({
           maxLaps={maxLaps}
           sessionFlag={sessionFlag}
           isAutoSimulating={isAutoSimulating}
+          simSpeed={simSpeed}
           onToggleAutoSim={onToggleAutoSim}
           onChangeSimSpeed={onChangeSimSpeed}
           userRole={userRole}

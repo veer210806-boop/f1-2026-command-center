@@ -110,6 +110,7 @@ export default function LiveRaceMapTracker({
   maxLaps = 58,
   sessionFlag = "GREEN",
   isAutoSimulating = false,
+  simSpeed: externalSimSpeed = 1,
   onToggleAutoSim,
   onChangeSimSpeed,
   userRole = "team",
@@ -124,12 +125,16 @@ export default function LiveRaceMapTracker({
   const trackRotation = activeCircuitId === "australia" ? 298 : 0;
 
   const [localPlaying, setLocalPlaying] = useState(() => isAutoSimulating);
-  const [simSpeed, setSimSpeed] = useState(4);
+  const [localSimSpeed, setLocalSimSpeed] = useState(() => externalSimSpeed || 1);
   useEffect(() => {
     setLocalPlaying(isAutoSimulating);
   }, [isAutoSimulating]);
+  useEffect(() => {
+    if (externalSimSpeed) setLocalSimSpeed(externalSimSpeed);
+  }, [externalSimSpeed]);
 
   const isPlaying = onToggleAutoSim ? isAutoSimulating : localPlaying;
+  const simSpeed = onChangeSimSpeed && externalSimSpeed ? externalSimSpeed : localSimSpeed;
 
   const handleTogglePlayPause = () => {
     if (onToggleAutoSim) {
@@ -140,8 +145,8 @@ export default function LiveRaceMapTracker({
   };
 
   const handleSelectSpeed = (spd) => {
-    setSimSpeed(spd);
-    onChangeSimSpeed?.(spd >= 5 ? 5 : spd >= 2 ? 2 : 1);
+    setLocalSimSpeed(spd);
+    onChangeSimSpeed?.(spd);
   };
 
   const weather = useMemo(() => {

@@ -336,7 +336,7 @@ export default function LiveBroadcastGantry({
                 SPEED:
               </span>
               <div style={{ display: "flex", gap: "3px", background: "rgba(0,0,0,0.3)", padding: "2px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                {[1, 2, 5].map((spd) => (
+                {[1, 2, 4, 8, 16].map((spd) => (
                   <button
                     key={spd}
                     onClick={() => handleSimSpeedClick(spd)}
