@@ -5,12 +5,13 @@
 // 3D track view) paired strictly with simulation Play/Pause + Speed controls.
 // Zero user involvement with individual cars or camera orbit/zoom.
 // ============================================================
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
 import { isDriverBelongingToTeam } from "../data/constructors2026";
 import { calculateAutoFuelPrediction } from "../utils/fuelPredictionEngine";
-import CircuitSpatialRadar from "./CircuitSpatialRadar";
+
+const CircuitSpatialRadar = lazy(() => import("./CircuitSpatialRadar"));
 
 const TEAM_COLORS = {
   "McLaren":         { primary: "#ff8700" },
@@ -475,19 +476,21 @@ export default function LiveRaceMapTracker({
 
       {/* Read-Only 3D Broadcast Circuit Stage */}
       <div className="spatial-race-map-layer" style={{ pointerEvents: "none" }}>
-        <CircuitSpatialRadar
-          trackPath={activeTrackPath}
-          circuitId={activeCircuitId}
-          drivers={leaderboardCars}
-          selectedDriverNum={highlightedDriverNum}
-          isNightMode={isNightMode}
-          isPlaying={isPlaying}
-          simSpeed={simSpeed}
-          currentLap={currentLap}
-          isAutoSimulating={isPlaying}
-          sessionFlag={sessionFlag}
-          onLapComplete={onAdvanceLap}
-        />
+        <Suspense fallback={<div className="spatial-race-map-fallback">INITIALIZING 3D SATELLITE TRACK...</div>}>
+          <CircuitSpatialRadar
+            trackPath={activeTrackPath}
+            circuitId={activeCircuitId}
+            drivers={leaderboardCars}
+            selectedDriverNum={highlightedDriverNum}
+            isNightMode={isNightMode}
+            isPlaying={isPlaying}
+            simSpeed={simSpeed}
+            currentLap={currentLap}
+            isAutoSimulating={isPlaying}
+            sessionFlag={sessionFlag}
+            onLapComplete={onAdvanceLap}
+          />
+        </Suspense>
       </div>
 
       {/* LEFT TIMING MATRIX (All 22 cars compact, non-interactive, full P1-P22 visibility) */}

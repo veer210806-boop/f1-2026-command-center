@@ -728,7 +728,7 @@ function TimingTower({
     return { driverCode: fastestCode, timeSec: minSec, lapStr: fastestLapStr };
   }, [drivers, effectiveLap]);
 
-  // Synchronize internal drivers with externalDrivers from App.jsx / StrategyAdvisor
+  // Synchronize internal drivers cleanly with externalDrivers (post-commit avoids render-time setState errors)
   const lastExternalSyncRef = useRef(null);
   useEffect(() => {
     if (externalDrivers && externalDrivers.length > 0 && externalDrivers !== lastExternalSyncRef.current) {
@@ -736,6 +736,13 @@ function TimingTower({
       setDrivers(externalDrivers);
     }
   }, [externalDrivers]);
+
+  useEffect(() => {
+    if (onDriversUpdate && drivers !== lastExternalSyncRef.current) {
+      lastExternalSyncRef.current = drivers;
+      onDriversUpdate(drivers);
+    }
+  }, [drivers, onDriversUpdate]);
 
   const [radioMsg, setRadioMsg] = useState("Box this lap for Hard compounds. Push hard on in-lap.");
   const [radioFeedIdx, setRadioFeedIdx] = useState(0);
@@ -747,12 +754,14 @@ function TimingTower({
   const [momBoostActive, setMomBoostActive] = useState(false);
   const [momCooldown, setMomCooldown] = useState(0);
 
-  // Synchronized broadcast event state
+  // Synchronized broadcast event state (parent callbacks queued post-updater cleanly)
   const [internalOvertakeEvent, setInternalOvertakeEvent] = useState(null);
   const overtakeEvent = propOvertakeEvent !== undefined ? propOvertakeEvent : internalOvertakeEvent;
   const setOvertakeEvent = (val) => {
     setInternalOvertakeEvent(val);
-    onSetOvertakeEvent?.(val);
+    if (onSetOvertakeEvent) {
+      queueMicrotask(() => onSetOvertakeEvent(val));
+    }
   };
 
   const [activeOvertake, setActiveOvertake] = useState(null);
@@ -761,7 +770,9 @@ function TimingTower({
   const activePitEvent = propActivePitEvent !== undefined ? propActivePitEvent : internalPitEvent;
   const setActivePitEvent = (val) => {
     setInternalPitEvent(val);
-    onSetPitEvent?.(val);
+    if (onSetPitEvent) {
+      queueMicrotask(() => onSetPitEvent(val));
+    }
   };
 
   const [isSoundMuted, setIsSoundMuted] = useState(false);
@@ -955,12 +966,7 @@ function TimingTower({
       });
       setRadioMsg(`[RADIO #${targetDriver.num}] Box confirm. ${targetCompound} tires fitted. You are P${newTargetPos}${aheadNotice}. Out-lap is cold!`);
       playF1OvertakeChime(isSoundMuted);
-      onCompletePlanStop?.(driverCode, (targetDriver.pits || 0) + 1);
-
-      if (onDriversUpdate) {
-        lastExternalSyncRef.current = finalGrid;
-        onDriversUpdate(finalGrid);
-      }
+      queueMicrotask(() => onCompletePlanStop?.(driverCode, (targetDriver.pits || 0) + 1));
 
       return finalGrid;
     });
@@ -974,12 +980,7 @@ function TimingTower({
       setDrivers((prevDrivers) => {
         // If controlledLap is 1, maintain or reset to clean pre-race grid without fake gaps/sectors/laptimes
         if (!prevDrivers || prevDrivers.length < 2 || controlledLap <= 1) {
-          const freshGrid = buildTimingTowerGridForCircuit(activeCircuitId, 1);
-          if (onDriversUpdate) {
-            lastExternalSyncRef.current = freshGrid;
-            onDriversUpdate(freshGrid);
-          }
-          return freshGrid;
+          return buildTimingTowerGridForCircuit(activeCircuitId, 1);
         }
 
         const parseGapSec = (gapStr) => {
@@ -1090,7 +1091,7 @@ function TimingTower({
             const trackTransitLoss = sessionFlag === "SC" ? 11.2 : (selectedCircuit?.pit_loss_green || 19.8);
             const totalPitLoss = +(trackTransitLoss + crew.sec).toFixed(1);
             currentGapSec += totalPitLoss;
-            onCompletePlanStop?.(d.code, plannedStop.stopNum || 1);
+            queueMicrotask(() => onCompletePlanStop?.(d.code, plannedStop.stopNum || 1));
             pittedDriverCode = d.code;
             pitStopReason = "Planned Strategy Call";
             pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
@@ -1326,11 +1327,6 @@ function TimingTower({
           setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3500 ? null : curr));
         }, 4000);
 
-        if (onDriversUpdate) {
-          lastExternalSyncRef.current = reordered;
-          onDriversUpdate(reordered);
-        }
-
         return reordered;
       });
     }
@@ -1394,16 +1390,11 @@ function TimingTower({
   const handleInjectDeltaGap = () => {
     setDrivers((prevDrivers) => {
       if (prevDrivers.length < 2) return prevDrivers;
-      const updated = prevDrivers.map((d, i) => {
+      return prevDrivers.map((d, i) => {
         if (i === 0) return { ...d, gap: "LEADER", interval: "—" };
         if (i === 1) return { ...d, gap: "+0.420s", interval: "+0.420s" };
         return d;
       });
-      if (onDriversUpdate) {
-        lastExternalSyncRef.current = updated;
-        onDriversUpdate(updated);
-      }
-      return updated;
     });
     setRadioMsg("[AWS DELTA INJECT] Delta gap compressed to +0.420s. DRS detection confirmed.");
     setOvertakeEvent("[AWS DELTA INJECT] P2 within 0.420s attack window · High Probability Intercept");
@@ -1411,21 +1402,23 @@ function TimingTower({
 
   // Realistic Interactive Overtake Duel Simulator
   const handleTriggerDuelOvertake = () => {
+    const targetIdx = selectedDriverIdx > 0 ? selectedDriverIdx - 1 : 0;
+    const attackerIdx = targetIdx + 1;
+    const currentList = drivers || [];
+    if (currentList.length < 2) return;
+
+    const carAhead = currentList[targetIdx];
+    const carBehind = currentList[attackerIdx];
+    if (!carAhead || !carBehind) return;
+
     setDrivers((prevDrivers) => {
       if (prevDrivers.length < 2) return prevDrivers;
-      let targetIdx = selectedDriverIdx > 0 ? selectedDriverIdx - 1 : 0;
-      let attackerIdx = targetIdx + 1;
-
-      const carAhead = prevDrivers[targetIdx];
-      const carBehind = prevDrivers[attackerIdx];
-
       const updated = [...prevDrivers];
-      updated[targetIdx] = { ...carBehind, pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
-      updated[attackerIdx] = { ...carAhead, pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
+      updated[targetIdx] = { ...prevDrivers[attackerIdx], pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
+      updated[attackerIdx] = { ...prevDrivers[targetIdx], pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
 
-      // Recalculate gaps
       let accum = 0;
-      const finalDrivers = updated.map((d, i) => {
+      return updated.map((d, i) => {
         const isLead = i === 0;
         const step = +(0.55 + (i % 3) * 0.22).toFixed(3);
         if (!isLead) accum += step;
@@ -1436,38 +1429,29 @@ function TimingTower({
           interval: isLead ? "—" : (effectiveLap <= 1 ? "—" : `+${step.toFixed(3)}s`),
         };
       });
-
-      setSelectedDriverIdx(targetIdx);
-
-      if (onDriversUpdate) {
-        lastExternalSyncRef.current = finalDrivers;
-        onDriversUpdate(finalDrivers);
-      }
-
-      const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
-      setActiveOvertake({
-        winnerCode: carBehind.code,
-        winnerNum: carBehind.num,
-        winnerTeam: carBehind.team,
-        loserCode: carAhead.code,
-        loserNum: carAhead.num,
-        loserTeam: carAhead.team,
-        toPos: targetIdx + 1,
-        fromPos: attackerIdx + 1,
-        lap: currentLap,
-        reason: boostReason,
-        timestamp: Date.now(),
-      });
-      playF1OvertakeChime(isSoundMuted);
-
-      setOvertakeEvent(`OVERTAKE CONFIRMED: P${targetIdx + 1} #${carBehind.num} ${carBehind.code} passes #${carAhead.num} ${carAhead.code} ${boostReason}!`);
-
-      setTimeout(() => {
-        setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
-      }, 4000);
-
-      return finalDrivers;
     });
+
+    setSelectedDriverIdx(targetIdx);
+    const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
+    setActiveOvertake({
+      winnerCode: carBehind.code,
+      winnerNum: carBehind.num,
+      winnerTeam: carBehind.team,
+      loserCode: carAhead.code,
+      loserNum: carAhead.num,
+      loserTeam: carAhead.team,
+      toPos: targetIdx + 1,
+      fromPos: attackerIdx + 1,
+      lap: currentLap,
+      reason: boostReason,
+      timestamp: Date.now(),
+    });
+    playF1OvertakeChime(isSoundMuted);
+    setOvertakeEvent(`OVERTAKE CONFIRMED: P${targetIdx + 1} #${carBehind.num} ${carBehind.code} passes #${carAhead.num} ${carAhead.code} ${boostReason}!`);
+
+    setTimeout(() => {
+      setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
+    }, 4000);
   };
 
   // Active Aero toggle
@@ -2252,7 +2236,7 @@ function TimingTower({
       ) : (
         <>
           {/* ════════ FRONT / UPPER COCKPIT: 2-COLUMN LAYOUT (LEFT MAP + TIMING TOWER) ════════ */}
-          <div className="timing-workspace" style={{ display: "grid", gridTemplateColumns: "330px minmax(0, 1fr)", gap: "12px", alignItems: "start", width: "100%" }}>
+          <div className="timing-workspace" style={{ display: "grid", gridTemplateColumns: "302px minmax(0, 1fr)", gap: "12px", alignItems: "start", width: "100%" }}>
 
         {/* ──── COLUMN 1: EXPANDED LEFT PANEL (Circuit Radar, SVG Map, Sectors & Speed Trap) ──── */}
         <div className="timing-sidebar" style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: 0 }}>
@@ -3497,14 +3481,18 @@ function TimingTower({
             </div>
           )}
 
-          {/* Unified Table with Sticky Header */}
+          {/* Unified Accessible Table with Sticky Header */}
           <div
             className="timing-table-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="2026 Live Timing Tower"
             style={{
               maxHeight: tableDensity === "compact" ? "680px" : "635px",
               overflowY: "auto",
               overflowX: "auto",
               width: "100%",
+              maxInlineSize: "100%",
               borderRadius: "6px",
               border: "1px solid rgba(255,255,255,0.08)",
               background: "rgba(8, 10, 16, 0.6)",
@@ -3514,7 +3502,7 @@ function TimingTower({
             <table
               style={{
                 width: "100%",
-                minWidth: "900px",
+                minWidth: "740px",
                 borderCollapse: "separate",
                 borderSpacing: tableDensity === "compact" ? "0 1px" : "0 2px",
                 textAlign: "left",
@@ -3531,27 +3519,27 @@ function TimingTower({
               >
                 <tr
                   style={{
-                    fontSize: tableDensity === "compact" ? "0.62rem" : "0.65rem",
+                    fontSize: tableDensity === "compact" ? "0.60rem" : "0.62rem",
                     fontFamily: "'Orbitron', monospace",
                     color: "var(--text-secondary)",
-                    letterSpacing: "0.05em",
+                    letterSpacing: "0.04em",
                     textTransform: "uppercase",
                     borderBottom: "1px solid rgba(255,255,255,0.14)",
                   }}
                 >
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "38px", textAlign: "center" }}>POS</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "36px", textAlign: "center" }}>NO</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 6px" : "8px 8px", minWidth: "220px", textAlign: "left" }}>DRIVER</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "86px", minWidth: "86px", textAlign: "center" }}>TYRE / AGE</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>GAP</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>INT</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "65px", textAlign: "center", color: "#cc44ff" }}>S1</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "65px", textAlign: "center", color: "#00e676" }}>S2</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "65px", textAlign: "center", color: "#ffeb3b" }}>S3</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "88px", textAlign: "center", color: "var(--neon-cyan)" }}>2026 SOC</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "88px", minWidth: "88px", textAlign: "center" }}>ACTIVE AERO</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "80px", textAlign: "center" }}>BEST LAP</th>
-                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "8px 6px", width: "42px", textAlign: "center" }}>PITS</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "30px", textAlign: "center" }}>POS</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "28px", textAlign: "center" }}>NO</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 4px" : "6px 4px", minWidth: "140px", textAlign: "left" }}>DRIVER</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "58px", textAlign: "center" }}>TYRE / AGE</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "58px", textAlign: "right" }}>GAP</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "60px", textAlign: "right" }}>INT</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "48px", textAlign: "center", color: "#cc44ff" }}>S1</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "48px", textAlign: "center", color: "#00e676" }}>S2</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "48px", textAlign: "center", color: "#ffeb3b" }}>S3</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "64px", textAlign: "center", color: "var(--neon-cyan)" }}>2026 SOC</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "66px", textAlign: "center" }}>ACTIVE AERO</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "64px", textAlign: "center" }}>BEST</th>
+                  <th style={{ padding: tableDensity === "compact" ? "5px 2px" : "6px 3px", width: "32px", textAlign: "center" }}>PITS</th>
                 </tr>
               </thead>
               <tbody>
@@ -3706,7 +3694,7 @@ function TimingTower({
                       </td>
 
                       {/* Driver */}
-                      <td style={{ padding: isCompact ? "2.5px 6px" : "5px 8px", minWidth: "220px" }}>
+                      <td style={{ padding: isCompact ? "2.5px 4px" : "4px 6px", minWidth: "152px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: isCompact ? "6px" : "8px" }}>
                           <div
                             title={d.team}
@@ -3887,7 +3875,7 @@ function TimingTower({
                       </td>
 
                       {/* Tyre / Age & Remaining Life % */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "86px", minWidth: "86px", textAlign: "center", verticalAlign: "middle" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 4px", width: "64px", minWidth: "60px", textAlign: "center", verticalAlign: "middle" }}>
                         <div style={{ display: "inline-flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "2px" }}>
                           <TireWheel compound={d.tire} laps={d.tireAge} />
                           <span
@@ -3907,7 +3895,7 @@ function TimingTower({
                       </td>
 
                       {/* Gap to Leader */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 4px", width: "62px", minWidth: "58px", textAlign: "right" }}>
                         {d.pitState === "IN PIT" ? (
                           <span
                             style={{
@@ -3971,7 +3959,7 @@ function TimingTower({
                       </td>
 
                       {/* Interval to Ahead with Trend Pill */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "82px", minWidth: "82px", textAlign: "right" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 4px", width: "62px", minWidth: "58px", textAlign: "right" }}>
                         {d.pitState === "IN PIT" ? (
                           <span style={{ fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.62rem" : "0.68rem", color: "#ffaa00", fontWeight: "800" }}>
                             BOX BOX
@@ -3999,29 +3987,29 @@ function TimingTower({
                       </td>
 
                       {/* Sector 1 */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 3px", textAlign: "center" }}>
                         <SectorBadge time={effectiveLap <= 1 ? "—" : d.s1} type={effectiveLap <= 1 ? "empty" : d.s1Type} />
                       </td>
 
                       {/* Sector 2 */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 3px", textAlign: "center" }}>
                         <SectorBadge time={effectiveLap <= 1 ? "—" : d.s2} type={effectiveLap <= 1 ? "empty" : d.s2Type} />
                       </td>
 
                       {/* Sector 3 */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 3px", textAlign: "center" }}>
                         <SectorBadge time={effectiveLap <= 1 ? "—" : d.s3} type={effectiveLap <= 1 ? "empty" : d.s3Type} />
                       </td>
 
                       {/* 2026 MGU-K Hybrid SOC Battery % */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 3px", textAlign: "center" }}>
                         <div style={{ display: "inline-flex", justifyContent: "center", width: "100%" }}>
                           <HybridSocBar soc={d.soc} />
                         </div>
                       </td>
 
                       {/* Active Aero Status */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", width: "88px", minWidth: "88px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 3px", width: "68px", minWidth: "64px", textAlign: "center" }}>
                         {(() => {
                           const gapNum = parseFloat(String(d.interval).replace("+", "").replace("s", ""));
                           const isDrs = d.pos > 1 && !isNaN(gapNum) && gapNum > 0 && gapNum < 1.000;
@@ -4030,7 +4018,7 @@ function TimingTower({
                       </td>
 
                       {/* Best Lap */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 3px", textAlign: "center" }}>
                         {effectiveLap <= 1 ? (
                           <span
                             style={{
@@ -4073,7 +4061,7 @@ function TimingTower({
                       </td>
 
                       {/* Pit Stops */}
-                      <td style={{ padding: isCompact ? "2.5px 4px" : "5px 6px", textAlign: "center" }}>
+                      <td style={{ padding: isCompact ? "2px 3px" : "4px 4px", textAlign: "center" }}>
                         <span style={{ fontFamily: "'Orbitron', monospace", fontSize: isCompact ? "0.68rem" : "0.72rem", color: "var(--text-secondary)" }}>
                           {d.pits}P
                         </span>

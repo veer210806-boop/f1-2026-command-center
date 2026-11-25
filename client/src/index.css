@@ -1343,7 +1343,8 @@ textarea:focus-visible,
 .timing-table-scroll {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  max-height: calc(100vh - 210px);
+  container-type: inline-size;
+  max-block-size: calc(100vh - 210px);
 }
 
 .race-brief:not(.is-open) {

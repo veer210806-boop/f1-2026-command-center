@@ -661,7 +661,46 @@ function buildStartingGridGroup(points, frames, pitInfo, texturesToDispose) {
     group.add(slotGroup);
   }
 
-  return group;
+  return { group, lightPodMat };
+}
+
+// Create a miniature directional open-wheel F1 silhouette oriented forward along +X
+function createF1CarMesh(teamColor, sharedGeos) {
+  const carGroup = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: teamColor,
+    emissive: teamColor,
+    emissiveIntensity: 0.48,
+    roughness: 0.28,
+    metalness: 0.3,
+  });
+
+  const body = new THREE.Mesh(sharedGeos.chassisGeo, bodyMat);
+  body.position.set(-0.02, 0.055, 0);
+  body.castShadow = true;
+  carGroup.add(body);
+
+  const nose = new THREE.Mesh(sharedGeos.noseGeo, bodyMat);
+  nose.position.set(0.11, 0.045, 0);
+  carGroup.add(nose);
+
+  const frontWing = new THREE.Mesh(sharedGeos.frontWingGeo, sharedGeos.carbonMat);
+  frontWing.position.set(0.17, 0.025, 0);
+  carGroup.add(frontWing);
+
+  const rearWing = new THREE.Mesh(sharedGeos.rearWingGeo, sharedGeos.carbonMat);
+  rearWing.position.set(-0.15, 0.085, 0);
+  carGroup.add(rearWing);
+
+  const halo = new THREE.Mesh(sharedGeos.haloGeo, sharedGeos.haloMat);
+  halo.position.set(0.01, 0.095, 0);
+  carGroup.add(halo);
+
+  const rainLight = new THREE.Mesh(sharedGeos.rainLightGeo, sharedGeos.rainLightMat);
+  rainLight.position.set(-0.18, 0.052, 0);
+  carGroup.add(rainLight);
+
+  return { carNode: carGroup, bodyMat };
 }
 
 // Compute driver target progress along track & staggered lane when positioned on Lap-1 Grid vs Live Race
@@ -958,7 +997,7 @@ export default function CircuitSpatialRadar({
       scene.add(buildPitAreaGroup(trackPoints, pitInfo, isNightMode));
 
       // Lap-1 Checkered Starting Line + Staggered Grid Boxes + 5-Light Gantry
-      const lap1StartGroup = buildStartingGridGroup(trackPoints, frames, pitInfo, localTextures);
+      const { group: lap1StartGroup, lightPodMat } = buildStartingGridGroup(trackPoints, frames, pitInfo, localTextures);
       lap1StartGroup.visible = currentLapRef.current <= 1;
       scene.add(lap1StartGroup);
 
@@ -1072,27 +1111,31 @@ export default function CircuitSpatialRadar({
         texturesToDispose: localTextures,
       };
 
+      const sharedCarGeos = {
+        chassisGeo: new THREE.BoxGeometry(0.24, 0.08, 0.13),
+        noseGeo: new THREE.BoxGeometry(0.14, 0.055, 0.075),
+        frontWingGeo: new THREE.BoxGeometry(0.05, 0.025, 0.25),
+        rearWingGeo: new THREE.BoxGeometry(0.05, 0.065, 0.22),
+        haloGeo: new THREE.BoxGeometry(0.1, 0.04, 0.06),
+        rainLightGeo: new THREE.BoxGeometry(0.025, 0.03, 0.03),
+        carbonMat: new THREE.MeshStandardMaterial({ color: "#141821", roughness: 0.55, metalness: 0.35 }),
+        haloMat: new THREE.MeshStandardMaterial({ color: "#0b0e14", roughness: 0.4 }),
+        rainLightMat: new THREE.MeshStandardMaterial({ color: "#ff1801", emissive: "#ff1801", emissiveIntensity: 1.8 }),
+      };
+
       const populateDriversIfReady = (driverList) => {
         if (!driverList || driverList.length === 0 || sceneRefs.current.markers.length > 0) return;
-        const carNodeGeo = new THREE.SphereGeometry(0.19, 18, 14);
         const isGrid = currentLapRef.current <= 1 && !isAutoSimulatingRef.current && !isPlayingRef.current;
         sceneRefs.current.nextLapThreshold = 1.0;
 
         const builtMarkers = driverList.map((driver, index) => {
           const teamColor = TEAM_COLORS[driver.team] || "#ffffff";
-          const carMat = new THREE.MeshStandardMaterial({
-            color: teamColor,
-            emissive: teamColor,
-            emissiveIntensity: 0.6,
-            roughness: 0.32,
-            metalness: 0.25,
-          });
-          const carNode = new THREE.Mesh(carNodeGeo, carMat);
-          carNode.castShadow = true;
+          const { carNode, bodyMat } = createF1CarMesh(teamColor, sharedCarGeos);
           const slot = computeDriverTrackSlot(driver, index, pitInfo.startLinePct, isGrid);
 
           carNode.userData.driver = driver;
           carNode.userData.index = index;
+          carNode.userData.bodyMat = bodyMat;
           carNode.userData.totalDistance = slot.totalDistance;
           carNode.userData.progress = slot.progress;
           carNode.userData.lateral = slot.lateral;
@@ -1149,6 +1192,24 @@ export default function CircuitSpatialRadar({
         let hasSelectedMarker = false;
         const leaderMarker = activeMarkers.find((m) => (m.userData.driver?.pos || 99) === 1) || activeMarkers[0];
         const leaderTotal = leaderMarker ? (leaderMarker.userData.totalDistance || 0) : 0;
+
+        // Animate 5-Light FIA Gantry Pods: Red while paused on grid -> Green lights-out burst -> Off away from grid
+        if (lightPodMat && lapNum <= 1) {
+          if (running && leaderTotal < 0.16) {
+            lightPodMat.color.set("#00ff66");
+            lightPodMat.emissive.set("#00ff66");
+            lightPodMat.emissiveIntensity = 2.4;
+          } else if (running) {
+            lightPodMat.color.set("#1e293b");
+            lightPodMat.emissive.set("#000000");
+            lightPodMat.emissiveIntensity = 0;
+          } else {
+            lightPodMat.color.set("#ff1801");
+            lightPodMat.emissive.set("#ff1801");
+            lightPodMat.emissiveIntensity = 2.2;
+          }
+        }
+
         let minCarDist = Infinity;
 
         activeMarkers.forEach((marker, idx) => {
@@ -1191,28 +1252,31 @@ export default function CircuitSpatialRadar({
           const pitOffset = pitInfo.outwardNormal.clone().multiplyScalar(0.96);
           const pitShift = raceOffset.lerp(pitOffset, marker.userData.pitBlend);
 
-          // Rest car sphere squarely on the asphalt surface (y = 0.14 surface + 0.17 radius height = 0.31)
-          marker.position.set(pt.x + pitShift.x, 0.31, pt.z + pitShift.z);
+          // Ground miniature F1 chassis squarely on asphalt surface (y = 0.14 surface + 0.015 floor clearance)
+          marker.position.set(pt.x + pitShift.x, 0.155, pt.z + pitShift.z);
+          marker.rotation.y = Math.atan2(-tan.z, tan.x);
 
           const isSelected = driver.num === activeSel;
-          marker.scale.setScalar(isSelected ? 1.38 : 1.0);
-          marker.material.emissiveIntensity = isSelected ? 1.4 : 0.6;
+          marker.scale.setScalar(isSelected ? 1.24 : 1.0);
+          if (marker.userData.bodyMat) {
+            marker.userData.bodyMat.emissiveIntensity = isSelected ? 1.05 : 0.48;
+          }
 
           if (marker.userData.label) {
-            // Anchored pin height right above car dot on asphalt (zero disconnected air-floating pills)
+            // 4-tier anchored pin stagger directly above F1 car chassis
             const showOnGrid = isSelected || curPos === 1 || curPos === 3 || curPos === 6 || curPos === 10 || curPos === 15;
             marker.userData.label.visible = isStaticGrid ? showOnGrid : (isSelected || curPos <= 14);
             marker.userData.label.renderOrder = isSelected ? 200 : Math.max(10, 50 - curPos);
             marker.userData.label.position.y = isStaticGrid
-              ? (isSelected ? 0.42 : 0.2 + ((curPos % 3) * 0.16))
+              ? (isSelected ? 0.52 : 0.24 + ((curPos % 3) * 0.15))
               : isSelected
-                ? 0.45
-                : 0.18 + ((curPos - 1) % 3) * 0.16;
+                ? 0.56
+                : 0.2 + ((curPos - 1) % 4) * 0.13;
           }
 
           if (isSelected) {
             hasSelectedMarker = true;
-            selectedHalo.position.set(marker.position.x, 0.155, marker.position.z);
+            selectedHalo.position.set(marker.position.x, 0.15, marker.position.z);
             selectedHalo.rotation.z = elapsed * 2.4;
           }
         });

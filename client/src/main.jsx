@@ -100,7 +100,11 @@ class RootErrorBoundary extends Component {
   }
 }
 
-createRoot(document.getElementById('root')).render(
+const rootContainer = document.getElementById('root');
+if (!window.__gpCommandReactRoot) {
+  window.__gpCommandReactRoot = createRoot(rootContainer);
+}
+window.__gpCommandReactRoot.render(
   <StrictMode>
     <RootErrorBoundary>
       <App />
