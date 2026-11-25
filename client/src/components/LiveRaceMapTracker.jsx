@@ -1,8 +1,9 @@
 // ============================================================
 // LiveRaceMapTracker.jsx — Read-Only Broadcast 3D Live Race View
-// Pure informational race director overlay: live classification tower,
-// circuit conditions ("RACE VIEW"), hardware-accelerated 3D track view,
-// and live car/ERS/bio-fuel telemetry readout. Zero user actions inside view.
+// Pure informational race director overlay (full 22-car left timing matrix,
+// circuit conditions "RACE VIEW", car/ERS/bio-fuel telemetry readout, and
+// 3D track view) paired strictly with simulation Play/Pause + Speed controls.
+// Zero user involvement with individual cars or camera orbit/zoom.
 // ============================================================
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
@@ -28,7 +29,7 @@ const TEAM_COLORS = {
 
 const NIGHT_CIRCUITS = ["las_vegas", "singapore", "bahrain", "qatar", "abu_dhabi", "saudi_arabia"];
 const LUT_SIZE = 1400;
-const SIM_SPEED = 4;
+const SPEED_OPTIONS = [1, 2, 4, 8, 16];
 
 const FALLBACK_GRID = [
   { pos: 1,  code: "VER", num: 3,  team: "Red Bull Racing", name: "Max Verstappen" },
@@ -109,6 +110,8 @@ export default function LiveRaceMapTracker({
   maxLaps = 58,
   sessionFlag = "GREEN",
   isAutoSimulating = false,
+  onToggleAutoSim,
+  onChangeSimSpeed,
   userRole = "team",
   playerTeam = "Ferrari",
 }) {
@@ -119,7 +122,27 @@ export default function LiveRaceMapTracker({
   const activeTrackPath = OFFICIAL_CIRCUIT_PATHS[activeCircuitId] || OFFICIAL_CIRCUIT_PATHS.australia;
   const isNightMode = NIGHT_CIRCUITS.includes(activeCircuitId);
   const trackRotation = activeCircuitId === "australia" ? 298 : 0;
-  const isRunning = isAutoSimulating || currentLap > 1;
+
+  const [localPlaying, setLocalPlaying] = useState(() => isAutoSimulating);
+  const [simSpeed, setSimSpeed] = useState(4);
+  useEffect(() => {
+    setLocalPlaying(isAutoSimulating);
+  }, [isAutoSimulating]);
+
+  const isPlaying = onToggleAutoSim ? isAutoSimulating : localPlaying;
+
+  const handleTogglePlayPause = () => {
+    if (onToggleAutoSim) {
+      onToggleAutoSim();
+    } else {
+      setLocalPlaying((p) => !p);
+    }
+  };
+
+  const handleSelectSpeed = (spd) => {
+    setSimSpeed(spd);
+    onChangeSimSpeed?.(spd >= 5 ? 5 : spd >= 2 ? 2 : 1);
+  };
 
   const weather = useMemo(() => {
     if (selectedCircuit?.weather) return selectedCircuit.weather;
@@ -143,7 +166,7 @@ export default function LiveRaceMapTracker({
     setLeaderboardCars(updated);
   }, [drivers]);
 
-  // Automatically focus broadcast telemetry on player's lead car (or race leader when in Admin mode)
+  // Automatically highlight player's lead car (or race leader when in Admin mode)
   const highlightedCar = useMemo(() => {
     if (effectiveRole !== "admin") {
       const teamCar = leaderboardCars.find((d) => isDriverBelongingToTeam(d, effectiveTeam));
@@ -157,8 +180,10 @@ export default function LiveRaceMapTracker({
   // Refs for zero-rerender 10Hz telemetry readout
   const hiddenPathRef = useRef(null);
   const trackLutRef = useRef([]);
-  const isRunningRef = useRef(isRunning);
-  isRunningRef.current = isRunning;
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const simSpeedRef = useRef(simSpeed);
+  simSpeedRef.current = simSpeed;
   const highlightedNumRef = useRef(highlightedDriverNum);
   highlightedNumRef.current = highlightedDriverNum;
   const sessionFlagRef = useRef(sessionFlag);
@@ -176,7 +201,7 @@ export default function LiveRaceMapTracker({
   const shiftLedRefs = useRef([]);
   const rpmDisplayRef = useRef(null);
 
-  // Precompute 1400-node track curvature LUT for realistic speed/gear/RPM readout
+  // Precompute 1400-node track curvature LUT for live speed/gear/RPM telemetry readout
   useEffect(() => {
     if (!hiddenPathRef.current) return;
     try {
@@ -254,12 +279,13 @@ export default function LiveRaceMapTracker({
 
       const lut = trackLutRef.current;
       const cars = carSimStateRef.current;
-      const running = isRunningRef.current;
+      const running = isPlayingRef.current;
+      const mult = simSpeedRef.current || 1;
       const flag = sessionFlagRef.current;
 
       if (running && lut.length === LUT_SIZE && cars.length > 0) {
         const flagFactor = flag === "SC" ? 0.52 : flag === "VSC" ? 0.65 : flag === "RED" ? 0.05 : 1.0;
-        const baseSpeed = 0.000045 * SIM_SPEED * flagFactor;
+        const baseSpeed = 0.000045 * mult * flagFactor;
 
         for (let i = 0; i < cars.length; i++) {
           const car = cars[i];
@@ -379,8 +405,8 @@ export default function LiveRaceMapTracker({
       style={{
         position: "relative",
         width: "100%",
-        height: "clamp(465px, calc(100vh - 360px), 780px)",
-        minHeight: "465px",
+        height: "clamp(470px, calc(100vh - 355px), 780px)",
+        minHeight: "470px",
         maxHeight: "820px",
         background: isNightMode
           ? "radial-gradient(ellipse at 50% 40%, #0d1526 0%, #080c16 50%, #04060b 100%)"
@@ -449,14 +475,14 @@ export default function LiveRaceMapTracker({
           drivers={leaderboardCars}
           selectedDriverNum={highlightedDriverNum}
           isNightMode={isNightMode}
-          isPlaying={isRunning}
-          simSpeed={SIM_SPEED}
+          isPlaying={isPlaying}
+          simSpeed={simSpeed}
           currentLap={currentLap}
-          isAutoSimulating={isAutoSimulating}
+          isAutoSimulating={isPlaying}
         />
       </div>
 
-      {/* LEFT READ-ONLY CLASSIFICATION TOWER (All 22 cars compact, non-interactive) */}
+      {/* LEFT TIMING MATRIX (All 22 cars compact, non-interactive, full P1-P22 visibility) */}
       <div
         className="race-map-hud race-map-leaderboard"
         style={{
@@ -468,23 +494,23 @@ export default function LiveRaceMapTracker({
           border: "1px solid rgba(255, 255, 255, 0.14)",
           borderTop: "3px solid #e10600",
           borderRadius: "7px",
-          padding: "6px 8px",
+          padding: "5px 7px",
           boxShadow: "0 10px 35px rgba(0, 0, 0, 0.82)",
           zIndex: 30,
           display: "flex",
           flexDirection: "column",
-          gap: "4px",
+          gap: "3px",
           maxHeight: "calc(100% - 24px)",
           pointerEvents: "none",
           cursor: "default",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "4px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "3px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span style={{ background: "#e10600", color: "#ffffff", padding: "1px 6px", borderRadius: "3px", fontWeight: "900", fontSize: "0.66rem", fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.5px" }}>
+            <span style={{ background: "#e10600", color: "#ffffff", padding: "1px 6px", borderRadius: "3px", fontWeight: "900", fontSize: "0.62rem", fontFamily: "'Orbitron', sans-serif", letterSpacing: "0.5px" }}>
               LIVE
             </span>
-            <span style={{ fontSize: "0.68rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff" }}>
+            <span style={{ fontSize: "0.64rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ffffff" }}>
               L{currentLap}/{maxLaps}
             </span>
           </div>
@@ -495,7 +521,7 @@ export default function LiveRaceMapTracker({
               color: "var(--neon-cyan)",
               padding: "1px 5px",
               borderRadius: "3px",
-              fontSize: "0.52rem",
+              fontSize: "0.50rem",
               fontFamily: "'Orbitron', monospace",
               fontWeight: "700",
             }}
@@ -504,12 +530,12 @@ export default function LiveRaceMapTracker({
           </span>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.52rem", color: "rgba(255,255,255,0.45)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.08em" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.48rem", color: "rgba(255,255,255,0.45)", fontFamily: "'Orbitron', monospace", letterSpacing: "0.08em", flexShrink: 0, lineHeight: 1.1 }}>
           <span>POS · DRIVER</span>
           <span>S1 · S2 · S3</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5px", overflow: "clip" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px", overflowY: "auto", scrollbarGutter: "stable", overscrollBehavior: "contain" }}>
           {leaderboardCars.map((d) => {
             const isHighlighted = d.num === highlightedDriverNum;
             const teamConf = TEAM_COLORS[d.team] || { primary: "#888" };
@@ -520,37 +546,40 @@ export default function LiveRaceMapTracker({
                 key={d.num}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "16px 3px 34px 1fr",
+                  gridTemplateColumns: "16px 3px 32px 1fr",
                   alignItems: "center",
                   gap: "4px",
-                  padding: "1.5px 5px",
-                  borderRadius: "3px",
+                  height: "15.5px",
+                  padding: "0 4px",
+                  boxSizing: "border-box",
+                  borderRadius: "2.5px",
                   background: isHighlighted ? "#ffffff" : "rgba(255, 255, 255, 0.03)",
                   border: isHighlighted ? "1px solid #ffffff" : "1px solid transparent",
-                  boxShadow: isHighlighted ? "0 2px 8px rgba(255,255,255,0.35)" : "none",
+                  boxShadow: isHighlighted ? "0 1px 6px rgba(255,255,255,0.35)" : "none",
+                  lineHeight: 1,
                 }}
               >
-                <span style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: isHighlighted ? "#0a0e16" : "var(--text-dim)", fontWeight: "800" }}>
+                <span style={{ fontSize: "0.56rem", fontFamily: "'Orbitron', monospace", color: isHighlighted ? "#0a0e16" : "var(--text-dim)", fontWeight: "800" }}>
                   {d.pos}
                 </span>
 
-                <div style={{ width: "3px", height: "11px", borderRadius: "1px", background: teamConf.primary }} />
+                <div style={{ width: "3px", height: "10px", borderRadius: "1px", background: teamConf.primary }} />
 
-                <span style={{ fontSize: "0.66rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: isHighlighted ? "#0a0e16" : "#ffffff" }}>
+                <span style={{ fontSize: "0.61rem", fontFamily: "'Orbitron', monospace", fontWeight: "900", color: isHighlighted ? "#0a0e16" : "#ffffff" }}>
                   {d.code}
                 </span>
 
                 {isOutLap ? (
                   <div style={{ textAlign: "right" }}>
-                    <span style={{ fontSize: "0.50rem", fontFamily: "'Orbitron', monospace", padding: "1px 4px", borderRadius: "2px", background: isHighlighted ? "#0a0e16" : "rgba(255,255,255,0.12)", color: "#ffffff", fontWeight: "800" }}>
+                    <span style={{ fontSize: "0.48rem", fontFamily: "'Orbitron', monospace", padding: "1px 4px", borderRadius: "2px", background: isHighlighted ? "#0a0e16" : "rgba(255,255,255,0.12)", color: "#ffffff", fontWeight: "800" }}>
                       PIT / OUT
                     </span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", gap: "2px", justifyContent: "flex-end", alignItems: "center" }}>
-                    <div style={{ width: "12px", height: "4.5px", borderRadius: "1px", background: d.pos === 1 ? "#cc44ff" : d.pos <= 4 ? "#00e84d" : "#ffcc00" }} />
-                    <div style={{ width: "12px", height: "4.5px", borderRadius: "1px", background: d.pos <= 2 ? "#cc44ff" : d.pos <= 9 ? "#00e84d" : "#ffcc00" }} />
-                    <div style={{ width: "12px", height: "4.5px", borderRadius: "1px", background: d.pos <= 3 ? "#00e84d" : "#ffcc00" }} />
+                    <div style={{ width: "11px", height: "4px", borderRadius: "1px", background: d.pos === 1 ? "#cc44ff" : d.pos <= 4 ? "#00e84d" : "#ffcc00" }} />
+                    <div style={{ width: "11px", height: "4px", borderRadius: "1px", background: d.pos <= 2 ? "#cc44ff" : d.pos <= 9 ? "#00e84d" : "#ffcc00" }} />
+                    <div style={{ width: "11px", height: "4px", borderRadius: "1px", background: d.pos <= 3 ? "#00e84d" : "#ffcc00" }} />
                   </div>
                 )}
               </div>
@@ -618,14 +647,14 @@ export default function LiveRaceMapTracker({
                 fontSize: "0.52rem",
                 fontFamily: "'Orbitron', monospace",
                 fontWeight: "800",
-                color: isRunning ? "#00e676" : "#fbbf24",
-                background: isRunning ? "rgba(0, 230, 118, 0.14)" : "rgba(251, 191, 36, 0.14)",
-                border: `1px solid ${isRunning ? "rgba(0, 230, 118, 0.35)" : "rgba(251, 191, 36, 0.35)"}`,
+                color: isPlaying ? "#00e676" : "#fbbf24",
+                background: isPlaying ? "rgba(0, 230, 118, 0.14)" : "rgba(251, 191, 36, 0.14)",
+                border: `1px solid ${isPlaying ? "rgba(0, 230, 118, 0.35)" : "rgba(251, 191, 36, 0.35)"}`,
                 padding: "1px 5px",
                 borderRadius: "3px",
               }}
             >
-              {isRunning ? `LIVE ${SIM_SPEED}X` : "GRID VIEW"}
+              {isPlaying ? `LIVE ${simSpeed}X` : currentLap <= 1 ? "GRID PAUSED" : "PAUSED"}
             </span>
           </div>
 
@@ -860,6 +889,84 @@ export default function LiveRaceMapTracker({
               <span style={{ color: activeCarFuelPred.ecuModeColor, fontWeight: "800" }}>{activeCarFuelPred.ecuModeLabel}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* BOTTOM CENTER: SIMULATION PLAY / PAUSE + SPEED CONTROLS ONLY */}
+      <div
+        className="race-map-controller"
+        style={{
+          position: "absolute",
+          bottom: "12px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 35,
+          background: "rgba(10, 14, 22, 0.94)",
+          border: "1px solid rgba(0, 210, 190, 0.34)",
+          borderRadius: "24px",
+          padding: "4px 12px",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          boxShadow: "0 8px 28px rgba(0, 0, 0, 0.85)",
+          pointerEvents: "auto",
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleTogglePlayPause}
+          aria-label={isPlaying ? "Pause race simulation" : "Play race simulation"}
+          title={isPlaying ? "Pause Simulation" : "Play Simulation"}
+          style={{
+            background: isPlaying ? "rgba(0, 210, 190, 0.16)" : "rgba(255, 204, 0, 0.22)",
+            border: isPlaying ? "1px solid rgba(0, 210, 190, 0.5)" : "1px solid rgba(255, 204, 0, 0.65)",
+            color: isPlaying ? "#00d2be" : "#ffcc00",
+            cursor: "pointer",
+            borderRadius: "16px",
+            height: "24px",
+            padding: "0 10px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "5px",
+            fontFamily: "'Orbitron', monospace",
+            fontWeight: "900",
+            fontSize: "0.62rem",
+            letterSpacing: "0.06em",
+          }}
+        >
+          <span>{isPlaying ? "⏸" : "▶"}</span>
+          <span>{isPlaying ? "PAUSE" : "PLAY"}</span>
+        </button>
+
+        <div style={{ height: "14px", width: "1px", background: "rgba(255,255,255,0.18)" }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: "3px" }} role="group" aria-label="Simulation speed multiplier">
+          {SPEED_OPTIONS.map((spd) => {
+            const isActive = simSpeed === spd;
+            return (
+              <button
+                key={spd}
+                type="button"
+                onClick={() => handleSelectSpeed(spd)}
+                title={`Set simulation speed to ${spd}x`}
+                aria-pressed={isActive}
+                style={{
+                  background: isActive ? "rgba(0, 210, 190, 0.24)" : "transparent",
+                  border: isActive ? "1px solid rgba(0, 210, 190, 0.65)" : "1px solid transparent",
+                  color: isActive ? "#00d2be" : "rgba(255,255,255,0.68)",
+                  cursor: "pointer",
+                  borderRadius: "10px",
+                  padding: "2px 7px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontWeight: isActive ? "900" : "700",
+                  fontSize: "0.62rem",
+                }}
+              >
+                {spd}x
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

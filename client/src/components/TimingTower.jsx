@@ -660,6 +660,8 @@ function TimingTower({
   controlledLap,
   controlledFlag,
   isAutoSimulating = false,
+  onToggleAutoSim,
+  onChangeSimSpeed,
   triggerOvertakeSignal,
   userRole = "team",
   playerTeam = "Ferrari",
@@ -2209,6 +2211,8 @@ function TimingTower({
           maxLaps={maxLaps}
           sessionFlag={sessionFlag}
           isAutoSimulating={isAutoSimulating}
+          onToggleAutoSim={onToggleAutoSim}
+          onChangeSimSpeed={onChangeSimSpeed}
           userRole={userRole}
           playerTeam={playerTeam}
         />

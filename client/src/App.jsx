@@ -1315,6 +1315,8 @@ export default function App() {
               controlledLap={currentLapNum}
               controlledFlag={activeFlag}
               isAutoSimulating={isAutoSimulating}
+              onToggleAutoSim={() => setIsAutoSimulating((s) => !s)}
+              onChangeSimSpeed={(spd) => setSimSpeed(spd)}
               triggerOvertakeSignal={overtakeTriggerCount}
               userRole={userRole}
               playerTeam={selectedTeam}

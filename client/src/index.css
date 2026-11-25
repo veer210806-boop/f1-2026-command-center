@@ -1940,11 +1940,14 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
-.race-map-hud {
+.race-map-hud,
+.race-map-controller {
   backdrop-filter: blur(16px) saturate(1.12);
   -webkit-backdrop-filter: blur(16px) saturate(1.12);
-  pointer-events: none;
 }
+
+.race-map-hud { pointer-events: none; }
+.race-map-controller { pointer-events: auto; }
 
 .race-map-leaderboard {
   border-top-color: var(--neon-red) !important;
