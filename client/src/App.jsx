@@ -249,9 +249,7 @@ export default function App() {
     return SEASON_2026_ROUNDS.find((c) => c.circuit_id === targetId) || SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT;
   });
 
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem("gp_strategy_role") || "team";
-  });
+  const [userRole, setUserRole] = useState("team");
   const [selectedTeam, setSelectedTeam] = useState(() => {
     return localStorage.getItem("gp_strategy_team") || "Ferrari";
   });
@@ -1370,13 +1368,12 @@ export default function App() {
       {/* ── 2026 Strategy Simulation Gateway Landing Modal ── */}
       <StrategyGameGatewayModal
         isOpen={isGatewayOpen}
-        initialRole={userRole}
         initialTeam={selectedTeam}
         onLaunchGame={({ role, teamId }) => {
-          setUserRole(role);
+          setUserRole(role || "team");
           if (teamId) handleSelectTeam(teamId);
           setIsGatewayOpen(false);
-          localStorage.setItem("gp_strategy_role", role);
+          localStorage.setItem("gp_strategy_role", "team");
           setActiveTab("timing");
         }}
       />
@@ -1386,7 +1383,6 @@ export default function App() {
         isOpen={isRestartMenuOpen}
         onClose={() => setIsRestartMenuOpen(false)}
         currentCircuitName={selectedCircuit?.grand_prix_name || "Australian Grand Prix"}
-        currentRole={userRole}
         currentTeamId={selectedTeam}
         onRestartRace={handleDirectRestart}
         onChangeTeam={(teamId) => {
@@ -1395,11 +1391,6 @@ export default function App() {
           } else {
             setIsGatewayOpen(true);
           }
-        }}
-        onToggleRole={() => {
-          const nextRole = userRole === "team" ? "fia" : "team";
-          setUserRole(nextRole);
-          localStorage.setItem("gp_strategy_role", nextRole);
         }}
         onOpenGateway={() => {
           setIsGatewayOpen(true);

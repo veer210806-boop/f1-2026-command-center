@@ -1,7 +1,7 @@
 // ============================================================
 // RestartMenuModal.jsx — Dynamic Race Reset & Constructor Switcher
 // Allows restarting the current race from Lap 1, changing team,
-// toggling between Player and FIA Admin, or returning to the Gateway.
+// or returning to the starting Gateway.
 // ============================================================
 import React, { useState } from "react";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
@@ -11,11 +11,9 @@ export default function RestartMenuModal({
   isOpen = false,
   onClose,
   currentCircuitName = "Australian Grand Prix",
-  currentRole = "team", // "team" | "fia"
   currentTeamId = "Ferrari",
   onRestartRace,
   onChangeTeam,
-  onToggleRole,
   onOpenGateway,
 }) {
   const [isSelectingTeam, setIsSelectingTeam] = useState(false);
@@ -98,18 +96,16 @@ export default function RestartMenuModal({
         >
           <div>
             <span style={{ color: "var(--text-dim)" }}>OPERATIONAL MODE: </span>
-            <span style={{ color: currentRole === "team" ? "var(--neon-cyan)" : "var(--neon-green)", fontWeight: "800" }}>
-              {currentRole === "team" ? "TEAM STRATEGIST" : "FIA ADMINISTRATOR"}
+            <span style={{ color: "var(--neon-cyan)", fontWeight: "800" }}>
+              TEAM STRATEGIST
             </span>
           </div>
-          {currentRole === "team" && (
-            <div>
-              <span style={{ color: "var(--text-dim)" }}>TEAM: </span>
-              <span style={{ color: currentTeamObj.color, fontWeight: "900" }}>
-                {currentTeamObj.name.toUpperCase()}
-              </span>
-            </div>
-          )}
+          <div>
+            <span style={{ color: "var(--text-dim)" }}>TEAM: </span>
+            <span style={{ color: currentTeamObj.color, fontWeight: "900" }}>
+              {currentTeamObj.name.toUpperCase()}
+            </span>
+          </div>
         </div>
 
         {/* Action Body: Either Options or Inline 11-Team Switcher */}
@@ -253,44 +249,7 @@ export default function RestartMenuModal({
               <span style={{ fontSize: "0.85rem", color: "var(--neon-cyan)", fontWeight: "900" }}>→</span>
             </button>
 
-            {/* Option 3: Switch Role (FIA Admin vs Team Principal) */}
-            <button
-              onClick={() => {
-                if (onToggleRole) onToggleRole();
-                handleClose();
-              }}
-              style={{
-                background: "linear-gradient(135deg, rgba(0,204,68,0.18) 0%, rgba(20,24,36,0.9) 100%)",
-                border: "1px solid rgba(0,204,68,0.4)",
-                borderRadius: "10px",
-                padding: "12px 16px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                transition: "all 0.15s ease",
-                textAlign: "left",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--neon-green)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,204,68,0.3)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(0,204,68,0.4)"; e.currentTarget.style.boxShadow = "none"; }}
-            >
-              <div>
-                <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.85rem", fontWeight: "900", color: "#ffffff", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span>🛡️</span>
-                  <span>
-                    {currentRole === "team" ? "SWITCH TO FIA RACE CONTROL (ALL TEAMS)" : "SWITCH TO TEAM STRATEGIST VIEW"}
-                  </span>
-                </div>
-                <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600", marginTop: "2px" }}>
-                  {currentRole === "team"
-                    ? "Gain full steward clearance to evaluate any car and control session flags."
-                    : "Switch to single-constructor pit wall view focused on your 2 drivers."}
-                </div>
-              </div>
-              <span style={{ fontSize: "0.85rem", color: "var(--neon-green)", fontWeight: "900" }}>→</span>
-            </button>
-
-            {/* Option 4: Full Reset to Gateway */}
+            {/* Option 3: Full Reset to Gateway */}
             <button
               onClick={() => {
                 if (onOpenGateway) onOpenGateway();
