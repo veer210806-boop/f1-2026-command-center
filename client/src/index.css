@@ -2025,6 +2025,8 @@ dialog.gp-native-dialog {
   color: var(--text-primary);
   max-width: 96vw;
   max-height: 92vh;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
 dialog.gp-native-dialog:modal {
@@ -2133,14 +2135,49 @@ dialog.gp-native-dialog::backdrop {
   }
 }
 
+/* Gateway starting modal layout */
+.gateway-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.gateway-team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.gateway-hero-pod {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 920px) {
+  .gateway-team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 600px) {
   .timing-plan-grid,
-  .telemetry-hud-grid {
+  .telemetry-hud-grid,
+  .gateway-hero-pod {
     grid-template-columns: 1fr;
   }
   .timing-stint-metrics-grid,
   .timing-radio-macro-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .gateway-team-grid {
+    grid-template-columns: 1fr;
   }
 }
 
