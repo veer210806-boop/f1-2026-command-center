@@ -4,13 +4,12 @@
 // ATR Testing Regulations, Virtual Showroom Stage & AI Knapsack Optimizer
 // ============================================================
 import { useState, useEffect, useMemo, memo } from "react";
-import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from "recharts";
 import { getTeamLogo, TEAM_CARS } from "../data/f1MediaAssets2026";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "";
 const BUDGET_CAP = 135_000_000;
 
 // ── Official 2026 Constructors' Championship Grid Financial Profiles ─────────
@@ -281,14 +280,16 @@ function BudgetManager() {
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [viewMode, setViewMode] = useState("DASHBOARD"); // "DASHBOARD" | "STANDINGS"
 
-  // Sync with Backend if available
+  // Sync with Backend if configured via VITE_API_URL
   useEffect(() => {
-    axios.get(`${API}/budget`)
+    if (!API) return;
+    fetch(`${API}/budget`)
+      .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
-        if (res.data?.data && res.data.data.length > 0) {
+        if (res?.data && res.data.length > 0) {
           setTeams((prevTeams) =>
             prevTeams.map((baseTeam) => {
-              const backendMatch = res.data.data.find(
+              const backendMatch = res.data.find(
                 (bt) => bt.team.toLowerCase().trim() === baseTeam.team.toLowerCase().trim()
               );
               return backendMatch ? { ...baseTeam, ...backendMatch } : baseTeam;

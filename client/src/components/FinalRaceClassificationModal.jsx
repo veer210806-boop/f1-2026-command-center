@@ -7,8 +7,8 @@ import React from "react";
 import { getDriverFaceUrl, DRIVER_PHOTOS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
-
-const F1_POINTS_TABLE = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+import { F1_POINTS_TABLE, findFastestLapDriverCode } from "../utils/scoreboardEngine";
+import { useModalDialog } from "../utils/useModalDialog";
 
 export default function FinalRaceClassificationModal({
   isOpen = false,
@@ -21,26 +21,15 @@ export default function FinalRaceClassificationModal({
   nextCircuit,
   onGoToScoreboard,
 }) {
-  if (!isOpen) return null;
+  const dialogRef = useModalDialog(isOpen, onClose);
 
   const totalLaps = selectedCircuit?.laps || 58;
   const circuitName = selectedCircuit?.grand_prix_name || "Australian Grand Prix";
   const trackName = selectedCircuit?.circuit_name || "Albert Park Circuit";
   const roundNum = selectedCircuit?.round || 1;
 
-  // Identify Fastest Lap driver across the grid
-  let fastestLapDriverCode = null;
-  let bestLapSec = 999999;
-  drivers.forEach((d) => {
-    if (d.bestLap && d.bestLap.includes(":")) {
-      const parts = d.bestLap.split(":");
-      const sec = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-      if (sec < bestLapSec) {
-        bestLapSec = sec;
-        fastestLapDriverCode = d.code;
-      }
-    }
-  });
+  // Identify Fastest Lap driver across the grid using shared scoreboardEngine helper
+  const fastestLapDriverCode = findFastestLapDriverCode(drivers);
 
   // Calculate points for each driver
   const classifiedDrivers = drivers.map((d, idx) => {
@@ -145,33 +134,27 @@ export default function FinalRaceClassificationModal({
     : "ROUND 02 · CHINESE GRAND PRIX";
 
   return (
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget && onClose) onClose();
-      }}
+    <dialog
+      ref={dialogRef}
+      className="gp-native-dialog"
+      closedby="any"
+      aria-labelledby="classification-modal-title"
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        background: "rgba(3, 6, 12, 0.92)",
-        backdropFilter: "blur(18px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px",
+        width: "100%",
+        maxWidth: "1050px",
+        maxHeight: "92vh",
+        overflowY: "auto",
+        background: "linear-gradient(180deg, rgba(16, 22, 36, 0.98) 0%, rgba(9, 12, 20, 0.99) 100%)",
+        border: "1.5px solid rgba(255, 215, 0, 0.4)",
+        borderRadius: "16px",
+        padding: 0,
+        boxShadow: "0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 215, 0, 0.25)",
       }}
     >
+      {isOpen && (
       <div
         style={{
-          width: "100%",
-          maxWidth: "1050px",
-          maxHeight: "92vh",
-          overflowY: "auto",
-          background: "linear-gradient(180deg, rgba(16, 22, 36, 0.98) 0%, rgba(9, 12, 20, 0.99) 100%)",
-          border: "1.5px solid rgba(255, 215, 0, 0.4)",
-          borderRadius: "16px",
           padding: "24px 28px",
-          boxShadow: "0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 215, 0, 0.25)",
           display: "flex",
           flexDirection: "column",
           gap: "20px",
@@ -204,7 +187,7 @@ export default function FinalRaceClassificationModal({
               </span>
             </div>
 
-            <h1 style={{ fontFamily: "'Orbitron', monospace", fontSize: "1.55rem", fontWeight: "900", color: "#ffffff", margin: 0, letterSpacing: "0.04em" }}>
+            <h1 id="classification-modal-title" style={{ fontFamily: "'Orbitron', monospace", fontSize: "1.55rem", fontWeight: "900", color: "#ffffff", margin: 0, letterSpacing: "0.04em" }}>
               {circuitName.toUpperCase()}
             </h1>
 
@@ -719,7 +702,8 @@ export default function FinalRaceClassificationModal({
           )}
         </div>
       </div>
-    </div>
+      )}
+    </dialog>
   );
 }
 

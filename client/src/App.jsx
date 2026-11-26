@@ -1,8 +1,7 @@
 // ============================================================
 // App.jsx — GP-Command F1 2026 Season Command Center
 // ============================================================
-import React, { Component, lazy, Suspense, useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import React, { Component, lazy, Suspense, useEffect, useState, useCallback } from "react";
 import "./index.css";
 import RaceBrief from "./components/RaceBrief";
 import { SEASON_2026_ROUNDS } from "./data/calendar2026";
@@ -32,7 +31,6 @@ import { f1Audio } from "./utils/f1AudioEngine";
 import { getTeamLogo } from "./data/f1MediaAssets2026";
 import { fetchCircuitLiveWeather } from "./utils/openF1Service";
 import {
-  getTeamDriversHelper,
   createInitialTeamPlans,
   resetGridEntries,
 } from "./utils/raceSimEngine";
@@ -116,7 +114,7 @@ class ErrorBoundary extends Component {
   }
 }
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "";
 
 const DEFAULT_CIRCUIT = {
   round: 1,
@@ -251,6 +249,12 @@ export default function App() {
     return SEASON_2026_ROUNDS.find((c) => c.circuit_id === targetId) || SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT;
   });
 
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem("gp_strategy_role") || "team";
+  });
+  const [selectedTeam, setSelectedTeam] = useState(() => {
+    return localStorage.getItem("gp_strategy_team") || "Ferrari";
+  });
   const totalLaps = selectedCircuit?.laps || 58;
   const [currentLapNum, setCurrentLapNum] = useState(1);
   const [isAutoSimulating, setIsAutoSimulating] = useState(false);
@@ -273,85 +277,8 @@ export default function App() {
     }
   }, [activeTab, selectedCircuit?.circuit_id]);
 
-  useEffect(() => {
-    const onHashChange = () => {
-      const parsed = parseHashLocation();
-      if (parsed.tab) setActiveTab(parsed.tab);
-      if (parsed.circuit) {
-        const match = circuits.find((c) => c.circuit_id === parsed.circuit);
-        if (match) setSelectedCircuit(match);
-      }
-    };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, [circuits]);
-
-  // Fetch live GPS meteorological telemetry for active circuit via Open-Meteo (silent fallback to season defaults)
-  useEffect(() => {
-    const cid = selectedCircuit?.circuit_id;
-    if (!cid) return;
-    let cancelled = false;
-    fetchCircuitLiveWeather(cid)
-      .then((liveWeather) => {
-        if (!cancelled && liveWeather) {
-          setSelectedCircuit((prev) =>
-            prev && prev.circuit_id === cid ? { ...prev, weather: { ...prev.weather, ...liveWeather } } : prev
-          );
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [selectedCircuit?.circuit_id]);
-
-  useEffect(() => {
-    axios.get(`${API}/circuits`)
-      .then((res) => {
-        if (res.data?.data && res.data.data.length > 0) {
-          setCircuits(res.data.data);
-          setSelectedCircuit((prev) => prev || res.data.data[0]);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const handleShortcut = (event) => {
-      if (!event.altKey || event.ctrlKey || event.metaKey) return;
-      const index = Number(event.key) - 1;
-      if (index >= 0 && index < TABS.length) {
-        event.preventDefault();
-        setActiveTab(TABS[index].id);
-      }
-    };
-
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, []);
-
-  const handleCircuitChange = useCallback((circuitId) => {
-    const found = circuits.find((c) => c.circuit_id === circuitId);
-    if (found) {
-      setSelectedCircuit(found);
-      setCurrentLapNum(1);
-      setIsAutoSimulating(false);
-      setActiveFlag("GREEN");
-    }
-  }, [circuits]);
-
   const handleGoToCalendar = useCallback(() => {
     setActiveTab("calendar");
-  }, []);
-
-  const handleSelectCircuit = useCallback((c) => {
-    setSelectedCircuit(c);
-    setCurrentLapNum(1);
-    setIsAutoSimulating(false);
-    setActiveFlag("GREEN");
-  }, []);
-
-  const handleLaunchPitWall = useCallback((c) => {
-    setSelectedCircuit(c);
-    setActiveTab("timing");
   }, []);
 
   const handleSetLap = useCallback((targetLap) => {
@@ -365,13 +292,6 @@ export default function App() {
     }
   }, [totalLaps, activeFlag]);
 
-  // ── Strategy Game Mode: Role Clearance & Team Principal Selection ──
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem("gp_strategy_role") || "team";
-  });
-  const [selectedTeam, setSelectedTeam] = useState(() => {
-    return localStorage.getItem("gp_strategy_team") || "Ferrari";
-  });
   const [isGatewayOpen, setIsGatewayOpen] = useState(() => {
     return !localStorage.getItem("gp_strategy_role");
   });
@@ -394,12 +314,19 @@ export default function App() {
     }
   }, [activePitEvent]);
 
-  // ── Dynamic Initial Strategy Directives for the active team ──
+  // ── Dynamic Initial Strategy Directives & Driver Plans for the active team ──
   const [plannedStrategies, setPlannedStrategies] = useState(() => {
     const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
     const initGrid = buildTimingTowerGridForCircuit("australia", 1);
     const { strategies } = createInitialTeamPlans(initTeam, initGrid, 58);
     return strategies;
+  });
+
+  const [driverPlans, setDriverPlans] = useState(() => {
+    const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
+    const initGrid = buildTimingTowerGridForCircuit("australia", 1);
+    const { plans } = createInitialTeamPlans(initTeam, initGrid, 58);
+    return plans;
   });
 
   // ── 2026 World Championship Scoreboard & Season Points State ──
@@ -434,15 +361,12 @@ export default function App() {
     setIsAutoSimulating(false);
     setActiveFlag("GREEN");
     setRestartSignal((s) => s + 1);
+    const freshGrid = resetGridEntries(buildTimingTowerGridForCircuit(round1.circuit_id || "australia", 1));
+    setDrivers(freshGrid);
+    const { plans, strategies } = createInitialTeamPlans(selectedTeam, freshGrid, round1.laps || 58);
+    setDriverPlans(plans);
+    setPlannedStrategies(strategies);
   }, [selectedTeam, circuits]);
-
-  // ── Global Driver Plans State (Dynamic for the active team) ──
-  const [driverPlans, setDriverPlans] = useState(() => {
-    const initTeam = localStorage.getItem("gp_strategy_team") || "Ferrari";
-    const initGrid = buildTimingTowerGridForCircuit("australia", 1);
-    const { plans } = createInitialTeamPlans(initTeam, initGrid, 58);
-    return plans;
-  });
 
   // Dedicated handler to switch team and instantly update plans for that team
   const handleSelectTeam = useCallback((newTeamId) => {
@@ -472,19 +396,109 @@ export default function App() {
     setOvertakeEvent(`🏎️ NEW CAMPAIGN BEGUN WITH ${newTeamId.toUpperCase()}! Season standings reset to 0 pts for Round 1: Australian GP.`);
   }, [circuits]);
 
-  // Synchronize plans whenever selectedTeam or drivers change
-  useEffect(() => {
-    const activeTeamDrivers = getTeamDriversHelper(selectedTeam, drivers);
-    const activeDriverCodes = activeTeamDrivers.map((d) => d.code);
-    const currentPlannedCodes = Object.keys(driverPlans);
+  // Reset grid & team pit plans whenever active circuit switches cleanly
+  const resetGridAndPlansForCircuit = useCallback((nextCircuitObj) => {
+    if (!nextCircuitObj) return;
+    const freshGrid = buildTimingTowerGridForCircuit(nextCircuitObj.circuit_id || "australia", 1);
+    setDrivers(freshGrid);
+    const { plans, strategies } = createInitialTeamPlans(selectedTeam, freshGrid, nextCircuitObj.laps || 58);
+    setDriverPlans(plans);
+    setPlannedStrategies(strategies);
+  }, [selectedTeam]);
 
-    const isMatching = activeDriverCodes.every((code) => currentPlannedCodes.includes(code));
-    if (!isMatching && activeTeamDrivers.length > 0) {
-      const { plans, strategies } = createInitialTeamPlans(selectedTeam, drivers, totalLaps);
-      setDriverPlans(plans);
-      setPlannedStrategies(strategies);
+  useEffect(() => {
+    const onHashChange = () => {
+      const parsed = parseHashLocation();
+      if (parsed.tab) setActiveTab(parsed.tab);
+      if (parsed.circuit) {
+        const match = circuits.find((c) => c.circuit_id === parsed.circuit);
+        if (match) {
+          setSelectedCircuit(match);
+          setCurrentLapNum(1);
+          setIsAutoSimulating(false);
+          setActiveFlag("GREEN");
+          resetGridAndPlansForCircuit(match);
+        }
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [circuits, resetGridAndPlansForCircuit]);
+
+  // Fetch live GPS meteorological telemetry for active circuit via Open-Meteo (silent fallback to season defaults)
+  useEffect(() => {
+    const cid = selectedCircuit?.circuit_id;
+    if (!cid) return;
+    let cancelled = false;
+    fetchCircuitLiveWeather(cid)
+      .then((liveWeather) => {
+        if (!cancelled && liveWeather) {
+          setSelectedCircuit((prev) =>
+            prev && prev.circuit_id === cid ? { ...prev, weather: { ...prev.weather, ...liveWeather } } : prev
+          );
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedCircuit?.circuit_id]);
+
+  useEffect(() => {
+    if (!API) return;
+    fetch(`${API}/circuits`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (res?.data && res.data.length > 0) {
+          setCircuits(res.data);
+          setSelectedCircuit((prev) => prev || res.data[0]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const handleShortcut = (event) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey) return;
+      const index = Number(event.key) - 1;
+      if (index >= 0 && index < TABS.length) {
+        event.preventDefault();
+        setActiveTab(TABS[index].id);
+      }
+    };
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
+  const handleCircuitChange = useCallback((circuitId) => {
+    const found = circuits.find((c) => c.circuit_id === circuitId);
+    if (found) {
+      setSelectedCircuit(found);
+      setCurrentLapNum(1);
+      setIsAutoSimulating(false);
+      setActiveFlag("GREEN");
+      resetGridAndPlansForCircuit(found);
     }
-  }, [selectedTeam, drivers, driverPlans, totalLaps]);
+  }, [circuits, resetGridAndPlansForCircuit]);
+
+  const handleSelectCircuit = useCallback((c) => {
+    if (!c) return;
+    setSelectedCircuit(c);
+    setCurrentLapNum(1);
+    setIsAutoSimulating(false);
+    setActiveFlag("GREEN");
+    resetGridAndPlansForCircuit(c);
+  }, [resetGridAndPlansForCircuit]);
+
+  const handleLaunchPitWall = useCallback((c) => {
+    if (c && c.circuit_id !== selectedCircuit?.circuit_id) {
+      setSelectedCircuit(c);
+      setCurrentLapNum(1);
+      setIsAutoSimulating(false);
+      setActiveFlag("GREEN");
+      resetGridAndPlansForCircuit(c);
+    }
+    setActiveTab("timing");
+  }, [selectedCircuit?.circuit_id, resetGridAndPlansForCircuit]);
 
   // Direct Restart Race Simulation Handler
   const handleDirectRestart = useCallback(() => {
@@ -515,7 +529,7 @@ export default function App() {
     f1Audio.playRadioBeep();
 
     // Ensure the current race result is locked in before advancing
-    handleRecordRaceResult(circuitRef.current, driversRef.current);
+    handleRecordRaceResult(selectedCircuit, drivers);
 
     const currentIdx = circuits.findIndex((c) => c.circuit_id === selectedCircuit?.circuit_id);
     const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % circuits.length : 0;
@@ -539,7 +553,7 @@ export default function App() {
     setActiveTab("timing");
     setActivePitEvent(null);
     setOvertakeEvent(`🏁 WELCOME TO ROUND ${nextC.round}: ${nextC.grand_prix_name.toUpperCase()}! Grid, tire allocations & initial team strategies loaded.`);
-  }, [circuits, selectedCircuit, selectedTeam, handleRecordRaceResult]);
+  }, [circuits, selectedCircuit, selectedTeam, drivers, handleRecordRaceResult]);
 
   const handleCompletePlanStop = useCallback((driverCode, stopNum) => {
     setDriverPlans((prev) => {
@@ -626,14 +640,7 @@ export default function App() {
     });
   }, []);
 
-  // Synchronize starting grid when circuit changes (ONLY on Lap 1 before race start)
-  useEffect(() => {
-    if (currentLapNum <= 1) {
-      setDrivers(buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
-    }
-  }, [selectedCircuit?.circuit_id, currentLapNum]);
-
-  // Execute Pit Stop shared handler (updates drivers & timing matrix immediately)
+  // Advance to Next Grand Prix handler already reads selectedCircuit & drivers in deps below
   const handleExecutePitStop = useCallback(({ driverCode, targetCompound, initialWear = 4, initialAge = 0 }) => {
     const baseLoss = activeFlag === "SC" ? 13.5 : activeFlag === "VSC" ? 15.2 : (selectedCircuit?.pit_loss_green || 22.5);
     const pitCrewVariance = +((Math.random() * 0.4) - 0.2).toFixed(2);
@@ -783,33 +790,25 @@ export default function App() {
     }
   }, [drivers, selectedTeam, currentLapNum]);
 
-  // Live references to prevent stale closures during simulation and race completion
-  const driversRef = useRef(drivers);
-  const circuitRef = useRef(selectedCircuit);
-  const currentLapRef = useRef(currentLapNum);
-
-  useEffect(() => {
-    driversRef.current = drivers;
-    circuitRef.current = selectedCircuit;
-    currentLapRef.current = currentLapNum;
-  }, [drivers, selectedCircuit, currentLapNum]);
-
   const [is3DMapActive, setIs3DMapActive] = useState(false);
   const isMapDrivingLaps = activeTab === "timing" && is3DMapActive;
 
   const advanceRaceOneLap = useCallback(() => {
-    const next = currentLapRef.current + 1;
-    if (next >= totalLaps) {
-      setCurrentLapNum(totalLaps);
-      setIsAutoSimulating(false);
-      setIsRaceFinishedModalOpen(true);
-      setActiveFlag("CHEQUERED");
-      f1Audio.playRadioBeep();
-      handleRecordRaceResult(circuitRef.current, driversRef.current);
-    } else {
-      setCurrentLapNum(next);
-    }
-  }, [totalLaps, handleRecordRaceResult]);
+    setCurrentLapNum((prevLap) => {
+      const next = prevLap + 1;
+      if (next >= totalLaps) {
+        queueMicrotask(() => {
+          setIsAutoSimulating(false);
+          setIsRaceFinishedModalOpen(true);
+          setActiveFlag("CHEQUERED");
+          f1Audio.playRadioBeep();
+          handleRecordRaceResult(selectedCircuit, drivers);
+        });
+        return totalLaps;
+      }
+      return next;
+    });
+  }, [totalLaps, handleRecordRaceResult, selectedCircuit, drivers]);
 
   // Master race simulation clock: runs fast lap-by-lap in Timing Matrix, defers to 3D full-lap completion on 3D Map
   useEffect(() => {

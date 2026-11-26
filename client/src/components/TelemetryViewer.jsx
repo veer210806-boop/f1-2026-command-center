@@ -541,14 +541,7 @@ function TelemetryViewer({ selectedCircuit }) {
       </div>
 
       {/* ── 2. Hero Head-to-Head Battle Showcase (Crystal Clear at a Glance) ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.1fr 1.6fr 1.1fr",
-          gap: "14px",
-          alignItems: "stretch",
-        }}
-      >
+      <div className="telemetry-hero-grid">
         {/* Driver 1 Card */}
         <div
           style={{
@@ -1002,10 +995,8 @@ function TelemetryViewer({ selectedCircuit }) {
         {/* Real-Time Cockpit Instruments HUD (4 Clean Pods) */}
         {currentPoint && (
           <div
+            className="telemetry-hud-grid"
             style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 1.3fr 1.2fr 0.9fr",
-              gap: "12px",
               background: "rgba(0,0,0,0.4)",
               padding: "14px 16px",
               borderRadius: "10px",
@@ -1475,7 +1466,7 @@ function TelemetryViewer({ selectedCircuit }) {
         </div>
 
         {/* Radio Messages Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div className="telemetry-radio-grid">
           {filteredRadio.slice(0, 4).map((rad) => {
             const isD1 = rad.driver_code === selectedPair.d1;
             const cardAccent = isD1 ? d1Color : d2Color;

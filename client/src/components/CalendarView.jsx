@@ -4,11 +4,11 @@
 // Featuring verified official race card background photography
 // ============================================================
 import { useState, useMemo, useEffect, useCallback, memo } from "react";
-import { createPortal } from "react-dom";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { SEASON_2026_ROUNDS } from "../data/calendar2026";
 import { getRaceCardImage, isSprintWeekend, getWeekendSchedule } from "../data/f1CalendarMedia2026";
 import { getDriverFaceUrl } from "../data/f1MediaAssets2026";
+import { useModalDialog } from "../utils/useModalDialog";
 import TeamRadioModal from "./TeamRadioModal";
 
 const NIGHT_CIRCUITS = ["bahrain", "saudi_arabia", "singapore", "las_vegas", "qatar", "abu_dhabi"];
@@ -258,6 +258,10 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
   const [activeModalRace, setActiveModalRace] = useState(null);
   const [modalTab, setModalTab] = useState("schedule"); // "schedule" | "telemetry" | "winners"
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
+  const raceDossierDialogRef = useModalDialog(
+    Boolean(activeModalRace),
+    () => setActiveModalRace(null)
+  );
 
   // Currently inspected race in split dossier view
   const inspectedRace = useMemo(() => {
@@ -311,13 +315,11 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
     });
   }, []);
 
-  // Keyboard navigation for modal
+  // Keyboard navigation for modal (Escape handled natively by <dialog>)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!activeModalRace) return;
-      if (e.key === "Escape") {
-        setActiveModalRace(null);
-      } else if (e.key === "ArrowLeft") {
+      if (e.key === "ArrowLeft") {
         navigateModal(-1);
       } else if (e.key === "ArrowRight") {
         navigateModal(1);
@@ -326,17 +328,6 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeModalRace, navigateModal]);
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (activeModalRace) {
-      const prevOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prevOverflow;
-      };
-    }
-  }, [activeModalRace]);
 
   const isGloballyActive = (race) => {
     if (!selectedCircuit || !race) return false;
@@ -1539,46 +1530,34 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
       {/* ══════════════════════════════════════════════════════════════
           INTERACTIVE 2-COLUMN RACE DOSSIER MODAL (Next-Gen F1 Cockpit Guide)
           ══════════════════════════════════════════════════════════════ */}
-      {activeModalRace && typeof document !== "undefined" && createPortal((() => {
-        const modalSchedule = getWeekendSchedule(activeModalRace);
-        const modalWinners = getCircuitHistoricWinners(activeModalRace.circuit_id);
-        const isActiveCircuit = isGloballyActive(activeModalRace);
+      <dialog
+        ref={raceDossierDialogRef}
+        className="gp-native-dialog"
+        closedby="any"
+        aria-labelledby="calendar-race-modal-title"
+        style={{
+          maxWidth: "1220px",
+          width: "95vw",
+          maxHeight: "min(90vh, 840px)",
+          overflowY: "auto",
+          background: "linear-gradient(155deg, #111420 0%, #090b12 100%)",
+          borderTop: "2px solid var(--neon-red)",
+          borderRight: "1px solid rgba(255,255,255,0.12)",
+          borderBottom: "1px solid rgba(255,255,255,0.12)",
+          borderLeft: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: "14px",
+          boxShadow: "0 25px 80px rgba(0,0,0,0.95), 0 0 35px rgba(232,0,45,0.2)",
+          padding: 0,
+        }}
+      >
+        {activeModalRace && (() => {
+          const modalSchedule = getWeekendSchedule(activeModalRace);
+          const modalWinners = getCircuitHistoricWinners(activeModalRace.circuit_id);
+          const isActiveCircuit = isGloballyActive(activeModalRace);
 
-        return (
-          <div
-            onClick={() => setActiveModalRace(null)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: "100vw",
-              height: "100vh",
-              background: "rgba(2, 4, 8, 0.88)",
-              backdropFilter: "blur(14px)",
-              WebkitBackdropFilter: "blur(14px)",
-              zIndex: 99999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "16px",
-              boxSizing: "border-box",
-              overflow: "hidden",
-            }}
-          >
+          return (
             <div
-              onClick={(e) => e.stopPropagation()}
               style={{
-                maxWidth: "1220px",
-                width: "95vw",
-                maxHeight: "min(90vh, 840px)",
-                overflowY: "auto",
-                background: "linear-gradient(155deg, #111420 0%, #090b12 100%)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderTop: "2px solid var(--neon-red)",
-                borderRadius: "14px",
-                boxShadow: "0 25px 80px rgba(0,0,0,0.95), 0 0 35px rgba(232,0,45,0.2)",
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
@@ -1619,6 +1598,7 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span
+                        id="calendar-race-modal-title"
                         style={{
                           fontFamily: "'Orbitron', monospace",
                           fontSize: "1.25rem",
@@ -2464,9 +2444,9 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })(), document.body)}
+          );
+        })()}
+      </dialog>
 
       {/* ── BoxBox Team Radio Modal ── */}
       <TeamRadioModal

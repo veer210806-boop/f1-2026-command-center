@@ -22,7 +22,9 @@ class RootErrorBoundary extends Component {
       localStorage.removeItem('gp_strategy_role');
       localStorage.removeItem('gp_strategy_team');
       localStorage.removeItem('gp_scoreboard_season_v1');
-    } catch (_) {}
+    } catch {
+      // Ignore storage access failures during emergency reset
+    }
     window.location.reload();
   };
 

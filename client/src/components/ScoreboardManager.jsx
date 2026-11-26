@@ -10,6 +10,7 @@ import { getDriverFaceUrl, getTeamLogo, DRIVER_PHOTOS } from "../data/f1MediaAss
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
 import { downloadCsvFile } from "../utils/exportUtils";
+import { useModalDialog } from "../utils/useModalDialog";
 
 export default function ScoreboardManager({
   seasonData,
@@ -22,6 +23,11 @@ export default function ScoreboardManager({
   const [activeView, setActiveView] = useState("drivers"); // "drivers" | "constructors" | "matrix"
   const [matrixFilter, setMatrixFilter] = useState("drivers"); // "drivers" | "constructors"
   const [exportStatus, setExportStatus] = useState("");
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const resetDialogRef = useModalDialog(
+    isResetConfirmOpen,
+    () => setIsResetConfirmOpen(false)
+  );
 
   // Compute standings live from seasonData
   const standings = useMemo(() => {
@@ -220,12 +226,8 @@ export default function ScoreboardManager({
 
           {onResetSeasonCampaign && (
             <button
-              onClick={() => {
-                if (window.confirm("Are you sure you want to reset all season points and scoreboard back to 0 for Race 1?")) {
-                  f1Audio.playRadioBeep();
-                  onResetSeasonCampaign();
-                }
-              }}
+              type="button"
+              onClick={() => setIsResetConfirmOpen(true)}
               style={{
                 background: "rgba(255, 255, 255, 0.05)",
                 border: "1px solid rgba(255, 255, 255, 0.15)",
@@ -247,6 +249,78 @@ export default function ScoreboardManager({
               <span>RESET SEASON</span>
             </button>
           )}
+
+          <dialog
+            ref={resetDialogRef}
+            className="gp-native-dialog"
+            closedby="any"
+            aria-labelledby="reset-season-title"
+            style={{
+              maxWidth: "440px",
+              width: "92vw",
+              background: "linear-gradient(180deg, rgba(16, 20, 32, 0.99) 0%, rgba(9, 11, 18, 0.99) 100%)",
+              border: "1px solid rgba(255, 77, 77, 0.4)",
+              borderRadius: "12px",
+              padding: "20px 22px",
+              color: "#ffffff",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.85)",
+            }}
+          >
+            {isResetConfirmOpen && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <h1
+                  id="reset-season-title"
+                  style={{ margin: 0, fontFamily: "'Orbitron', monospace", fontSize: "0.95rem", fontWeight: "900", color: "#ffffff" }}
+                >
+                  RESET CHAMPIONSHIP STANDINGS?
+                </h1>
+                <p style={{ margin: 0, fontSize: "0.84rem", color: "var(--text-secondary)", lineHeight: 1.45 }}>
+                  This clears all recorded Grand Prix points and resets the World Championship scoreboard back to 0 for Round 1.
+                </p>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={() => setIsResetConfirmOpen(false)}
+                    style={{
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      color: "#ffffff",
+                      padding: "7px 14px",
+                      borderRadius: "6px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.72rem",
+                      fontWeight: "800",
+                      cursor: "pointer",
+                    }}
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      f1Audio.playRadioBeep();
+                      setIsResetConfirmOpen(false);
+                      onResetSeasonCampaign();
+                    }}
+                    style={{
+                      background: "linear-gradient(135deg, var(--neon-red) 0%, #b3001e 100%)",
+                      border: "none",
+                      color: "#ffffff",
+                      padding: "7px 14px",
+                      borderRadius: "6px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.72rem",
+                      fontWeight: "900",
+                      cursor: "pointer",
+                    }}
+                  >
+                    RESET TO 0 PTS
+                  </button>
+                </div>
+              </div>
+            )}
+          </dialog>
 
           {onGoToPitWall && (
             <button

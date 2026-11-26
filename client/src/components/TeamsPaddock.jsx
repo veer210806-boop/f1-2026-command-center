@@ -3,14 +3,13 @@
 // Pixel-accurate recreation matching formula1.com/en/teams & formula1.com/en/drivers
 // ============================================================
 import { useState, useEffect, useMemo, memo } from "react";
-import { createPortal } from "react-dom";
-import axios from "axios";
 import { DRIVER_PHOTOS, TEAM_CARS, TEAM_LOGOS, getDriverFaceUrl, getTeamLogo } from "../data/f1MediaAssets2026";
 import { DRIVER_PROFILES_2026, getDriverProfile, GRID_DRIVER_CODES } from "../data/driverProfiles2026";
 import { TEAM_PERFORMANCE_2026 } from "../data/teamPerformance2026";
+import { useModalDialog } from "../utils/useModalDialog";
 import TeamRadioModal from "./TeamRadioModal";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "";
 
 const STATIC_TEAMS = [
   {
@@ -401,6 +400,10 @@ function TeamsPaddock() {
   const [activeDriverModal, setActiveDriverModal] = useState(null); // driver object or code
   const [modalTab, setModalTab] = useState("stats"); // 'stats' | 'bio' | 'ratings' | 'milestones'
   const [radioModalDriver, setRadioModalDriver] = useState(null); // driver code or 'ALL'
+  const driverDialogRef = useModalDialog(
+    Boolean(activeDriverModal),
+    () => setActiveDriverModal(null)
+  );
 
   // Filter & Sorting state for Teams
   const [teamSearch, setTeamSearch] = useState("");
@@ -428,9 +431,7 @@ function TeamsPaddock() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!activeDriverModal) return;
-      if (e.key === "Escape") {
-        setActiveDriverModal(null);
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         const delta = e.key === "ArrowLeft" ? -1 : 1;
         const currentCode = typeof activeDriverModal === "string" ? activeDriverModal : activeDriverModal.code;
         const currentIndex = GRID_DRIVER_CODES.indexOf(currentCode);
@@ -446,12 +447,14 @@ function TeamsPaddock() {
   }, [activeDriverModal, drivers]);
 
   useEffect(() => {
-    // Fetch live teams and drivers from backend
-    axios.get(`${API}/budget`)
+    if (!API) return;
+    // Fetch live teams and drivers when optional backend API is configured
+    fetch(`${API}/budget`)
+      .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
-        if (res.data?.data && res.data.data.length > 0) {
+        if (res?.data && res.data.length > 0) {
           // Sort teams by official championship rank order by default
-          const sorted = [...res.data.data].sort(
+          const sorted = [...res.data].sort(
             (a, b) => (CONSTRUCTOR_RANK_ORDER[a.team] || 99) - (CONSTRUCTOR_RANK_ORDER[b.team] || 99)
           );
           setTeams(sorted);
@@ -459,10 +462,11 @@ function TeamsPaddock() {
       })
       .catch(() => {});
 
-    axios.get(`${API}/drivers`)
+    fetch(`${API}/drivers`)
+      .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
-        if (res.data?.data && res.data.data.length > 0) {
-          const sorted = [...res.data.data].sort((a, b) => (b.points || 0) - (a.points || 0));
+        if (res?.data && res.data.length > 0) {
+          const sorted = [...res.data].sort((a, b) => (b.points || 0) - (a.points || 0));
           setDrivers(sorted);
         }
       })
@@ -3256,6 +3260,23 @@ function TeamsPaddock() {
       {/* ══════════════════════════════════════════════════════════════
           OFFICIAL 2026 DRIVER DOSSIER MODAL (formula1.com/en/drivers)
           ══════════════════════════════════════════════════════════════ */}
+      <dialog
+        ref={driverDialogRef}
+        className="gp-native-dialog"
+        closedby="any"
+        aria-labelledby="driver-dossier-modal-title"
+        style={{
+          maxWidth: "1120px",
+          width: "96vw",
+          maxHeight: "92vh",
+          background: "linear-gradient(180deg, rgba(14,16,26,0.98) 0%, rgba(8,10,18,0.99) 100%)",
+          border: "1px solid rgba(255,255,255,0.16)",
+          borderRadius: "20px",
+          padding: 0,
+          overflow: "hidden",
+          boxShadow: "0 30px 80px rgba(0,0,0,0.9)",
+        }}
+      >
       {activeDriverModal && (() => {
         const code = typeof activeDriverModal === "string" ? activeDriverModal : activeDriverModal.code;
         const profile = getDriverProfile(code) || {};
@@ -3289,51 +3310,13 @@ function TeamsPaddock() {
         const tireRating = profile.telemetry_ratings?.tire_mgmt || driverObj.tire_mgmt_rating || 85;
         const qualiRating = profile.telemetry_ratings?.qualifying || 91;
 
-        return createPortal(
-          <div
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setActiveDriverModal(null);
-            }}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              width: "100vw",
-              height: "100vh",
-              zIndex: 100000,
-              background: `radial-gradient(ellipse at 30% 40%, ${color}12 0%, transparent 50%), radial-gradient(ellipse at center, rgba(4,7,14,0.82) 0%, rgba(2,3,8,0.96) 100%)`,
-              backdropFilter: "blur(18px) saturate(1.2)",
-              WebkitBackdropFilter: "blur(18px) saturate(1.2)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "16px",
-              boxSizing: "border-box",
-              overflow: "hidden",
-              animation: "fadeIn 0.3s ease-out",
-            }}
-          >
-            {/* Ambient team-colored bokeh orbs */}
-            <div style={{ position: "fixed", top: "10%", left: "5%", width: "300px", height: "300px", background: `radial-gradient(circle, ${color}15, transparent 70%)`, borderRadius: "50%", pointerEvents: "none", filter: "blur(60px)", animation: "pulseGlow 4s ease infinite" }} />
-            <div style={{ position: "fixed", bottom: "10%", right: "8%", width: "200px", height: "200px", background: `radial-gradient(circle, ${color}10, transparent 70%)`, borderRadius: "50%", pointerEvents: "none", filter: "blur(40px)", animation: "pulseGlow 5s ease infinite 1s" }} />
-
+        return (
             <div
               style={{
-                maxWidth: "1120px",
-                width: "100%",
-                maxHeight: "92vh",
-                background: "linear-gradient(180deg, rgba(14,16,26,0.98) 0%, rgba(8,10,18,0.99) 100%)",
-                border: `1px solid ${color}44`,
-                borderTop: "none",
-                borderRadius: "20px",
-                boxShadow: `0 30px 80px rgba(0,0,0,0.9), 0 0 60px ${color}15, inset 0 1px 0 rgba(255,255,255,0.06)`,
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
                 overflow: "hidden",
-                animation: "modalSlideIn 0.35s ease-out",
               }}
             >
               {/* Animated gradient top border */}
@@ -3385,9 +3368,9 @@ function TeamsPaddock() {
                     </div>
                   )}
                   <div>
-                    <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.95rem", fontWeight: "900", color: color, letterSpacing: "0.06em" }}>
+                    <h1 id="driver-dossier-modal-title" style={{ margin: 0, fontFamily: "'Orbitron', monospace", fontSize: "0.95rem", fontWeight: "900", color: color, letterSpacing: "0.06em" }}>
                       {teamObj?.full_name || driverObj.team}
-                    </div>
+                    </h1>
                     <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                       FORMULA 1® 2026 OFFICIAL DRIVER DOSSIER
                     </div>
@@ -3453,6 +3436,8 @@ function TeamsPaddock() {
 
                 {/* Right: Close (✕) Button */}
                 <button
+                  type="button"
+                  aria-label="Close driver dossier"
                   onClick={() => setActiveDriverModal(null)}
                   style={{
                     width: "36px",
@@ -3485,9 +3470,8 @@ function TeamsPaddock() {
 
               {/* Modal Body: Two-Column Responsive Layout */}
               <div
+                className="paddock-driver-modal-grid"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "350px 1fr",
                   gap: "28px",
                   padding: "28px",
                   overflowY: "auto",
@@ -4138,10 +4122,9 @@ function TeamsPaddock() {
                 </a>
               </div>
             </div>
-          </div>,
-          document.body
         );
       })()}
+      </dialog>
 
       {/* ── BoxBox & FormulaDream Team Radio Interceptor Modal ── */}
       <TeamRadioModal

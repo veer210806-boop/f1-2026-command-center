@@ -49,7 +49,9 @@ class F1AudioEngine {
 
       osc.start(now);
       osc.stop(now + 0.12);
-    } catch (_) {}
+    } catch {
+      // Ignore Web Audio failures when autoplay/device output is restricted
+    }
   }
 
   // ── 350kW MGU-K Electric Motor Whine + Turbo Rev ──────────
@@ -82,7 +84,9 @@ class F1AudioEngine {
 
       osc.start(now);
       osc.stop(now + 0.7);
-    } catch (_) {}
+    } catch {
+      // Ignore Web Audio failures when autoplay/device output is restricted
+    }
   }
 
   // ── Overtake Broadcast Chime ─────────────────────────────
@@ -109,7 +113,9 @@ class F1AudioEngine {
         osc.start(now + idx * 0.06);
         osc.stop(now + idx * 0.06 + 0.25);
       });
-    } catch (_) {}
+    } catch {
+      // Ignore Web Audio failures when autoplay/device output is restricted
+    }
   }
 
   // ── Safety Car / Virtual Safety Car Siren Alert ───────────
@@ -136,7 +142,9 @@ class F1AudioEngine {
 
       osc.start(now);
       osc.stop(now + 0.45);
-    } catch (_) {}
+    } catch {
+      // Ignore Web Audio failures when autoplay/device output is restricted
+    }
   }
 
   // ── Synthesize Team Radio Transmission with Voice ─────────
@@ -158,7 +166,9 @@ class F1AudioEngine {
           };
 
           window.speechSynthesis.speak(utterance);
-        } catch (_) {}
+        } catch {
+          // Ignore speech synthesis errors on restricted platforms
+        }
       }, 120);
     }
   }

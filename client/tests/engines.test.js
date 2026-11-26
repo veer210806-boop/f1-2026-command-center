@@ -25,7 +25,13 @@ import {
   computeChampionshipStandings,
 } from "../src/utils/scoreboardEngine.js";
 import { escapeCsvCell, buildCsvContent } from "../src/utils/exportUtils.js";
-import { mapOpenF1Compound, CIRCUIT_GEO_COORDS } from "../src/utils/openF1Service.js";
+import {
+  mapOpenF1Compound,
+  CIRCUIT_GEO_COORDS,
+  fetchCircuitLiveWeather,
+  fetchOpenF1RaceReplay,
+  fetchOpenF1TeammateTelemetry,
+} from "../src/utils/openF1Service.js";
 import { isDriverBelongingToTeam, TEAM_COLORS_MAP } from "../src/data/constructors2026.js";
 
 test("raceSimEngine: formats & parses F1 lap times cleanly", () => {
@@ -189,4 +195,119 @@ test("raceSimEngine: createInitialTeamPlans & resetGridEntries scale by circuit"
   assert.equal(reset[0].s1, "—");
   assert.equal(reset[1].pos, 2);
   assert.equal(reset[1].arrow, "none");
+});
+
+test("openF1Service: fetchCircuitLiveWeather maps live GPS weather & rejects cleanly on HTTP error", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      assert.ok(url.includes("open-meteo.com"));
+      return {
+        ok: true,
+        json: async () => ({
+          current: {
+            temperature_2m: 19.4,
+            relative_humidity_2m: 82,
+            precipitation: 0.8,
+            wind_speed_10m: 24.3,
+          },
+        }),
+      };
+    };
+
+    const spaWeather = await fetchCircuitLiveWeather("belgium");
+    assert.equal(spaWeather.air_temp, 19);
+    assert.equal(spaWeather.track_temp, 23);
+    assert.equal(spaWeather.humidity, "82%");
+    assert.equal(spaWeather.wind, "24 km/h");
+    assert.equal(spaWeather.rain_chance, 85);
+    assert.equal(spaWeather.icon, "🌧️");
+
+    globalThis.fetch = async () => ({ ok: false, status: 503 });
+    await assert.rejects(() => fetchCircuitLiveWeather("monza"), /Open-Meteo HTTP 503/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("openF1Service: fetchOpenF1RaceReplay & fetchOpenF1TeammateTelemetry parse mocked FIA feeds", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      if (url.includes("/sessions?")) {
+        return {
+          ok: true,
+          json: async () => [
+            { session_key: 9472, circuit_short_name: "Melbourne", location: "Melbourne", country_name: "Australia" },
+          ],
+        };
+      }
+      if (url.includes("/drivers?")) {
+        return {
+          ok: true,
+          json: async () => [
+            { driver_number: 1, name_acronym: "VER", full_name: "Max Verstappen", team_name: "Red Bull Racing", country_code: "NED" },
+            { driver_number: 16, name_acronym: "LEC", full_name: "Charles Leclerc", team_name: "Ferrari", country_code: "MON" },
+          ],
+        };
+      }
+      if (url.includes("/laps?") && !url.includes("driver_number=")) {
+        return {
+          ok: true,
+          json: async () => [
+            { driver_number: 1, lap_number: 1, lap_duration: 84.5, duration_sector_1: 27.5, duration_sector_2: 33.0, duration_sector_3: 24.0 },
+            { driver_number: 16, lap_number: 1, lap_duration: 84.0, duration_sector_1: 27.2, duration_sector_2: 32.8, duration_sector_3: 24.0 },
+          ],
+        };
+      }
+      if (url.includes("/stints?")) {
+        return {
+          ok: true,
+          json: async () => [
+            { driver_number: 1, lap_start: 1, compound: "MEDIUM", tyre_age_at_start: 0 },
+            { driver_number: 16, lap_start: 1, compound: "SOFT", tyre_age_at_start: 0 },
+          ],
+        };
+      }
+      if (url.includes("/weather?")) {
+        return {
+          ok: true,
+          json: async () => [{ air_temperature: 22.4, track_temperature: 34.2, humidity: 48, wind_speed: 3.0, rainfall: 0 }],
+        };
+      }
+      if (url.includes("/laps?") && url.includes("driver_number=")) {
+        return {
+          ok: true,
+          json: async () => [{ lap_number: 5, lap_duration: 81.2, date_start: "2024-03-24T04:10:00.000Z" }],
+        };
+      }
+      if (url.includes("/car_data?")) {
+        const isD1 = url.includes("driver_number=1&");
+        return {
+          ok: true,
+          json: async () => [
+            { speed: isD1 ? 312 : 304, throttle: 100, brake: 0, n_gear: 8, drs: 12 },
+            { speed: isD1 ? 145 : 140, throttle: 40, brake: 1, n_gear: 3, drs: 0 },
+          ],
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+
+    const replay = await fetchOpenF1RaceReplay("australia", 2024);
+    assert.equal(replay.maxLaps, 1);
+    assert.equal(replay.framesByLap[1][0].code, "LEC");
+    assert.equal(replay.framesByLap[1][0].gap, "LEADER");
+    assert.equal(replay.framesByLap[1][0].tire, "S");
+    assert.equal(replay.framesByLap[1][1].code, "VER");
+    assert.equal(replay.framesByLap[1][1].interval, "+0.500s");
+
+    const tel = await fetchOpenF1TeammateTelemetry("australia", "VER", "LEC", 2024);
+    assert.equal(tel.d1Code, "VER");
+    assert.equal(tel.d2Code, "LEC");
+    assert.equal(tel.points.length, 40);
+    assert.ok(tel.points[0].d1_speed > tel.points[0].d2_speed);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

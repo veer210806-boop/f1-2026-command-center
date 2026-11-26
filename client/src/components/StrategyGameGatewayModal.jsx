@@ -6,17 +6,17 @@
 import React, { useState } from "react";
 import { TEAM_CARS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
+import { useModalDialog } from "../utils/useModalDialog";
 
 export default function StrategyGameGatewayModal({
   isOpen = true,
   onLaunchGame,
+  onClose,
   initialRole = "team",
   initialTeam = "Ferrari",
 }) {
   const [selectedRole, setSelectedRole] = useState(initialRole || "team");
   const [selectedTeamId, setSelectedTeamId] = useState(initialTeam || "Ferrari");
-
-  if (!isOpen) return null;
 
   const activeTeam = CONSTRUCTORS_2026.find((t) => t.id === selectedTeamId) || CONSTRUCTORS_2026[0];
 
@@ -30,36 +30,36 @@ export default function StrategyGameGatewayModal({
     }
   };
 
+  const dialogRef = useModalDialog(
+    isOpen,
+    () => (onClose ? onClose() : handleLaunch())
+  );
+
   return (
-    <div
+    <dialog
+      ref={dialogRef}
+      className="gp-native-dialog"
+      closedby="any"
+      aria-labelledby="gateway-modal-title"
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
-        background: "radial-gradient(ellipse at 50% 20%, rgba(18, 24, 38, 0.98) 0%, rgba(6, 8, 14, 0.99) 100%)",
-        backdropFilter: "blur(18px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
+        width: "100%",
+        maxWidth: "1180px",
+        maxHeight: "92vh",
+        background: "linear-gradient(180deg, rgba(16, 21, 33, 0.96) 0%, rgba(9, 12, 19, 0.99) 100%)",
+        border: "1px solid rgba(255, 255, 255, 0.12)",
+        borderRadius: "18px",
+        padding: 0,
+        boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(232, 0, 45, 0.15)",
         overflowY: "auto",
-        boxSizing: "border-box",
       }}
     >
+      {isOpen && (
       <div
         style={{
-          width: "100%",
-          maxWidth: "1180px",
-          maxHeight: "92vh",
           display: "flex",
           flexDirection: "column",
           gap: "18px",
-          background: "linear-gradient(180deg, rgba(16, 21, 33, 0.96) 0%, rgba(9, 12, 19, 0.99) 100%)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
-          borderRadius: "18px",
           padding: "24px 28px",
-          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(232, 0, 45, 0.15)",
-          overflowY: "auto",
           position: "relative",
         }}
       >
@@ -88,6 +88,7 @@ export default function StrategyGameGatewayModal({
           </div>
 
           <h1
+            id="gateway-modal-title"
             style={{
               fontFamily: "'Orbitron', sans-serif",
               fontSize: "2.1rem",
@@ -117,9 +118,11 @@ export default function StrategyGameGatewayModal({
         </div>
 
         {/* ── STEP 1: OPERATIONAL CLEARANCE SELECTOR (2 BIG CARDS) ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div className="gateway-role-grid">
           {/* Card 1: Team Strategy Principal (Player Game Mode) */}
-          <div
+          <button
+            type="button"
+            aria-pressed={selectedRole === "team"}
             onClick={() => setSelectedRole("team")}
             style={{
               background: selectedRole === "team"
@@ -132,6 +135,8 @@ export default function StrategyGameGatewayModal({
               transition: "all 0.2s ease",
               boxShadow: selectedRole === "team" ? "0 8px 24px rgba(232,0,45,0.3)" : "none",
               position: "relative",
+              textAlign: "left",
+              width: "100%",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -166,10 +171,12 @@ export default function StrategyGameGatewayModal({
               <li>Out-maneuver the <strong>10 AI rival teams</strong> as they run independent pit strategies.</li>
               <li><strong>Win or lose</strong> based on your tactical timing, tire management, and undercut calls.</li>
             </ul>
-          </div>
+          </button>
 
           {/* Card 2: FIA Race Administrator (God Mode) */}
-          <div
+          <button
+            type="button"
+            aria-pressed={selectedRole === "fia"}
             onClick={() => setSelectedRole("fia")}
             style={{
               background: selectedRole === "fia"
@@ -182,6 +189,8 @@ export default function StrategyGameGatewayModal({
               transition: "all 0.2s ease",
               boxShadow: selectedRole === "fia" ? "0 8px 24px rgba(0,210,190,0.3)" : "none",
               position: "relative",
+              textAlign: "left",
+              width: "100%",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -216,7 +225,7 @@ export default function StrategyGameGatewayModal({
               <li>Universal telemetry inspection across all 11 teams simultaneously.</li>
               <li>Direct simulated overtakes, race incidents, and dynamic weather overrides.</li>
             </ul>
-          </div>
+          </button>
         </div>
 
         {/* ── STEP 2: CONSTRUCTOR SELECTION (ONLY IF TEAM PRINCIPAL) ── */}
@@ -243,15 +252,19 @@ export default function StrategyGameGatewayModal({
               {CONSTRUCTORS_2026.map((team) => {
                 const isChosen = team.id === selectedTeamId;
                 return (
-                  <div
+                  <button
                     key={team.id}
+                    type="button"
+                    aria-pressed={isChosen}
                     onClick={() => setSelectedTeamId(team.id)}
                     style={{
                       background: isChosen
                         ? `linear-gradient(135deg, ${team.color}35 0%, rgba(18,22,34,0.95) 100%)`
                         : "rgba(10, 14, 22, 0.75)",
-                      border: `1.5px solid ${isChosen ? team.color : "rgba(255, 255, 255, 0.08)"}`,
                       borderTop: `3px solid ${team.color}`,
+                      borderRight: `1.5px solid ${isChosen ? team.color : "rgba(255, 255, 255, 0.08)"}`,
+                      borderBottom: `1.5px solid ${isChosen ? team.color : "rgba(255, 255, 255, 0.08)"}`,
+                      borderLeft: `1.5px solid ${isChosen ? team.color : "rgba(255, 255, 255, 0.08)"}`,
                       borderRadius: "10px",
                       padding: "8px 10px",
                       cursor: "pointer",
@@ -262,9 +275,11 @@ export default function StrategyGameGatewayModal({
                       justifyContent: "space-between",
                       position: "relative",
                       overflow: "hidden",
+                      textAlign: "left",
+                      width: "100%",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                       <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "900", color: isChosen ? "#ffffff" : "#cbd5e1" }}>
                         {team.short}
                       </span>
@@ -273,7 +288,7 @@ export default function StrategyGameGatewayModal({
                       </span>
                     </div>
 
-                    <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "#ffffff", marginTop: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "#ffffff", marginTop: "3px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>
                       {team.name}
                     </div>
 
@@ -283,7 +298,7 @@ export default function StrategyGameGatewayModal({
                       <span>·</span>
                       <span>#{team.drivers[1].num} {team.drivers[1].code}</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -362,6 +377,7 @@ export default function StrategyGameGatewayModal({
           </div>
 
           <button
+            type="button"
             onClick={handleLaunch}
             style={{
               background: "linear-gradient(135deg, rgba(232,0,45,0.95) 0%, rgba(180,0,30,0.98) 100%)",
@@ -389,6 +405,7 @@ export default function StrategyGameGatewayModal({
           </button>
         </div>
       </div>
-    </div>
+      )}
+    </dialog>
   );
 }

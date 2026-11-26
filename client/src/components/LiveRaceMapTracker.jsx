@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "rea
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
 import { isDriverBelongingToTeam, TEAM_COLORS_MAP as TEAM_COLORS } from "../data/constructors2026";
+import { buildTimingTowerGridForCircuit } from "../data/raceWeekendGrids2026";
 import { calculateAutoFuelPrediction } from "../utils/fuelPredictionEngine";
 
 const CircuitSpatialRadar = lazy(() => import("./CircuitSpatialRadar"));
@@ -17,35 +18,10 @@ const NIGHT_CIRCUITS = ["las_vegas", "singapore", "bahrain", "qatar", "abu_dhabi
 const LUT_SIZE = 1400;
 const SPEED_OPTIONS = [1, 2, 4, 8, 16];
 
-const FALLBACK_GRID = [
-  { pos: 1,  code: "VER", num: 3,  team: "Red Bull Racing", name: "Max Verstappen" },
-  { pos: 2,  code: "LEC", num: 16, team: "Ferrari",         name: "Charles Leclerc" },
-  { pos: 3,  code: "NOR", num: 4,  team: "McLaren",         name: "Lando Norris" },
-  { pos: 4,  code: "RUS", num: 63, team: "Mercedes",        name: "George Russell" },
-  { pos: 5,  code: "HAM", num: 44, team: "Ferrari",         name: "Lewis Hamilton" },
-  { pos: 6,  code: "SAI", num: 55, team: "Williams",        name: "Carlos Sainz" },
-  { pos: 7,  code: "PIA", num: 81, team: "McLaren",         name: "Oscar Piastri" },
-  { pos: 8,  code: "ANT", num: 12, team: "Mercedes",        name: "Kimi Antonelli" },
-  { pos: 9,  code: "ALO", num: 14, team: "Aston Martin",    name: "Fernando Alonso" },
-  { pos: 10, code: "ALB", num: 23, team: "Williams",        name: "Alexander Albon" },
-  { pos: 11, code: "GAS", num: 10, team: "Alpine",          name: "Pierre Gasly" },
-  { pos: 12, code: "TSU", num: 22, team: "Racing Bulls",    name: "Yuki Tsunoda" },
-  { pos: 13, code: "HUL", num: 27, team: "Haas",            name: "Nico Hülkenberg" },
-  { pos: 14, code: "STR", num: 18, team: "Aston Martin",    name: "Lance Stroll" },
-  { pos: 15, code: "OCO", num: 31, team: "Haas",            name: "Esteban Ocon" },
-  { pos: 16, code: "HAD", num: 6,  team: "Racing Bulls",    name: "Isack Hadjar" },
-  { pos: 17, code: "BEA", num: 87, team: "Haas",            name: "Oliver Bearman" },
-  { pos: 18, code: "BOT", num: 77, team: "Cadillac",        name: "Valtteri Bottas" },
-  { pos: 19, code: "PER", num: 11, team: "Cadillac",        name: "Sergio Perez" },
-  { pos: 20, code: "BOR", num: 5,  team: "Audi",            name: "Gabriel Bortoleto" },
-  { pos: 21, code: "COL", num: 43, team: "Alpine",          name: "Franco Colapinto" },
-  { pos: 22, code: "LIN", num: 40, team: "Audi",            name: "Arvid Lindblad" },
-];
-
 function buildInitialLeaderboard(inputDrivers) {
   const baseList = inputDrivers && inputDrivers.length > 0
     ? inputDrivers.map((d) => ({ ...d }))
-    : FALLBACK_GRID.map((d) => ({ ...d }));
+    : buildTimingTowerGridForCircuit("australia", 1);
 
   baseList.forEach((d) => {
     if (d.code === "VER") d.num = 3;
