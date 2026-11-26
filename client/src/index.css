@@ -2016,3 +2016,35 @@ textarea:focus-visible,
   background: #090d14;
 }
 
+/* Native <dialog> Top-Layer Scroll Containment & Focus Accessibility */
+dialog.gp-native-dialog {
+  margin: auto;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--text-primary);
+  max-width: 96vw;
+  max-height: 92vh;
+}
+
+dialog.gp-native-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.gp-native-dialog::backdrop {
+  background: rgba(5, 7, 14, 0.86);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+:where(a:any-link, button, [role="tab"], input, select):focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+[role="tab"][aria-selected="true"] {
+  border-bottom-width: 2px;
+}
+

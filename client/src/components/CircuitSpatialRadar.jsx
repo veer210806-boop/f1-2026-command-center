@@ -296,7 +296,6 @@ function buildCornerRunoffGroup(points, frames, isNightMode) {
     const nCandidate = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
 
     const pOutPlus = points[i].clone().addScaledVector(nCandidate, 1.1);
-    const pOutMinus = points[i].clone().addScaledVector(nCandidate, -1.1);
     const outDir = !isPointInsideCircuit(pOutPlus.x, pOutPlus.z, points) ? nCandidate : nCandidate.clone().negate();
 
     const center = points[i].clone().addScaledVector(outDir, 0.95);
@@ -801,21 +800,24 @@ export default function CircuitSpatialRadar({
 
   // Live Refs so upstream Lap transitions & highlight sync NEVER rebuild WebGL!
   const driversRef = useRef(drivers);
-  driversRef.current = drivers;
   const selectedDriverNumRef = useRef(selectedDriverNum);
-  selectedDriverNumRef.current = selectedDriverNum;
   const isPlayingRef = useRef(isPlaying);
-  isPlayingRef.current = isPlaying;
   const simSpeedRef = useRef(simSpeed);
-  simSpeedRef.current = simSpeed;
   const currentLapRef = useRef(currentLap);
-  currentLapRef.current = currentLap;
   const isAutoSimulatingRef = useRef(isAutoSimulating);
-  isAutoSimulatingRef.current = isAutoSimulating;
   const sessionFlagRef = useRef(sessionFlag);
-  sessionFlagRef.current = sessionFlag;
   const onLapCompleteRef = useRef(onLapComplete);
-  onLapCompleteRef.current = onLapComplete;
+
+  useEffect(() => {
+    driversRef.current = drivers;
+    selectedDriverNumRef.current = selectedDriverNum;
+    isPlayingRef.current = isPlaying;
+    simSpeedRef.current = simSpeed;
+    currentLapRef.current = currentLap;
+    isAutoSimulatingRef.current = isAutoSimulating;
+    sessionFlagRef.current = sessionFlag;
+    onLapCompleteRef.current = onLapComplete;
+  }, [drivers, selectedDriverNum, isPlaying, simSpeed, currentLap, isAutoSimulating, sessionFlag, onLapComplete]);
 
   const sceneRefs = useRef({
     scene: null,
@@ -1300,7 +1302,7 @@ export default function CircuitSpatialRadar({
       };
     } catch (err) {
       console.error("3D Spatial Radar WebGL Initialization:", err);
-      setWebglFailed(true);
+      queueMicrotask(() => setWebglFailed(true));
       return undefined;
     }
   }, [trackPath, circuitId, isNightMode]);

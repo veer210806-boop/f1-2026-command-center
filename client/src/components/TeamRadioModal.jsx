@@ -3,49 +3,26 @@
 // Ultra-Modern F1 Cockpit Transcript Console (Audio-Free / High Readability)
 // Sourced from boxbox-radio.com & formuladream.app
 // ============================================================
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import React, { useState } from "react";
 import {
   TEAM_RADIO_ARCHIVE,
   RADIO_CATEGORIES,
   filterRadioArchive
 } from "../data/teamRadioArchive";
 import { getDriverFaceUrl } from "../data/f1MediaAssets2026";
+import { useModalDialog } from "../utils/useModalDialog";
 
 export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" }) {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
-  const [selectedDriver, setSelectedDriver] = useState(initialDriver);
+  const [driverOverride, setDriverOverride] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeRadio, setActiveRadio] = useState(null);
+  const [selectedRadioEntry, setSelectedRadioEntry] = useState(null);
+  const dialogRef = useModalDialog(isOpen, onClose);
 
-  // Sync initialDriver when opened
-  useEffect(() => {
-    if (initialDriver) {
-      setSelectedDriver(initialDriver);
-    }
-  }, [initialDriver]);
-
-  // Set default active transmission if none selected
-  useEffect(() => {
-    if (!activeRadio && TEAM_RADIO_ARCHIVE.length > 0) {
-      setActiveRadio(TEAM_RADIO_ARCHIVE[0]);
-    }
-  }, [activeRadio]);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  const selectedDriver = driverOverride ?? initialDriver;
+  const setSelectedDriver = (drv) => setDriverOverride(drv);
+  const activeRadio = selectedRadioEntry || TEAM_RADIO_ARCHIVE[0] || null;
+  const setActiveRadio = setSelectedRadioEntry;
 
   const filteredRadios = filterRadioArchive({
     category: selectedCategory,
@@ -58,32 +35,18 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
     ...Array.from(new Set(TEAM_RADIO_ARCHIVE.map(r => r.driver_code))).filter(Boolean)
   ];
 
-  return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "rgba(5, 7, 14, 0.90)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        zIndex: 100000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        boxSizing: "border-box",
-      }}
-      onClick={onClose}
+  return (
+    <dialog
+      ref={dialogRef}
+      closedby="any"
+      aria-labelledby="radio-dialog-title"
+      className="gp-native-dialog"
+      style={{ width: "min(1280px, 95vw)" }}
     >
+      {isOpen && (
       <div
         style={{
-          width: "95%",
-          maxWidth: "1280px",
+          width: "100%",
           maxHeight: "92vh",
           background: "linear-gradient(180deg, #111424 0%, #090b14 100%)",
           border: "1px solid rgba(0, 210, 190, 0.35)",
@@ -94,7 +57,6 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
           overflow: "hidden",
           position: "relative",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Top Glowing Laser Border */}
         <div
@@ -138,7 +100,8 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <h2
+                <h1
+                  id="radio-dialog-title"
                   style={{
                     fontFamily: "'Orbitron', monospace",
                     fontSize: "1.25rem",
@@ -149,7 +112,7 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
                   }}
                 >
                   BOX BOX <span style={{ color: "var(--neon-cyan)" }}>TEAM RADIO</span> CONSOLE
-                </h2>
+                </h1>
                 <span
                   style={{
                     background: "rgba(0, 210, 190, 0.15)",
@@ -203,6 +166,7 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
 
             {/* Close Button */}
             <button
+              type="button"
               onClick={onClose}
               aria-label="Close team radio console"
               style={{
@@ -652,7 +616,7 @@ export default function TeamRadioModal({ isOpen, onClose, initialDriver = "ALL" 
           )}
         </div>
       </div>
-    </div>,
-    document.body
+      )}
+    </dialog>
   );
 }

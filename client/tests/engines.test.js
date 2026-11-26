@@ -8,6 +8,10 @@ import {
   simulateLapTick,
   formatLapTimeSec,
   parseTimeToSeconds,
+  computeSectorAndTrapTelemetry,
+  buildStrategyPlanSummary,
+  createInitialTeamPlans,
+  resetGridEntries,
 } from "../src/utils/raceSimEngine.js";
 import {
   calculateAutoFuelPrediction,
@@ -131,4 +135,58 @@ test("exportUtils & openF1Service helpers work cleanly", () => {
   assert.equal(mapOpenF1Compound("INTERMEDIATE"), "I");
   assert.ok(CIRCUIT_GEO_COORDS.australia.lat < 0);
   assert.ok(TEAM_COLORS_MAP.Ferrari.primary.startsWith("#"));
+});
+
+test("raceSimEngine: computeSectorAndTrapTelemetry & buildStrategyPlanSummary respond dynamically", () => {
+  const sampleGrid = [
+    { pos: 1, num: 3, code: "VER", name: "Max Verstappen", team: "Red Bull Racing", tire: "M", tireAge: 8, wear: 24, interval: "—", lastLap: "1:18.900", pushMode: "attack", mom: "MOM ON", pitState: "RACING" },
+    { pos: 2, num: 16, code: "LEC", name: "Charles Leclerc", team: "Ferrari", tire: "M", tireAge: 9, wear: 27, interval: "+0.650s", lastLap: "1:19.120", pushMode: "balanced", mom: "Z-MODE", pitState: "RACING" },
+    { pos: 3, num: 4, code: "NOR", name: "Lando Norris", team: "McLaren", tire: "H", tireAge: 5, wear: 14, interval: "+1.450s", lastLap: "1:19.450", pushMode: "balanced", mom: "X-MODE", pitState: "RACING" },
+  ];
+
+  const dryMonza = computeSectorAndTrapTelemetry({
+    drivers: sampleGrid,
+    circuitId: "monza",
+    trackDampness: 0,
+    aeroMode: "X-MODE",
+    currentLap: 10,
+  });
+  const wetMonaco = computeSectorAndTrapTelemetry({
+    drivers: sampleGrid,
+    circuitId: "monaco",
+    trackDampness: 80,
+    aeroMode: "Z-MODE",
+    currentLap: 10,
+  });
+
+  assert.ok(dryMonza.sectorSpeeds.trap > wetMonaco.sectorSpeeds.trap);
+  assert.equal(dryMonza.topSpeedTrap.length, 3);
+  assert.equal(dryMonza.topPaceDeltas.length, 3);
+  assert.equal(dryMonza.topPaceDeltas[0].code, "VER");
+
+  const monzaPlan = buildStrategyPlanSummary({ maxLaps: 53, currentDriver: sampleGrid[0] });
+  const spaPlan = buildStrategyPlanSummary({ maxLaps: 44, currentDriver: sampleGrid[0] });
+  assert.ok(monzaPlan.planAStopLap > spaPlan.planAStopLap);
+  assert.ok(monzaPlan.planALabel2.endsWith("–53)"));
+  assert.ok(spaPlan.planBLabel3.endsWith("–44)"));
+  assert.ok(monzaPlan.estRemainingLaps > 0);
+});
+
+test("raceSimEngine: createInitialTeamPlans & resetGridEntries scale by circuit", () => {
+  const miniGrid = [
+    { pos: 4, num: 3, code: "VER", name: "Max Verstappen", team: "Red Bull Racing", tireAge: 15, wear: 60, pits: 2 },
+    { pos: 8, num: 6, code: "HAD", name: "Isack Hadjar", team: "Red Bull Racing", tireAge: 12, wear: 48, pits: 1 },
+  ];
+  const { plans, strategies } = createInitialTeamPlans("red_bull", miniGrid, 44);
+  assert.equal(plans.VER.stop1Lap, Math.round(44 * 0.38));
+  assert.equal(strategies.length, 2);
+  assert.ok(strategies[0].label.includes(`Lap ${plans.VER.stop1Lap}`));
+
+  const reset = resetGridEntries(miniGrid, { includeSectorReset: true });
+  assert.equal(reset[0].pos, 1);
+  assert.equal(reset[0].gap, "LEADER");
+  assert.equal(reset[0].pits, 0);
+  assert.equal(reset[0].s1, "—");
+  assert.equal(reset[1].pos, 2);
+  assert.equal(reset[1].arrow, "none");
 });

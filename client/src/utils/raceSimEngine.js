@@ -3,13 +3,43 @@
 // Models compound grip delta, non-linear tire cliff degradation, fuel burn
 // mass gain, track dampness mismatch penalties, and real catch-up probability.
 // ============================================================
+import { CONSTRUCTORS_2026, TEAM_COLORS_MAP, isDriverBelongingToTeam } from "../data/constructors2026.js";
+
+export const DRIVER_IOC_MAP = {
+  NOR: "GBR", PIA: "AUS", VER: "NLD", HAD: "FRA", RUS: "GBR", ANT: "ITA",
+  LEC: "MCO", HAM: "GBR", SAI: "ESP", ALB: "THA", ALO: "ESP", STR: "CAN",
+  GAS: "FRA", COL: "ARG", OCO: "FRA", BEA: "GBR", HUL: "DEU", BOR: "BRA",
+  LAW: "NZL", LIN: "GBR", PER: "MEX", BOT: "FIN",
+};
+
+export const TIRE_CONFIG = {
+  S: { letter: "S", name: "Soft",         fullName: "Soft Compound",         color: "#ff1801", glow: "rgba(255, 24, 1, 0.75)" },
+  M: { letter: "M", name: "Medium",       fullName: "Medium Compound",       color: "#ffd700", glow: "rgba(255, 215, 0, 0.75)" },
+  H: { letter: "H", name: "Hard",         fullName: "Hard Compound",         color: "#ffffff", glow: "rgba(255, 255, 255, 0.75)" },
+  I: { letter: "I", name: "Intermediate", fullName: "Intermediate Compound", color: "#00cc44", glow: "rgba(0, 204, 68, 0.75)" },
+  W: { letter: "W", name: "Wet",          fullName: "Wet Compound",          color: "#0088ff", glow: "rgba(0, 136, 255, 0.75)" },
+};
+
+export const TEAM_RACE_ENGINEERS = {
+  McLaren:           "Will Joseph",
+  "Red Bull Racing": "Gianpiero Lambiase",
+  Ferrari:           "Bryan Bozzi",
+  Mercedes:          "Peter Bonnington",
+  "Aston Martin":    "Chris Cronin",
+  Williams:          "Gaetan Jego",
+  Haas:              "Gary Gannon",
+  Alpine:            "Josh Peckett",
+  "Racing Bulls":    "Mattia Spini",
+  Audi:              "Steven Petrik",
+  Cadillac:          "Hugh Bird",
+};
 
 export const COMPOUND_PHYSICS = {
-  S: { name: "Soft",         paceDelta: -0.35, baseWearPerLap: 4.5, cliffStartWear: 68, cliffPenaltyPerPct: 0.09 },
-  M: { name: "Medium",       paceDelta:  0.00, baseWearPerLap: 2.8, cliffStartWear: 72, cliffPenaltyPerPct: 0.08 },
-  H: { name: "Hard",         paceDelta:  0.28, baseWearPerLap: 1.8, cliffStartWear: 76, cliffPenaltyPerPct: 0.065 },
-  I: { name: "Intermediate", paceDelta:  1.15, baseWearPerLap: 2.9, cliffStartWear: 74, cliffPenaltyPerPct: 0.075 },
-  W: { name: "Full Wet",     paceDelta:  2.40, baseWearPerLap: 2.4, cliffStartWear: 78, cliffPenaltyPerPct: 0.06 },
+  S: { name: "Soft",         paceDelta: -0.35, baseWearPerLap: 4.5, cliffStartWear: 68, cliffPenaltyPerPct: 0.09, optimalStintLaps: 18 },
+  M: { name: "Medium",       paceDelta:  0.00, baseWearPerLap: 2.8, cliffStartWear: 72, cliffPenaltyPerPct: 0.08, optimalStintLaps: 30 },
+  H: { name: "Hard",         paceDelta:  0.28, baseWearPerLap: 1.8, cliffStartWear: 76, cliffPenaltyPerPct: 0.065, optimalStintLaps: 42 },
+  I: { name: "Intermediate", paceDelta:  1.15, baseWearPerLap: 2.9, cliffStartWear: 74, cliffPenaltyPerPct: 0.075, optimalStintLaps: 28 },
+  W: { name: "Full Wet",     paceDelta:  2.40, baseWearPerLap: 2.4, cliffStartWear: 78, cliffPenaltyPerPct: 0.06, optimalStintLaps: 24 },
 };
 
 const TIER1_DRIVERS = new Set(["NOR", "VER", "RUS", "LEC", "HAM", "PIA"]);
@@ -498,5 +528,247 @@ export function simulateLapTick({
     pittedInfo,
     overtakeInfo,
     completedPlanNotifications,
+  };
+}
+
+/**
+ * Resolves the two active drivers belonging to a given constructor on the live grid.
+ */
+export function getTeamDriversHelper(teamId, gridList = []) {
+  if (!teamId || !gridList || gridList.length === 0) return gridList?.slice(0, 2) || [];
+  const matched = gridList.filter((d) => isDriverBelongingToTeam(d, teamId));
+  if (matched.length >= 2) return matched.slice(0, 2);
+
+  const norm = String(teamId).toLowerCase();
+  const constructorObj = CONSTRUCTORS_2026.find((c) => {
+    const cid = c.id.toLowerCase();
+    const cname = c.name.toLowerCase();
+    return cid.includes(norm) || norm.includes(cid) || cname.includes(norm) || norm.includes(cname);
+  });
+
+  if (constructorObj?.drivers) {
+    const codes = constructorObj.drivers.map((d) => d.code);
+    const found = gridList.filter((d) => codes.includes(d.code));
+    if (found.length > 0) return found.slice(0, 2);
+  }
+  return matched.length > 0 ? matched : gridList.slice(0, 2);
+}
+
+/**
+ * Initializes proportional Lap-scaled pit plans and directives for a constructor's duo.
+ */
+export function createInitialTeamPlans(teamId, gridList = [], totalLaps = 58) {
+  const safeLaps = Math.max(20, Number(totalLaps) || 58);
+  const stop1Lead = Math.max(8, Math.round(safeLaps * 0.38));
+  const stop1Wing = Math.min(safeLaps - 8, stop1Lead + Math.max(2, Math.round(safeLaps * 0.05)));
+  const stop2Lead = Math.min(safeLaps - 6, Math.round(safeLaps * 0.72));
+  const stop2Wing = Math.min(safeLaps - 4, stop2Lead + 2);
+
+  const tDrivers = getTeamDriversHelper(teamId, gridList);
+  const d1 = tDrivers[0] || { code: "VER", num: 3, name: "Max Verstappen" };
+  const d2 = tDrivers[1] || { code: "HAD", num: 6, name: "Isack Hadjar" };
+
+  const plans = {
+    [d1.code]: {
+      stopsCount: 1,
+      stop1Lap: stop1Lead,
+      stop1SetId: "H1",
+      stop1Completed: false,
+      stop2Lap: stop2Lead,
+      stop2SetId: "S2",
+      stop2Completed: false,
+      pushMode: "balanced",
+      nextRecommendedWindow: `Laps ${stop1Lead} - ${Math.min(safeLaps - 6, stop1Lead + 5)} (Hard)`,
+    },
+    [d2.code]: {
+      stopsCount: 1,
+      stop1Lap: stop1Wing,
+      stop1SetId: "H1",
+      stop1Completed: false,
+      stop2Lap: stop2Wing,
+      stop2SetId: "S1",
+      stop2Completed: false,
+      pushMode: "balanced",
+      nextRecommendedWindow: `Laps ${stop1Lead + 3} - ${Math.min(safeLaps - 5, stop1Wing + 3)} (Hard)`,
+    },
+  };
+
+  const strategies = [
+    {
+      id: `stop1_${d1.code}`,
+      driverCode: d1.code,
+      lap: stop1Lead,
+      targetCompound: "H",
+      setId: "H1",
+      stopNum: 1,
+      label: `Stop 1 @ Lap ${stop1Lead} (H)`,
+      applied: false,
+    },
+    {
+      id: `stop1_${d2.code}`,
+      driverCode: d2.code,
+      lap: stop1Wing,
+      targetCompound: "H",
+      setId: "H1",
+      stopNum: 1,
+      label: `Stop 1 @ Lap ${stop1Wing} (H)`,
+      applied: false,
+    },
+  ];
+
+  return { plans, strategies };
+}
+
+/**
+ * Normalizes a starting grid array cleanly for Lap 1 race resets.
+ */
+export function resetGridEntries(rawGrid = [], { includeSectorReset = false } = {}) {
+  return rawGrid.map((d, i) => ({
+    ...d,
+    pos: i + 1,
+    tireAge: 0,
+    wear: 4,
+    pits: 0,
+    pitState: "RACING",
+    gap: i === 0 ? "LEADER" : "—",
+    gapSec: 0,
+    interval: "—",
+    posDelta: "0",
+    arrow: includeSectorReset ? "none" : "neutral",
+    ...(includeSectorReset
+      ? { s1: "—", s2: "—", s3: "—", s1Type: "empty", s2Type: "empty", s3Type: "empty", bestLap: "NO TIME", lastLap: "—" }
+      : {}),
+  }));
+}
+
+function formatShortDriverName(fullName = "", code = "DRV") {
+  const clean = String(fullName || "").trim();
+  if (!clean) return code;
+  if (clean.includes("Sainz")) return "C. Sainz Jr.";
+  const parts = clean.split(/\s+/);
+  if (parts.length < 2) return clean;
+  return `${parts[0][0]}. ${parts.slice(1).join(" ")}`;
+}
+
+const HIGH_SPEED_TRACKS = new Set(["monza", "saudi_arabia", "las_vegas", "azerbaijan", "belgium", "bahrain", "china"]);
+const TIGHT_DOWNFORCE_TRACKS = new Set(["monaco", "hungary", "singapore", "netherlands"]);
+
+/**
+ * Computes live sector speeds, Top-5 Speed Trap rankings, and Top-4 Pace Deltas from active drivers.
+ */
+export function computeSectorAndTrapTelemetry({
+  drivers = [],
+  circuitId = "australia",
+  trackDampness = 0,
+  aeroMode = "Z-MODE",
+  currentLap = 1,
+}) {
+  const cid = String(circuitId || "australia").toLowerCase();
+  const trackSpeedOffset = HIGH_SPEED_TRACKS.has(cid) ? 16 : TIGHT_DOWNFORCE_TRACKS.has(cid) ? -22 : 0;
+  const dampPenaltyKmh = Math.round((Number(trackDampness) || 0) * 0.34);
+  const aeroBonusKmh = aeroMode === "X-MODE" ? 11 : 0;
+  const lapWave = seededUnitNoise((currentLap || 1) * 7) * 2;
+
+  const baseS1 = Math.max(210, Math.round(302 + trackSpeedOffset * 0.65 - dampPenaltyKmh * 0.7 + aeroBonusKmh * 0.5 + lapWave));
+  const baseS2 = Math.max(195, Math.round(291 + trackSpeedOffset * 0.8 - dampPenaltyKmh * 0.8 + aeroBonusKmh * 0.4 - lapWave));
+  const baseS3 = Math.max(225, Math.round(326 + trackSpeedOffset - dampPenaltyKmh + aeroBonusKmh));
+
+  const safeList = Array.isArray(drivers) && drivers.length > 0 ? drivers : [];
+
+  // Top 5 live speed trap estimates from live drivers' aero, DRS, fresh tire grip & push modes
+  const speedEntries = safeList.map((d, idx) => {
+    const intSec = parseTimeToSeconds(d.interval);
+    const hasDrs = idx > 0 && intSec > 0 && intSec < 1.0 && (currentLap || 1) >= 2 && d.pitState !== "IN PIT";
+    const isAttack = d.pushMode === "attack" || d.mom === "MOM ON" || d.mom === "ACTIVE";
+    const freshBonus = Math.max(0, 6 - Math.round((d.wear || 15) * 0.12));
+    const aeroDelta = d.mom === "X-MODE" ? 7 : 0;
+    const microVar = Math.round(seededUnitNoise((d.num || idx + 1) * 19 + (currentLap || 1) * 5) * 3.5);
+
+    const trapKmh = Math.max(
+      245,
+      Math.round(baseS3 + (hasDrs ? 11 : 0) + (isAttack ? 4 : 0) + freshBonus + aeroDelta + microVar)
+    );
+    const teamPalette = TEAM_COLORS_MAP[d.team] || { primary: "#00d2be" };
+    return {
+      code: d.code,
+      num: d.num,
+      name: formatShortDriverName(d.name, d.code),
+      team: d.team,
+      color: teamPalette.primary || "#00d2be",
+      speed: trapKmh,
+      hasDrs,
+    };
+  });
+
+  speedEntries.sort((a, b) => b.speed - a.speed);
+  const topSpeed = speedEntries[0]?.speed || baseS3;
+  const minSpeed = Math.max(220, topSpeed - 28);
+  const topSpeedTrap = speedEntries.slice(0, 5).map((item, idx) => ({
+    pos: idx + 1,
+    name: item.name,
+    code: item.code,
+    team: item.team,
+    color: item.color,
+    speed: item.speed,
+    pct: Math.max(58, Math.min(100, Math.round(70 + ((item.speed - minSpeed) / Math.max(1, topSpeed - minSpeed)) * 30))),
+  }));
+
+  // Top 4 live pace deltas from current running order & last lap vs field median
+  const leaderLap = parseTimeToSeconds(safeList[0]?.lastLap) || 82.0;
+  const topPaceDeltas = safeList.slice(0, 4).map((d, idx) => {
+    const teamPalette = TEAM_COLORS_MAP[d.team] || { primary: "#00d2be" };
+    const drvLap = parseTimeToSeconds(d.lastLap) || leaderLap + idx * 0.25;
+    const pacePct = (currentLap || 1) <= 1
+      ? +(1.4 - idx * 0.3).toFixed(1)
+      : +(((leaderLap - drvLap) / Math.max(40, leaderLap)) * 100 + (d.pushMode === "attack" ? 0.6 : 0.2) - ((d.wear || 20) * 0.015)).toFixed(1);
+    const isUp = pacePct >= 0;
+    return {
+      pos: d.pos || idx + 1,
+      num: `#${d.num}`,
+      code: d.code,
+      name: formatShortDriverName(d.name, d.code),
+      trend: isUp ? "▲" : "▼",
+      pct: `${isUp ? "+" : ""}${pacePct.toFixed(1)}%`,
+      isUp,
+      color: teamPalette.primary || "#00d2be",
+    };
+  });
+
+  return {
+    sectorSpeeds: {
+      s1: baseS1,
+      s2: baseS2,
+      s3: baseS3,
+      trap: topSpeedTrap[0]?.speed || topSpeed,
+    },
+    topPaceDeltas,
+    topSpeedTrap,
+  };
+}
+
+/**
+ * Computes proportional 1-stop / 2-stop strategy windows and remaining stint endurance for any circuit lap count.
+ */
+export function buildStrategyPlanSummary({ maxLaps = 58, currentDriver }) {
+  const safeMax = Math.max(20, Number(maxLaps) || 58);
+  const planAStopLap = Math.max(10, Math.min(safeMax - 8, Math.round(safeMax * 0.58)));
+  const planBStop1 = Math.max(8, Math.round(safeMax * 0.31));
+  const planBStop2 = Math.min(safeMax - 6, Math.round(safeMax * 0.67));
+
+  const code = String(currentDriver?.tire || "M").trim().toUpperCase()[0] || "M";
+  const spec = COMPOUND_PHYSICS[code] || COMPOUND_PHYSICS.M;
+  const age = Number(currentDriver?.tireAge || 0);
+  const wear = Number(currentDriver?.wear || 12);
+  const estByAge = Math.max(0, spec.optimalStintLaps - age);
+  const estByWear = Math.max(0, Math.round((100 - wear) / Math.max(1.2, spec.baseWearPerLap)));
+
+  return {
+    planAStopLap,
+    planALabel1: `Med (L1–${planAStopLap - 1})`,
+    planALabel2: `Hard (L${planAStopLap}–${safeMax})`,
+    planBLabel1: `Soft (L1–${planBStop1})`,
+    planBLabel2: `Med (L${planBStop1 + 1}–${planBStop2})`,
+    planBLabel3: `Soft (L${planBStop2 + 1}–${safeMax})`,
+    estRemainingLaps: Math.max(0, Math.min(estByAge, estByWear, safeMax)),
   };
 }

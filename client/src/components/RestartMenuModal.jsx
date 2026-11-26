@@ -4,7 +4,8 @@
 // toggling between Player and FIA Admin, or returning to the Gateway.
 // ============================================================
 import React, { useState } from "react";
-import { CONSTRUCTORS_2026 } from "./StrategyGameGatewayModal";
+import { CONSTRUCTORS_2026 } from "../data/constructors2026";
+import { useModalDialog } from "../utils/useModalDialog";
 
 export default function RestartMenuModal({
   isOpen = false,
@@ -19,36 +20,26 @@ export default function RestartMenuModal({
 }) {
   const [isSelectingTeam, setIsSelectingTeam] = useState(false);
 
-  if (!isOpen) return null;
-
-  const currentTeamObj = CONSTRUCTORS_2026.find((t) => t.id === currentTeamId) || CONSTRUCTORS_2026[0];
-
   const handleClose = () => {
     setIsSelectingTeam(false);
-    onClose();
+    onClose?.();
   };
 
+  const dialogRef = useModalDialog(isOpen, handleClose);
+  const currentTeamObj = CONSTRUCTORS_2026.find((t) => t.id === currentTeamId) || CONSTRUCTORS_2026[0];
+
   return (
-    <div
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99998,
-        background: "rgba(4, 7, 14, 0.85)",
-        backdropFilter: "blur(14px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
+    <dialog
+      ref={dialogRef}
+      closedby="any"
+      aria-labelledby="restart-dialog-title"
+      className="gp-native-dialog"
+      style={{ width: isSelectingTeam ? "min(720px, 95vw)" : "min(580px, 95vw)" }}
     >
+      {isOpen && (
       <div
         style={{
           width: "100%",
-          maxWidth: isSelectingTeam ? "720px" : "580px",
           maxHeight: "90vh",
           overflowY: "auto",
           background: "linear-gradient(180deg, rgba(18, 24, 38, 0.98) 0%, rgba(10, 13, 22, 0.99) 100%)",
@@ -66,15 +57,17 @@ export default function RestartMenuModal({
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: "12px" }}>
           <div>
-            <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "1.05rem", fontWeight: "900", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span>🔄</span>
+            <h1 id="restart-dialog-title" style={{ margin: 0, fontFamily: "'Orbitron', monospace", fontSize: "1.05rem", fontWeight: "900", color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span aria-hidden="true">🔄</span>
               <span>{isSelectingTeam ? "SELECT YOUR 2026 CONSTRUCTOR" : "SESSION RESTART & STRATEGY CONTROL"}</span>
-            </div>
+            </h1>
             <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600", marginTop: "2px" }}>
               Current Grand Prix: <strong style={{ color: "var(--neon-cyan)" }}>{currentCircuitName}</strong>
             </div>
           </div>
           <button
+            type="button"
+            aria-label="Close session restart menu"
             onClick={handleClose}
             style={{
               background: "transparent",
@@ -285,13 +278,13 @@ export default function RestartMenuModal({
                 <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.85rem", fontWeight: "900", color: "#ffffff", display: "flex", alignItems: "center", gap: "6px" }}>
                   <span>🛡️</span>
                   <span>
-                    {currentRole === "team" ? "SWITCH TO FIA ADMINISTRATOR (GOD-MODE)" : "SWITCH TO TEAM STRATEGY PRINCIPAL"}
+                    {currentRole === "team" ? "SWITCH TO FIA RACE CONTROL (ALL TEAMS)" : "SWITCH TO TEAM STRATEGIST VIEW"}
                   </span>
                 </div>
                 <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)", fontFamily: "'Rajdhani', sans-serif", fontWeight: "600", marginTop: "2px" }}>
                   {currentRole === "team"
-                    ? "Gain unrestricted god-mode clearance to force-pit any car and trigger flags."
-                    : "Switch to single-team tactical strategy mode where you command your 2 drivers."}
+                    ? "Gain full steward clearance to evaluate any car and control session flags."
+                    : "Switch to single-constructor pit wall view focused on your 2 drivers."}
                 </div>
               </div>
               <span style={{ fontSize: "0.85rem", color: "var(--neon-green)", fontWeight: "900" }}>→</span>
@@ -332,6 +325,7 @@ export default function RestartMenuModal({
           </div>
         )}
       </div>
-    </div>
+      )}
+    </dialog>
   );
 }

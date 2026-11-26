@@ -12,7 +12,6 @@ import { getTeamLogo, TEAM_CARS } from "../data/f1MediaAssets2026";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const BUDGET_CAP = 135_000_000;
-const MINOR_BREACH_THRESHOLD = 128_250_000; // 95% of Cap
 
 // ── Official 2026 Constructors' Championship Grid Financial Profiles ─────────
 const OFFICIAL_11_TEAMS = [
@@ -399,8 +398,6 @@ function BudgetManager() {
     { quarter: "Q3 R13-18", spend: Math.round((currentTeam.spent * 0.24) / 1_000_000), cap: 33.75, label: "Americas" },
     { quarter: "Q4 R19-24", spend: Math.round((currentTeam.spent * 0.22) / 1_000_000), cap: 33.75, label: "Finale" },
   ], [currentTeam.spent]);
-
-  const totalGridSpend = useMemo(() => teams.reduce((acc, t) => acc + t.spent, 0), [teams]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", paddingBottom: "32px" }}>

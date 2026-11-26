@@ -3,13 +3,17 @@
 // Modeled directly after formula1.com/en/racing/2026
 // Featuring verified official race card background photography
 // ============================================================
-import { useState, useMemo, useEffect, memo } from "react";
+import { useState, useMemo, useEffect, useCallback, memo } from "react";
 import { createPortal } from "react-dom";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
-import { SEASON_2026_ROUNDS, PERIOD_CONFIG } from "../data/calendar2026";
+import { SEASON_2026_ROUNDS } from "../data/calendar2026";
 import { getRaceCardImage, isSprintWeekend, getWeekendSchedule } from "../data/f1CalendarMedia2026";
 import { getDriverFaceUrl } from "../data/f1MediaAssets2026";
 import TeamRadioModal from "./TeamRadioModal";
+
+const NIGHT_CIRCUITS = ["bahrain", "saudi_arabia", "singapore", "las_vegas", "qatar", "abu_dhabi"];
+const STREET_CIRCUITS = ["australia", "saudi_arabia", "miami", "monaco", "canada", "azerbaijan", "singapore", "las_vegas"];
+const HIGH_SPEED_CIRCUITS = ["italy", "belgium", "great_britain", "japan", "austria"];
 
 export function CalendarPirelliBadge({ label = "HARD", compoundCode = "C2", color = "#ffffff", letter = "H", size = 16 }) {
   return (
@@ -255,10 +259,6 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
   const [modalTab, setModalTab] = useState("schedule"); // "schedule" | "telemetry" | "winners"
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
 
-  const NIGHT_CIRCUITS = ["bahrain", "saudi_arabia", "singapore", "las_vegas", "qatar", "abu_dhabi"];
-  const STREET_CIRCUITS = ["australia", "saudi_arabia", "miami", "monaco", "canada", "azerbaijan", "singapore", "las_vegas"];
-  const HIGH_SPEED_CIRCUITS = ["italy", "belgium", "great_britain", "japan", "austria"];
-
   // Currently inspected race in split dossier view
   const inspectedRace = useMemo(() => {
     return SEASON_2026_ROUNDS.find((r) => r.round === inspectedRoundNum) || SEASON_2026_ROUNDS[0];
@@ -300,6 +300,17 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
     return list;
   }, [filterMode, searchQuery, sortMode]);
 
+  const navigateModal = useCallback((direction) => {
+    setActiveModalRace((curr) => {
+      if (!curr) return null;
+      const currentIdx = SEASON_2026_ROUNDS.findIndex((r) => r.round === curr.round);
+      if (currentIdx === -1) return curr;
+      let nextIdx = (currentIdx + direction) % SEASON_2026_ROUNDS.length;
+      if (nextIdx < 0) nextIdx = SEASON_2026_ROUNDS.length - 1;
+      return SEASON_2026_ROUNDS[nextIdx];
+    });
+  }, []);
+
   // Keyboard navigation for modal
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -314,7 +325,7 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeModalRace]);
+  }, [activeModalRace, navigateModal]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -326,15 +337,6 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
       };
     }
   }, [activeModalRace]);
-
-  const navigateModal = (direction) => {
-    if (!activeModalRace) return;
-    const currentIdx = SEASON_2026_ROUNDS.findIndex((r) => r.round === activeModalRace.round);
-    if (currentIdx === -1) return;
-    let nextIdx = (currentIdx + direction) % SEASON_2026_ROUNDS.length;
-    if (nextIdx < 0) nextIdx = SEASON_2026_ROUNDS.length - 1;
-    setActiveModalRace(SEASON_2026_ROUNDS[nextIdx]);
-  };
 
   const isGloballyActive = (race) => {
     if (!selectedCircuit || !race) return false;
@@ -1540,7 +1542,6 @@ function CalendarView({ selectedCircuit, onSelectCircuit, onLaunchPitWall }) {
       {activeModalRace && typeof document !== "undefined" && createPortal((() => {
         const modalSchedule = getWeekendSchedule(activeModalRace);
         const modalWinners = getCircuitHistoricWinners(activeModalRace.circuit_id);
-        const isSprint = isSprintWeekend(activeModalRace.round);
         const isActiveCircuit = isGloballyActive(activeModalRace);
 
         return (

@@ -2,9 +2,9 @@
 // FiaRaceControlModal.jsx — Official FIA Race Control & Stewards Board
 // Modeled directly after FIA.com sporting regulations and live bulletins
 // ============================================================
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import React, { useState } from "react";
 import { RACE_STATUS_FLAGS, INITIAL_FIA_BULLETINS } from "../data/fiaRaceControl";
+import { useModalDialog } from "../utils/useModalDialog";
 
 export default function FiaRaceControlModal({
   isOpen,
@@ -13,32 +13,17 @@ export default function FiaRaceControlModal({
   onStatusChange,
   bulletins = INITIAL_FIA_BULLETINS,
 }) {
-  const [selectedStatus, setSelectedStatus] = useState(currentStatus);
+  const [statusOverride, setStatusOverride] = useState(null);
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [bulletinList] = useState(bulletins);
-
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
-
-  useEffect(() => {
-    setSelectedStatus(currentStatus);
-  }, [currentStatus]);
-
-  if (!isOpen) return null;
+  const dialogRef = useModalDialog(isOpen, onClose);
+  const selectedStatus = statusOverride || currentStatus;
 
   const handleSelectStatus = (code) => {
-    setSelectedStatus(code);
-    if (onStatusChange) {
-      onStatusChange(code);
-    }
+    setStatusOverride(code);
+    onStatusChange?.(code);
   };
 
-  const filteredBulletins = bulletinList.filter((b) => {
+  const filteredBulletins = bulletins.filter((b) => {
     if (activeFilter === "ALL") return true;
     if (activeFilter === "TRACK_LIMITS") return b.type === "TRACK_LIMITS";
     if (activeFilter === "INVESTIGATIONS") return b.type === "INVESTIGATION" || b.type === "DECISION";
@@ -48,32 +33,18 @@ export default function FiaRaceControlModal({
 
   const activeFlagConf = RACE_STATUS_FLAGS[selectedStatus] || RACE_STATUS_FLAGS.GREEN;
 
-  return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "rgba(5, 7, 14, 0.88)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        zIndex: 100000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        boxSizing: "border-box",
-      }}
-      onClick={onClose}
+  return (
+    <dialog
+      ref={dialogRef}
+      closedby="any"
+      aria-labelledby="fia-dialog-title"
+      className="gp-native-dialog"
+      style={{ width: "min(1100px, 95vw)" }}
     >
+      {isOpen && (
       <div
         style={{
-          width: "95%",
-          maxWidth: "1100px",
+          width: "100%",
           maxHeight: "90vh",
           background: "linear-gradient(180deg, #101322 0%, #0a0c16 100%)",
           border: `1px solid ${activeFlagConf.border}`,
@@ -84,7 +55,6 @@ export default function FiaRaceControlModal({
           overflow: "hidden",
           position: "relative",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Glowing Top Laser Line */}
         <div
@@ -127,7 +97,8 @@ export default function FiaRaceControlModal({
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <h2
+                <h1
+                  id="fia-dialog-title"
                   style={{
                     fontFamily: "'Orbitron', monospace",
                     fontSize: "1.25rem",
@@ -138,7 +109,7 @@ export default function FiaRaceControlModal({
                   }}
                 >
                   FIA <span style={{ color: activeFlagConf.color }}>RACE CONTROL</span> & STEWARDS
-                </h2>
+                </h1>
                 <span
                   style={{
                     background: activeFlagConf.bg,
@@ -161,8 +132,9 @@ export default function FiaRaceControlModal({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label="Close FIA Race Control dialog"
             style={{
               width: "36px",
               height: "36px",
@@ -381,8 +353,8 @@ export default function FiaRaceControlModal({
           })}
         </div>
       </div>
-    </div>,
-    document.body
+      )}
+    </dialog>
   );
 }
 

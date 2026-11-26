@@ -22,13 +22,20 @@ import {
   findFastestLapDriverCode,
 } from "./utils/scoreboardEngine";
 import LiveBroadcastGantry from "./components/LiveBroadcastGantry";
-import StrategyGameGatewayModal, { CONSTRUCTORS_2026 } from "./components/StrategyGameGatewayModal";
+import StrategyGameGatewayModal from "./components/StrategyGameGatewayModal";
 import RestartMenuModal from "./components/RestartMenuModal";
 import FinalRaceClassificationModal from "./components/FinalRaceClassificationModal";
+import ComponentErrorBoundary from "./components/ComponentErrorBoundary";
+import { CONSTRUCTORS_2026 } from "./data/constructors2026";
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
 import { f1Audio } from "./utils/f1AudioEngine";
 import { getTeamLogo } from "./data/f1MediaAssets2026";
 import { fetchCircuitLiveWeather } from "./utils/openF1Service";
+import {
+  getTeamDriversHelper,
+  createInitialTeamPlans,
+  resetGridEntries,
+} from "./utils/raceSimEngine";
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -75,8 +82,16 @@ class ErrorBoundary extends Component {
             A telemetry conflict was safely intercepted. Click below to reset mission control cache and resume live command.
           </p>
           <button
+            type="button"
             onClick={() => {
-              localStorage.clear();
+              try {
+                localStorage.removeItem("gp_strategy_role");
+                localStorage.removeItem("gp_strategy_team");
+                localStorage.removeItem("gp_selected_circuit");
+                localStorage.removeItem("gp_scoreboard_season_v1");
+              } catch {
+                // ignore storage errors
+              }
               window.location.reload();
             }}
             style={{
@@ -99,102 +114,6 @@ class ErrorBoundary extends Component {
     }
     return this.props.children;
   }
-}
-
-// ── Helpers for Dynamic Team Drivers & Strategy Directives ──
-export function getTeamDriversHelper(teamId, gridList = []) {
-  if (!teamId || !gridList || gridList.length === 0) return gridList?.slice(0, 2) || [];
-  const t = teamId.toLowerCase();
-
-  let matched = gridList.filter((d) => {
-    if (!d.team) return false;
-    const dt = d.team.toLowerCase();
-    if (dt.includes(t) || t.includes(dt)) return true;
-    if (t.includes("red") && dt.includes("red")) return true;
-    if ((t.includes("audi") || t.includes("sauber")) && (dt.includes("audi") || dt.includes("sauber"))) return true;
-    if ((t.includes("bulls") || t.includes("rb") || t.includes("racing bulls")) && (dt.includes("bulls") || dt.includes("rb") || dt.includes("racing bulls"))) return true;
-    if (t.includes("aston") && dt.includes("aston")) return true;
-    if (t.includes("cadillac") && dt.includes("cadillac")) return true;
-    if (t.includes("haas") && dt.includes("haas")) return true;
-    if (t.includes("alpine") && dt.includes("alpine")) return true;
-    if (t.includes("williams") && dt.includes("williams")) return true;
-    if (t.includes("mercedes") && dt.includes("mercedes")) return true;
-    if (t.includes("mclaren") && dt.includes("mclaren")) return true;
-    if (t.includes("ferrari") && dt.includes("ferrari")) return true;
-    return false;
-  });
-
-  if (matched.length >= 2) return matched.slice(0, 2);
-
-  const constructorObj = CONSTRUCTORS_2026.find((c) => {
-    const cid = c.id.toLowerCase();
-    const cname = c.name.toLowerCase();
-    return cid.includes(t) || t.includes(cid) || cname.includes(t) || t.includes(cname);
-  });
-
-  if (constructorObj?.drivers) {
-    const codes = constructorObj.drivers.map((d) => d.code);
-    const found = gridList.filter((d) => codes.includes(d.code));
-    if (found.length > 0) return found.slice(0, 2);
-  }
-
-  return gridList.slice(0, 2);
-}
-
-export function createInitialTeamPlans(teamId, gridList = [], totalLaps = 58) {
-  const tDrivers = getTeamDriversHelper(teamId, gridList);
-  const d1 = tDrivers[0] || { code: "VER", num: 3, name: "Max Verstappen" };
-  const d2 = tDrivers[1] || { code: "HAD", num: 6, name: "Isack Hadjar" };
-
-  const plans = {
-    [d1.code]: {
-      stopsCount: 1,
-      stop1Lap: 22,
-      stop1SetId: "H1",
-      stop1Completed: false,
-      stop2Lap: 42,
-      stop2SetId: "S2",
-      stop2Completed: false,
-      pushMode: "balanced",
-      nextRecommendedWindow: "Laps 22 - 27 (Hard)",
-    },
-    [d2.code]: {
-      stopsCount: 1,
-      stop1Lap: 26,
-      stop1SetId: "H1",
-      stop1Completed: false,
-      stop2Lap: 44,
-      stop2SetId: "S1",
-      stop2Completed: false,
-      pushMode: "balanced",
-      nextRecommendedWindow: "Laps 25 - 28 (Hard)",
-    },
-  };
-
-  const strategies = [
-    {
-      id: `stop1_${d1.code}`,
-      driverCode: d1.code,
-      lap: 22,
-      targetCompound: "H",
-      setId: "H1",
-      stopNum: 1,
-      label: `Stop 1 @ Lap 22 (H)`,
-      applied: false,
-    },
-    {
-      id: `stop1_${d2.code}`,
-      driverCode: d2.code,
-      lap: 26,
-      targetCompound: "H",
-      setId: "H1",
-      stopNum: 1,
-      label: `Stop 1 @ Lap 26 (H)`,
-      applied: false,
-    },
-  ];
-
-  return { plans, strategies };
 }
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -321,14 +240,33 @@ export default function App() {
   const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
   const [selectedCircuit, setSelectedCircuit] = useState(() => {
-    const initialId = parseHashLocation().circuit;
-    return SEASON_2026_ROUNDS.find((c) => c.circuit_id === initialId) || SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT;
+    const hashId = parseHashLocation().circuit;
+    let savedId = null;
+    try {
+      savedId = localStorage.getItem("gp_selected_circuit");
+    } catch {
+      savedId = null;
+    }
+    const targetId = hashId || savedId;
+    return SEASON_2026_ROUNDS.find((c) => c.circuit_id === targetId) || SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT;
   });
 
-  // Sync URL hash cleanly for shareable views and browser Back/Forward without extra router complexity
+  const totalLaps = selectedCircuit?.laps || 58;
+  const [currentLapNum, setCurrentLapNum] = useState(1);
+  const [isAutoSimulating, setIsAutoSimulating] = useState(false);
+  const [simSpeed, setSimSpeed] = useState(1);
+  const [activeFlag, setActiveFlag] = useState("GREEN");
+  const [overtakeTriggerCount, setOvertakeTriggerCount] = useState(0);
+
+  // Sync URL hash and localStorage persistence cleanly for shareable views & reload continuity
   useEffect(() => {
     if (typeof window === "undefined") return;
     const cid = selectedCircuit?.circuit_id || "australia";
+    try {
+      localStorage.setItem("gp_selected_circuit", cid);
+    } catch {
+      // ignore storage errors
+    }
     const targetHash = `#/${activeTab}?circuit=${encodeURIComponent(cid)}`;
     if (window.location.hash !== targetHash) {
       window.history.replaceState(null, "", targetHash);
@@ -416,12 +354,16 @@ export default function App() {
     setActiveTab("timing");
   }, []);
 
-  const totalLaps = selectedCircuit?.laps || 58;
-  const [currentLapNum, setCurrentLapNum] = useState(1);
-  const [isAutoSimulating, setIsAutoSimulating] = useState(false);
-  const [simSpeed, setSimSpeed] = useState(1);
-  const [activeFlag, setActiveFlag] = useState("GREEN");
-  const [overtakeTriggerCount, setOvertakeTriggerCount] = useState(0);
+  const handleSetLap = useCallback((targetLap) => {
+    const clamped = Math.max(1, Math.min(totalLaps, Number(targetLap) || 1));
+    setCurrentLapNum(clamped);
+    if (clamped >= totalLaps) {
+      setIsAutoSimulating(false);
+      setActiveFlag("CHEQUERED");
+    } else if (activeFlag === "CHEQUERED") {
+      setActiveFlag("GREEN");
+    }
+  }, [totalLaps, activeFlag]);
 
   // ── Strategy Game Mode: Role Clearance & Team Principal Selection ──
   const [userRole, setUserRole] = useState(() => {
@@ -521,18 +463,7 @@ export default function App() {
     setRestartSignal((s) => s + 1);
 
     const r1Laps = round1.laps || 58;
-    const freshGrid = buildTimingTowerGridForCircuit(round1.circuit_id || "australia", 1).map((d, i) => ({
-      ...d,
-      pos: i + 1,
-      tireAge: 0,
-      wear: 4,
-      pits: 0,
-      pitState: "RACING",
-      gap: i === 0 ? "LEADER" : "—",
-      interval: "—",
-      posDelta: "0",
-      arrow: "neutral",
-    }));
+    const freshGrid = resetGridEntries(buildTimingTowerGridForCircuit(round1.circuit_id || "australia", 1));
     setDrivers(freshGrid);
 
     const { plans, strategies } = createInitialTeamPlans(newTeamId, freshGrid, r1Laps);
@@ -553,7 +484,7 @@ export default function App() {
       setDriverPlans(plans);
       setPlannedStrategies(strategies);
     }
-  }, [selectedTeam, drivers, totalLaps]);
+  }, [selectedTeam, drivers, driverPlans, totalLaps]);
 
   // Direct Restart Race Simulation Handler
   const handleDirectRestart = useCallback(() => {
@@ -568,18 +499,7 @@ export default function App() {
       setSeasonScoreboard((prev) => revertRaceResultFromScoreboard(prev, selectedCircuit.circuit_id));
     }
 
-    const freshGrid = buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1).map((d, i) => ({
-      ...d,
-      pos: i + 1,
-      tireAge: 0,
-      wear: 4,
-      pits: 0,
-      pitState: "RACING",
-      gap: i === 0 ? "LEADER" : "—",
-      interval: "—",
-      posDelta: "0",
-      arrow: "neutral",
-    }));
+    const freshGrid = resetGridEntries(buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
     setDrivers(freshGrid);
 
     const { plans, strategies } = createInitialTeamPlans(selectedTeam, freshGrid, totalLaps);
@@ -609,18 +529,7 @@ export default function App() {
     setRestartSignal((s) => s + 1);
 
     const nextLaps = nextC.laps || 58;
-    const freshGrid = buildTimingTowerGridForCircuit(nextC.circuit_id, 1).map((d, i) => ({
-      ...d,
-      pos: i + 1,
-      tireAge: 0,
-      wear: 4,
-      pits: 0,
-      pitState: "RACING",
-      gap: i === 0 ? "LEADER" : "—",
-      interval: "—",
-      posDelta: "0",
-      arrow: "neutral",
-    }));
+    const freshGrid = resetGridEntries(buildTimingTowerGridForCircuit(nextC.circuit_id, 1));
     setDrivers(freshGrid);
 
     const { plans, strategies } = createInitialTeamPlans(selectedTeam, freshGrid, nextLaps);
@@ -630,7 +539,7 @@ export default function App() {
     setActiveTab("timing");
     setActivePitEvent(null);
     setOvertakeEvent(`🏁 WELCOME TO ROUND ${nextC.round}: ${nextC.grand_prix_name.toUpperCase()}! Grid, tire allocations & initial team strategies loaded.`);
-  }, [circuits, selectedCircuit, selectedTeam]);
+  }, [circuits, selectedCircuit, selectedTeam, handleRecordRaceResult]);
 
   const handleCompletePlanStop = useCallback((driverCode, stopNum) => {
     setDriverPlans((prev) => {
@@ -722,10 +631,10 @@ export default function App() {
     if (currentLapNum <= 1) {
       setDrivers(buildTimingTowerGridForCircuit(selectedCircuit?.circuit_id || "australia", 1));
     }
-  }, [selectedCircuit?.circuit_id]);
+  }, [selectedCircuit?.circuit_id, currentLapNum]);
 
   // Execute Pit Stop shared handler (updates drivers & timing matrix immediately)
-  const handleExecutePitStop = useCallback(({ driverCode, targetCompound, initialWear = 4, initialAge = 0, reentry }) => {
+  const handleExecutePitStop = useCallback(({ driverCode, targetCompound, initialWear = 4, initialAge = 0 }) => {
     const baseLoss = activeFlag === "SC" ? 13.5 : activeFlag === "VSC" ? 15.2 : (selectedCircuit?.pit_loss_green || 22.5);
     const pitCrewVariance = +((Math.random() * 0.4) - 0.2).toFixed(2);
     const actualPitLoss = +(baseLoss + pitCrewVariance).toFixed(2);
@@ -876,11 +785,14 @@ export default function App() {
 
   // Live references to prevent stale closures during simulation and race completion
   const driversRef = useRef(drivers);
-  driversRef.current = drivers;
   const circuitRef = useRef(selectedCircuit);
-  circuitRef.current = selectedCircuit;
   const currentLapRef = useRef(currentLapNum);
-  currentLapRef.current = currentLapNum;
+
+  useEffect(() => {
+    driversRef.current = drivers;
+    circuitRef.current = selectedCircuit;
+    currentLapRef.current = currentLapNum;
+  }, [drivers, selectedCircuit, currentLapNum]);
 
   const [is3DMapActive, setIs3DMapActive] = useState(false);
   const isMapDrivingLaps = activeTab === "timing" && is3DMapActive;
@@ -897,7 +809,7 @@ export default function App() {
     } else {
       setCurrentLapNum(next);
     }
-  }, [totalLaps]);
+  }, [totalLaps, handleRecordRaceResult]);
 
   // Master race simulation clock: runs fast lap-by-lap in Timing Matrix, defers to 3D full-lap completion on 3D Map
   useEffect(() => {
@@ -1001,6 +913,7 @@ export default function App() {
             </span>
             <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
             <select
+              aria-label="Select Grand Prix circuit"
               value={selectedCircuit?.circuit_id || "australia"}
               onChange={(e) => handleCircuitChange(e.target.value)}
               style={{
@@ -1373,6 +1286,7 @@ export default function App() {
           onToggle={() => setIsBriefOpen((current) => !current)}
           onNavigate={setActiveTab}
         />
+        <ComponentErrorBoundary name="Telemetry Workspace">
         <Suspense fallback={<CommandLoader label={activeTabMeta.subtitle} />}>
           {/* Keep TimingTower and StrategyAdvisor mounted persistently to prevent simulation reset or unmounting */}
           <div style={{ display: activeTab === "timing" ? "block" : "none" }}>
@@ -1388,6 +1302,7 @@ export default function App() {
               onChangeSimSpeed={(spd) => setSimSpeed(spd)}
               onMapActiveChange={setIs3DMapActive}
               onAdvanceLap={advanceRaceOneLap}
+              onSetLap={handleSetLap}
               triggerOvertakeSignal={overtakeTriggerCount}
               userRole={userRole}
               playerTeam={selectedTeam}
@@ -1450,6 +1365,7 @@ export default function App() {
             />
           )}
         </Suspense>
+        </ComponentErrorBoundary>
       </main>
 
       {/* ── 2026 Strategy Simulation Gateway Landing Modal ── */}

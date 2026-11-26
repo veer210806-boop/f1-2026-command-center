@@ -3,21 +3,20 @@
 // High-Impact Head-to-Head Visual Duel, Interactive Track Corner Ribbon,
 // Focused Telemetry Chart Studio, Corner Apex Performance Cards & Radio Comms
 // ============================================================
-import React, { useState, useEffect, useMemo, memo } from "react";
+import React, { useState, useEffect, useMemo, useRef, memo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell, ReferenceLine
+  ResponsiveContainer, ReferenceLine
 } from "recharts";
 import { DRIVER_FACES, TEAM_LOGOS_WHITE, TEAM_LOGOS } from "../data/f1MediaAssets2026";
 import { DRIVER_PROFILES_2026 } from "../data/driverProfiles2026";
 import { getTeammateRadio } from "../data/teamRadioArchive";
 import TeamRadioModal from "./TeamRadioModal";
-import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { f1Audio } from "../utils/f1AudioEngine";
 import { fetchOpenF1TeammateTelemetry } from "../utils/openF1Service";
 import { downloadCsvFile } from "../utils/exportUtils";
 
-export const ALL_TEAMMATE_PAIRS = [
+const ALL_TEAMMATE_PAIRS = [
   { d1: "VER", d2: "HAD", team: "Red Bull Racing", color: "#1E41FF", color2: "#FFD700", d1Num: 3,  d2Num: 6 },
   { d1: "NOR", d2: "PIA", team: "McLaren",         color: "#FF8000", color2: "#00F0FF", d1Num: 1,  d2Num: 81 },
   { d1: "LEC", d2: "HAM", team: "Ferrari",         color: "#E8002D", color2: "#FFE600", d1Num: 16, d2Num: 44 },
@@ -187,13 +186,14 @@ function TelemetryViewer({ selectedCircuit }) {
   const [scrubPos, setScrubPos] = useState(380);
   const [isPlayingLap, setIsPlayingLap] = useState(false);
   const [tableViewMode, setTableViewMode] = useState("cards"); // "cards" | "table"
-  const [activeRadioFilter, setActiveRadioFilter] = useState("ALL");
+  const [activeRadioFilter] = useState("ALL");
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [playingRadioId, setPlayingRadioId] = useState(null);
   const [telemetryMode, setTelemetryMode] = useState("model"); // "model" | "openf1"
   const [openF1Data, setOpenF1Data] = useState(null);
   const [isLoadingOpenF1, setIsLoadingOpenF1] = useState(false);
   const [telemetryNotice, setTelemetryNotice] = useState("");
+  const pairTabRefs = useRef([]);
 
   // Get active circuit profile & official SVG layout
   const activeProfile = useMemo(() => {
@@ -202,14 +202,16 @@ function TelemetryViewer({ selectedCircuit }) {
 
   const maxTrackDistance = activeProfile.length_m;
   const activeCircuitId = selectedCircuit?.circuit_id || "australia";
-  const activeTrackSvgPath = OFFICIAL_CIRCUIT_PATHS[activeCircuitId] || OFFICIAL_CIRCUIT_PATHS.australia || OFFICIAL_CIRCUIT_PATHS.belgium;
 
   // Fetch real OpenF1 teammate lap telemetry when switched to Real Data mode
   useEffect(() => {
     if (telemetryMode !== "openf1") return;
     let cancelled = false;
-    setIsLoadingOpenF1(true);
-    setTelemetryNotice("Fetching fastest race lap telemetry from OpenF1 API...");
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setIsLoadingOpenF1(true);
+      setTelemetryNotice("Fetching fastest race lap telemetry from OpenF1 API...");
+    });
     fetchOpenF1TeammateTelemetry(activeCircuitId, selectedPair.d1, selectedPair.d2, 2024)
       .then((res) => {
         if (cancelled) return;
@@ -247,10 +249,7 @@ function TelemetryViewer({ selectedCircuit }) {
   const ratingDelta = (d1Rating - d2Rating) * 0.5;
 
   const modelTelemetryData = useMemo(() => {
-    let cumulativeDeltaSec = 0;
-    let prevDistance = 0;
-
-    return activeProfile.corners.map((pt, idx) => {
+    return activeProfile.corners.reduce((acc, pt, idx) => {
       const d1Var = Math.round(ratingDelta + (idx % 3 === 0 ? 3 : (idx % 2 === 0 ? -1 : 2)));
       const d2Var = Math.round(-ratingDelta + (idx % 3 === 0 ? -2 : (idx % 2 === 0 ? 2 : -1)));
 
@@ -263,14 +262,14 @@ function TelemetryViewer({ selectedCircuit }) {
       const b1 = pt.brake > 0 ? Math.min(100, pt.brake + (d1Var < 0 ? 10 : 0)) : 0;
       const b2 = pt.brake > 0 ? Math.min(100, pt.brake + (d2Var < 0 ? 10 : 0)) : 0;
 
-      const distStep = Math.max(1, pt.distance_m - prevDistance);
-      prevDistance = pt.distance_m;
+      const prevDist = idx > 0 ? activeProfile.corners[idx - 1].distance_m : 0;
+      const distStep = Math.max(1, pt.distance_m - prevDist);
       const t1_step = distStep / ((s1 / 3.6) || 1);
       const t2_step = distStep / ((s2 / 3.6) || 1);
-      const stepDelta = t2_step - t1_step;
-      cumulativeDeltaSec += stepDelta;
+      const prevRunningDelta = acc.length > 0 ? acc[acc.length - 1].runningDelta : 0;
+      const runningDelta = prevRunningDelta + (t2_step - t1_step);
 
-      return {
+      acc.push({
         distance: pt.distance_m,
         label: pt.turn,
         desc: pt.description,
@@ -281,14 +280,16 @@ function TelemetryViewer({ selectedCircuit }) {
         d1_speed: s1,
         d2_speed: s2,
         delta: deltaSpeed,
-        time_delta: +cumulativeDeltaSec.toFixed(3),
+        runningDelta,
+        time_delta: +runningDelta.toFixed(3),
         d1_throttle: t1,
         d2_throttle: t2,
         d1_brake: b1,
         d2_brake: b2,
-      };
-    });
-  }, [activeProfile, selectedPair, ratingDelta]);
+      });
+      return acc;
+    }, []);
+  }, [activeProfile, ratingDelta]);
 
   const telemetryData = telemetryMode === "openf1" && openF1Data?.points?.length > 0
     ? openF1Data.points
@@ -330,7 +331,24 @@ function TelemetryViewer({ selectedCircuit }) {
   // Simulated lap delta in seconds
   const lapDeltaSec = ((topSpeedD2 - topSpeedD1) * 0.015 + (minApexD2 - minApexD1) * 0.04).toFixed(3);
   const fasterDriver = lapDeltaSec <= 0 ? selectedPair.d1 : selectedPair.d2;
-  const fasterProfile = fasterDriver === selectedPair.d1 ? d1Profile : d2Profile;
+
+  const handleSelectPair = (pair, idx) => {
+    setSelectedPair(pair);
+    pairTabRefs.current[idx]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
+
+  const handlePairTabKeyDown = (e, idx) => {
+    let nextIdx = null;
+    if (e.key === "ArrowRight") nextIdx = (idx + 1) % ALL_TEAMMATE_PAIRS.length;
+    else if (e.key === "ArrowLeft") nextIdx = (idx - 1 + ALL_TEAMMATE_PAIRS.length) % ALL_TEAMMATE_PAIRS.length;
+    else if (e.key === "Home") nextIdx = 0;
+    else if (e.key === "End") nextIdx = ALL_TEAMMATE_PAIRS.length - 1;
+    if (nextIdx !== null) {
+      e.preventDefault();
+      handleSelectPair(ALL_TEAMMATE_PAIRS[nextIdx], nextIdx);
+      pairTabRefs.current[nextIdx]?.focus();
+    }
+  };
 
   // Formula Dream Team Radio Comms
   const teamRadioList = useMemo(() => {
@@ -457,6 +475,8 @@ function TelemetryViewer({ selectedCircuit }) {
 
         {/* Clean, Modern Horizontal Scrollable Team Pills */}
         <div
+          role="tablist"
+          aria-label="2026 Constructor teammate pairs"
           style={{
             display: "flex",
             gap: "8px",
@@ -466,15 +486,20 @@ function TelemetryViewer({ selectedCircuit }) {
             scrollbarColor: "rgba(255,255,255,0.15) transparent",
           }}
         >
-          {ALL_TEAMMATE_PAIRS.map((pair) => {
+          {ALL_TEAMMATE_PAIRS.map((pair, idx) => {
             const isSelected = selectedPair.d1 === pair.d1 && selectedPair.d2 === pair.d2;
             const logoUrl = TEAM_LOGOS_WHITE[pair.team] || TEAM_LOGOS[pair.team];
             return (
               <button
                 key={pair.team}
-                onClick={() => setSelectedPair(pair)}
+                ref={(el) => { pairTabRefs.current[idx] = el; }}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                tabIndex={isSelected ? 0 : -1}
+                onClick={() => handleSelectPair(pair, idx)}
+                onKeyDown={(e) => handlePairTabKeyDown(e, idx)}
                 style={{
-                  all: "unset",
                   cursor: "pointer",
                   flex: "0 0 auto",
                   display: "flex",
@@ -485,8 +510,10 @@ function TelemetryViewer({ selectedCircuit }) {
                   background: isSelected
                     ? `linear-gradient(135deg, ${pair.color}28 0%, rgba(20,24,36,0.95) 100%)`
                     : "rgba(255,255,255,0.025)",
-                  border: `1px solid ${isSelected ? pair.color : "rgba(255,255,255,0.08)"}`,
+                  borderTop: `1px solid ${isSelected ? pair.color : "rgba(255,255,255,0.08)"}`,
+                  borderRight: `1px solid ${isSelected ? pair.color : "rgba(255,255,255,0.08)"}`,
                   borderLeft: `4px solid ${pair.color}`,
+                  borderBottom: isSelected ? `2px solid ${pair.color}` : "2px solid rgba(255,255,255,0.08)",
                   boxShadow: isSelected ? `0 4px 16px ${pair.color}35` : "none",
                   transition: "all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
                 }}

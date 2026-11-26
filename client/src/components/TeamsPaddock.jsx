@@ -430,10 +430,15 @@ function TeamsPaddock() {
       if (!activeDriverModal) return;
       if (e.key === "Escape") {
         setActiveDriverModal(null);
-      } else if (e.key === "ArrowLeft") {
-        navigateDriver(-1);
-      } else if (e.key === "ArrowRight") {
-        navigateDriver(1);
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        const delta = e.key === "ArrowLeft" ? -1 : 1;
+        const currentCode = typeof activeDriverModal === "string" ? activeDriverModal : activeDriverModal.code;
+        const currentIndex = GRID_DRIVER_CODES.indexOf(currentCode);
+        if (currentIndex === -1) return;
+        const nextIdx = (currentIndex + delta + GRID_DRIVER_CODES.length) % GRID_DRIVER_CODES.length;
+        const nextCode = GRID_DRIVER_CODES[nextIdx];
+        const nextDriver = drivers.find((d) => d.code === nextCode) || getDriverProfile(nextCode);
+        setActiveDriverModal(nextDriver);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -1735,7 +1740,7 @@ function TeamsPaddock() {
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           {/* 22 Drivers Holographic Trading Cards Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "22px" }}>
-            {processedDrivers.map((d, index) => {
+            {processedDrivers.map((d) => {
               const teamObj = teams.find((t) => t.team.toLowerCase() === d.team.toLowerCase() || (t.drivers && t.drivers.includes(d.code)));
               const color = teamObj?.primary_color || "var(--neon-red)";
               const photoImg = d.photo_url || getDriverPhoto(d.code);
@@ -1754,7 +1759,6 @@ function TeamsPaddock() {
               const wdcCount = d.championships || profile.championships || 0;
               const wins = d.wins || profile.wins || 0;
               const podiums = d.podiums || profile.podiums || 0;
-              const poles = profile.pole_positions || 0;
               const careerPoints = d.points || profile.career_points || 0;
               const countryCode = NATIONALITY_TO_FIA[d.nationality] || (d.nationality ? d.nationality.slice(0, 3).toUpperCase() : (d.country ? d.country.slice(0, 3).toUpperCase() : "FIA"));
 
@@ -2789,7 +2793,7 @@ function TeamsPaddock() {
                   </div>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    {teamDrivers.map((driver, idx) => {
+                    {teamDrivers.map((driver) => {
                       const driverPhoto = driver.photo_url || getDriverPhoto(driver.code);
                       const profile = DRIVER_PROFILES_2026[driver.code] || {};
                       const ratings = profile.telemetry_ratings || {

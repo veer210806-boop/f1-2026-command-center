@@ -2,20 +2,20 @@
 // TimingTower.jsx — Advanced F1 Pit Wall Command Center
 // Next-Gen 2026 Formula 1 Live Mission Control Dashboard
 // ============================================================
-import { useState, useEffect, useMemo, useRef, memo } from "react";
-import axios from "axios";
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine
 } from "recharts";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getTeamLogo } from "../data/f1MediaAssets2026";
 import { getCircuitWeather } from "../data/calendar2026";
-import { getDriverRadio, getCircuitRadio, TEAM_RADIO_ARCHIVE } from "../data/teamRadioArchive";
+import { getDriverRadio } from "../data/teamRadioArchive";
 import TeamRadioModal from "./TeamRadioModal";
 import FiaRaceControlModal from "./FiaRaceControlModal";
 import LiveRaceMapTracker from "./LiveRaceMapTracker";
 import StatsF1LapMatrix from "./StatsF1LapMatrix";
-import { RACE_STATUS_FLAGS, INITIAL_FIA_BULLETINS } from "../data/fiaRaceControl";
+import TimingSidebarTelemetry from "./TimingSidebarTelemetry";
+import ComponentErrorBoundary from "./ComponentErrorBoundary";
 import {
   generateRaceWeekendData,
   buildTimingTowerGridForCircuit,
@@ -23,16 +23,19 @@ import {
 } from "../data/raceWeekendGrids2026";
 import { isDriverBelongingToTeam } from "../data/constructors2026";
 import {
+  DRIVER_IOC_MAP,
+  TIRE_CONFIG,
+  TEAM_RACE_ENGINEERS,
   simulateLapTick,
   computeCatchAndProbability,
+  computePitCrewExecution,
   buildLiveTireCurve,
   buildPaceComparisonSeries,
+  buildStrategyPlanSummary,
+  resetGridEntries,
 } from "../utils/raceSimEngine";
 import { fetchOpenF1RaceReplay } from "../utils/openF1Service";
 import { downloadCsvFile } from "../utils/exportUtils";
-
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // ── Authentic 2026 Team Badges & Colors ─────────────────────────────────────
 const TEAM_CONFIG = {
@@ -50,58 +53,7 @@ const TEAM_CONFIG = {
   "Cadillac":        { bg: "#4a3c00", text: "#ffc72c", label: "CADILLAC F1" },
 };
 
-// ── Default 22 Driver Grid (Official F1 2026 Season Grid with Next-Gen Data) ─
-const DEFAULT_22_GRID = buildTimingTowerGridForCircuit("australia", 1);
-
-
-
-export const DRIVER_IOC_MAP = {
-  NOR: "GBR", PIA: "AUS", VER: "NLD", HAD: "FRA", RUS: "GBR", ANT: "ITA",
-  LEC: "MCO", HAM: "GBR", SAI: "ESP", ALB: "THA", ALO: "ESP", STR: "CAN",
-  GAS: "FRA", COL: "ARG", OCO: "FRA", BEA: "GBR", HUL: "DEU", BOR: "BRA",
-  LAW: "NZL", LIN: "GBR", PER: "MEX", BOT: "FIN",
-};
-
-// ── Pirelli Wheel Compound Definitions & Broadcast Badges ───────────────────
-export const TIRE_CONFIG = {
-  S: {
-    letter: "S",
-    name: "Soft",
-    fullName: "Soft Compound",
-    color: "#ff1801",
-    glow: "rgba(255, 24, 1, 0.75)",
-  },
-  M: {
-    letter: "M",
-    name: "Medium",
-    fullName: "Medium Compound",
-    color: "#ffd700",
-    glow: "rgba(255, 215, 0, 0.75)",
-  },
-  H: {
-    letter: "H",
-    name: "Hard",
-    fullName: "Hard Compound",
-    color: "#ffffff",
-    glow: "rgba(255, 255, 255, 0.75)",
-  },
-  I: {
-    letter: "I",
-    name: "Intermediate",
-    fullName: "Intermediate Compound",
-    color: "#00cc44",
-    glow: "rgba(0, 204, 68, 0.75)",
-  },
-  W: {
-    letter: "W",
-    name: "Wet",
-    fullName: "Wet Compound",
-    color: "#0088ff",
-    glow: "rgba(0, 136, 255, 0.75)",
-  },
-};
-
-export function TireWheel({ compound = "M", laps = 20 }) {
+function TireWheel({ compound = "M", laps = 20 }) {
   const code = (compound || "M").toString().trim().toUpperCase()[0];
   const conf = TIRE_CONFIG[code] || TIRE_CONFIG.M;
 
@@ -237,7 +189,7 @@ export function TireWheel({ compound = "M", laps = 20 }) {
 }
 
 // ── Authentic Mini Compound Badge Pill for Strategy Plans ────────────────────
-export function TireBadgePill({ compound = "M", label = "" }) {
+function TireBadgePill({ compound = "M", label = "" }) {
   const code = (compound || "M").toString().trim().toUpperCase()[0];
   const conf = TIRE_CONFIG[code] || TIRE_CONFIG.M;
   return (
@@ -282,20 +234,6 @@ export function TireBadgePill({ compound = "M", label = "" }) {
   );
 }
 
-// ── Authentic 2026 F1 Team Race Engineers Mapping ────────────────────────────
-export const TEAM_RACE_ENGINEERS = {
-  "McLaren": "Will Joseph",
-  "Red Bull Racing": "Gianpiero Lambiase",
-  "Ferrari": "Bryan Bozzi",
-  "Mercedes": "Peter Bonnington",
-  "Aston Martin": "Chris Cronin",
-  "Williams": "Gaetan Jego",
-  "Haas": "Gary Gannon",
-  "Alpine": "Josh Peckett",
-  "Racing Bulls": "Mattia Spini",
-  "Audi": "Steven Petrik",
-  "Cadillac": "Hugh Bird",
-};
 function SectorBadge({ time = "28.140", type = "green" }) {
   if (time === "—" || time === "-" || !time || type === "empty") {
     return (
@@ -393,277 +331,8 @@ function AeroBadge({ mom = "Z-MODE", isDrs = false }) {
   );
 }
 
-// ── 2026 Active Aero & Wing Actuator Demonstrator ─────────────────────────
-function ActiveAeroDemonstrator({
-  mode = "Z-MODE",
-  onToggleMode,
-  momBoostActive,
-  onTriggerMom,
-  momCooldown,
-  selectedDriver
-}) {
-  const isZ = mode === "Z-MODE";
-  // Z-Mode: Corner Downforce (flaps at 32°), X-Mode: Straight Low-Drag (flaps at 6°)
-  const flapAngle = isZ ? 32 : 6;
-  const downforceKg = isZ ? 1420 : 680;
-  const dragCd = isZ ? 0.88 : 0.46;
-  const topSpeedEst = isZ ? 322 : 347;
-
-  return (
-    <div
-      style={{
-        background: "linear-gradient(135deg, rgba(16, 20, 32, 0.98) 0%, rgba(9, 12, 20, 0.98) 100%)",
-        border: isZ ? "1px solid rgba(68, 136, 255, 0.4)" : "1px solid rgba(0, 210, 190, 0.4)",
-        borderRadius: "8px",
-        padding: "10px 12px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "0.9rem" }}>🌀</span>
-          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.70rem", fontWeight: "900", color: "#ffffff", letterSpacing: "0.06em" }}>
-            2026 ACTIVE AERO ACTUATOR
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: "4px" }}>
-          <button
-            onClick={() => onToggleMode("Z-MODE")}
-            style={{
-              all: "unset",
-              cursor: "pointer",
-              fontFamily: "'Orbitron', monospace",
-              fontSize: "0.62rem",
-              fontWeight: "900",
-              padding: "2px 8px",
-              borderRadius: "4px",
-              background: isZ ? "linear-gradient(135deg, #2563eb, #1d4ed8)" : "rgba(255,255,255,0.05)",
-              color: isZ ? "#ffffff" : "var(--text-dim)",
-              border: `1px solid ${isZ ? "#60a5fa" : "rgba(255,255,255,0.1)"}`,
-              boxShadow: isZ ? "0 0 10px rgba(37, 99, 235, 0.6)" : "none",
-            }}
-          >
-            Z-MODE (DOWNFORCE)
-          </button>
-          <button
-            onClick={() => onToggleMode("X-MODE")}
-            style={{
-              all: "unset",
-              cursor: "pointer",
-              fontFamily: "'Orbitron', monospace",
-              fontSize: "0.62rem",
-              fontWeight: "900",
-              padding: "2px 8px",
-              borderRadius: "4px",
-              background: !isZ ? "linear-gradient(135deg, #00d2be, #00998a)" : "rgba(255,255,255,0.05)",
-              color: !isZ ? "#000000" : "var(--text-dim)",
-              border: `1px solid ${!isZ ? "#00d2be" : "rgba(255,255,255,0.1)"}`,
-              boxShadow: !isZ ? "0 0 10px rgba(0, 210, 190, 0.6)" : "none",
-            }}
-          >
-            X-MODE (LOW-DRAG)
-          </button>
-        </div>
-      </div>
-
-      {/* SVG Wing Flap Demonstration Schematic */}
-      <div
-        style={{
-          width: "100%",
-          height: "90px",
-          background: "radial-gradient(circle at center, rgba(0,210,190,0.06) 0%, rgba(5,7,12,0.9) 100%)",
-          borderRadius: "6px",
-          border: "1px solid rgba(255,255,255,0.08)",
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-        }}
-      >
-        <svg viewBox="0 0 280 85" style={{ width: "100%", height: "100%" }}>
-          <defs>
-            <linearGradient id="aeroWingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={isZ ? "#3b82f6" : "#00d2be"} />
-              <stop offset="100%" stopColor="#ffffff" />
-            </linearGradient>
-            <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(0, 210, 190, 0.1)" />
-              <stop offset="50%" stopColor={isZ ? "rgba(59, 130, 246, 0.6)" : "rgba(0, 210, 190, 0.7)"} />
-              <stop offset="100%" stopColor="rgba(255, 255, 255, 0.9)" />
-            </linearGradient>
-          </defs>
-
-          {/* Airflow streamlines */}
-          <path d="M 10 25 Q 90 20, 150 24 T 270 28" fill="none" stroke="url(#flowGrad)" strokeWidth="1.5" strokeDasharray="6 4">
-            <animate attributeName="stroke-dashoffset" from="30" to="0" dur={isZ ? "1.8s" : "0.9s"} repeatCount="indefinite" />
-          </path>
-          <path d="M 10 45 Q 90 40, 150 44 T 270 48" fill="none" stroke="url(#flowGrad)" strokeWidth="1.8" strokeDasharray="8 4">
-            <animate attributeName="stroke-dashoffset" from="40" to="0" dur={isZ ? "1.6s" : "0.8s"} repeatCount="indefinite" />
-          </path>
-          <path d="M 10 65 Q 90 60, 150 62 T 270 65" fill="none" stroke="url(#flowGrad)" strokeWidth="1.2" strokeDasharray="5 3">
-            <animate attributeName="stroke-dashoffset" from="25" to="0" dur={isZ ? "2.0s" : "1.0s"} repeatCount="indefinite" />
-          </path>
-
-          {/* Front Main Plane (fixed) */}
-          <path d="M 40 55 C 50 48, 75 48, 85 52 L 80 58 C 70 54, 50 54, 40 55 Z" fill="#475569" stroke="#64748b" strokeWidth="1" />
-          {/* Active Front Flap (Rotates on angle) */}
-          <g transform={`rotate(${isZ ? -22 : -5}, 80, 52)`} style={{ transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-            <path d="M 80 52 C 90 46, 108 44, 118 48 L 115 54 C 105 50, 90 50, 80 52 Z" fill="url(#aeroWingGrad)" stroke={isZ ? "#60a5fa" : "#00d2be"} strokeWidth="1.2" />
-          </g>
-
-          {/* Rear Wing Endplate Profile */}
-          <path d="M 175 62 L 180 20 L 235 18 L 240 60 Z" fill="rgba(30, 41, 59, 0.8)" stroke="#475569" strokeWidth="1" />
-          {/* Rear Lower Main Plane */}
-          <path d="M 180 38 C 195 34, 215 34, 230 38 L 228 42 C 215 39, 195 39, 180 42 Z" fill="#64748b" />
-          {/* Rear Active Beam Flap (Tilts between high drag 35° and low drag 6°) */}
-          <g transform={`rotate(${isZ ? -32 : -6}, 210, 24)`} style={{ transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-            <path d="M 190 26 C 205 20, 222 20, 235 24 L 232 29 C 220 25, 205 25, 190 30 Z" fill="url(#aeroWingGrad)" stroke={isZ ? "#60a5fa" : "#00d2be"} strokeWidth="1.5" />
-          </g>
-
-          {/* HUD Status label */}
-          <text x="140" y="78" textAnchor="middle" fill={isZ ? "#93c5fd" : "#00d2be"} fontSize="9" fontFamily="'Orbitron', monospace" fontWeight="800">
-            {isZ ? "Z-MODE: CORNER DOWNFORCE [FLAPS 32°]" : "X-MODE: STRAIGHTLINE LOW-DRAG [FLAPS 6°]"}
-          </text>
-        </svg>
-      </div>
-
-      {/* Aerodynamic Telemetry Metrics Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "5px", background: "rgba(0,0,0,0.4)", padding: "5px 6px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "0.55rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>WING ANGLE</div>
-          <div style={{ fontSize: "0.72rem", color: isZ ? "#60a5fa" : "#00d2be", fontWeight: "900", fontFamily: "'Orbitron', monospace" }}>
-            {flapAngle}°
-          </div>
-        </div>
-        <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ fontSize: "0.55rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>DOWNFORCE</div>
-          <div style={{ fontSize: "0.72rem", color: "#ffffff", fontWeight: "900", fontFamily: "'Orbitron', monospace" }}>
-            {downforceKg} <span style={{ fontSize: "0.50rem" }}>KG</span>
-          </div>
-        </div>
-        <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ fontSize: "0.55rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>DRAG COEFF</div>
-          <div style={{ fontSize: "0.72rem", color: isZ ? "#ffaa00" : "var(--neon-green)", fontWeight: "900", fontFamily: "'Orbitron', monospace" }}>
-            {dragCd} Cd
-          </div>
-        </div>
-        <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ fontSize: "0.55rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>EST TOP SPD</div>
-          <div style={{ fontSize: "0.72rem", color: "var(--neon-cyan)", fontWeight: "900", fontFamily: "'Orbitron', monospace" }}>
-            {topSpeedEst} <span style={{ fontSize: "0.50rem" }}>KM/H</span>
-          </div>
-        </div>
-      </div>
-
-      {/* MOM (Manual Override Mode) 350kW "Push to Pass" Cockpit Boost Trigger */}
-      <div
-        style={{
-          background: momBoostActive
-            ? "linear-gradient(135deg, rgba(255, 0, 85, 0.25) 0%, rgba(20, 0, 10, 0.95) 100%)"
-            : "linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(10, 12, 18, 0.9) 100%)",
-          border: momBoostActive ? "1px solid var(--neon-red)" : "1px solid rgba(255,255,255,0.1)",
-          borderRadius: "6px",
-          padding: "7px 10px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: momBoostActive ? "0 0 16px rgba(255, 0, 85, 0.5)" : "none",
-        }}
-      >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "0.85rem" }}>⚡</span>
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", fontWeight: "900", color: momBoostActive ? "var(--neon-red)" : "#ffffff" }}>
-              MOM 350kW MANUAL OVERRIDE
-            </span>
-          </div>
-          <div style={{ fontSize: "0.58rem", color: "var(--text-dim)", marginTop: "2px" }}>
-            Focus: #{selectedDriver?.num} {selectedDriver?.code} · Consumes 12% SOC for +18 km/h boost
-          </div>
-        </div>
-        <button
-          onClick={onTriggerMom}
-          disabled={momCooldown > 0 || momBoostActive}
-          style={{
-            all: "unset",
-            cursor: momCooldown > 0 || momBoostActive ? "not-allowed" : "pointer",
-            background: momBoostActive
-              ? "linear-gradient(135deg, #ff0055, #b3003b)"
-              : (momCooldown > 0 ? "rgba(255,255,255,0.08)" : "linear-gradient(135deg, #00d2be, #00998a)"),
-            color: momBoostActive ? "#ffffff" : (momCooldown > 0 ? "var(--text-dim)" : "#000000"),
-            padding: "5px 12px",
-            borderRadius: "4px",
-            fontFamily: "'Orbitron', monospace",
-            fontSize: "0.64rem",
-            fontWeight: "900",
-            letterSpacing: "0.04em",
-            boxShadow: momBoostActive ? "0 0 14px rgba(255,0,85,0.8)" : (momCooldown > 0 ? "none" : "0 0 10px rgba(0,210,190,0.5)"),
-            transition: "all 0.15s ease",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "5px",
-          }}
-        >
-          <span>{momBoostActive ? "🔥 ACTIVE" : (momCooldown > 0 ? `⏳ COOL (${momCooldown}s)` : "🚀 PUSH TO PASS")}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Helper to format clean driver surname (e.g. "Norris", "Sainz Jr.") ──────────
-function formatDriverSurname(name) {
-  if (!name) return "";
-  if (name.includes("Sainz")) return "Sainz Jr.";
-  const parts = name.split(" ");
-  return parts.slice(1).join(" ");
-}
-
-// ── Authentic F1 TV Broadcast Overtake Audio Chime ─────────────────────────────
-function playF1OvertakeChime(muted = false) {
-  if (muted) return;
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = "sine";
-    osc1.frequency.setValueAtTime(659.25, ctx.currentTime);
-    osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
-    gain1.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start();
-    osc1.stop(ctx.currentTime + 0.12);
-
-    setTimeout(() => {
-      try {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = "sine";
-        osc2.frequency.setValueAtTime(1174.66, ctx.currentTime);
-        osc2.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.12);
-        gain2.gain.setValueAtTime(0.09, ctx.currentTime);
-        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start();
-        osc2.stop(ctx.currentTime + 0.15);
-      } catch (_) {}
-    }, 90);
-  } catch (_) {}
-}
-
 function TimingTower({
   selectedCircuit,
-  onGoToCalendar,
   onGoToStrategy,
   controlledLap,
   controlledFlag,
@@ -673,12 +342,12 @@ function TimingTower({
   onChangeSimSpeed,
   onMapActiveChange,
   onAdvanceLap,
+  onSetLap,
   triggerOvertakeSignal,
   userRole = "team",
   playerTeam = "Ferrari",
   restartSignal = 0,
   drivers: externalDrivers,
-  onExecutePitStop,
   onDriversUpdate,
   plannedStrategies = [],
   driverPlans,
@@ -690,7 +359,6 @@ function TimingTower({
   onSetOvertakeEvent,
 }) {
   const gpName = selectedCircuit?.grand_prix_name || "AUSTRALIAN GRAND PRIX";
-  const roundNum = selectedCircuit?.round || 1;
   const maxLaps = selectedCircuit?.laps || 58;
 
   const activeCircuitId = selectedCircuit?.circuit_id || "australia";
@@ -762,26 +430,101 @@ function TimingTower({
   const [momBoostActive, setMomBoostActive] = useState(false);
   const [momCooldown, setMomCooldown] = useState(0);
 
+  // Format clean driver surname + audio broadcast chime
+  function formatDriverSurname(name) {
+    if (!name) return "";
+    if (name.includes("Sainz")) return "Sainz Jr.";
+    const parts = name.split(" ");
+    return parts.slice(1).join(" ");
+  }
+
+  function playF1OvertakeChime(muted = false) {
+    if (muted) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(659.25, ctx.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+      gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start();
+      osc1.stop(ctx.currentTime + 0.12);
+
+      setTimeout(() => {
+        try {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = "sine";
+          osc2.frequency.setValueAtTime(1174.66, ctx.currentTime);
+          osc2.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.12);
+          gain2.gain.setValueAtTime(0.09, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.15);
+        } catch {
+          // ignore WebAudio teardown edge
+        }
+      }, 90);
+    } catch {
+      // ignore AudioContext restriction
+    }
+  }
+
   // Synchronized broadcast event state (parent callbacks queued post-updater cleanly)
   const [internalOvertakeEvent, setInternalOvertakeEvent] = useState(null);
   const overtakeEvent = propOvertakeEvent !== undefined ? propOvertakeEvent : internalOvertakeEvent;
-  const setOvertakeEvent = (val) => {
+  const setOvertakeEvent = useCallback((val) => {
     setInternalOvertakeEvent(val);
     if (onSetOvertakeEvent) {
       queueMicrotask(() => onSetOvertakeEvent(val));
     }
-  };
+  }, [onSetOvertakeEvent]);
 
   const [activeOvertake, setActiveOvertake] = useState(null);
 
   const [internalPitEvent, setInternalPitEvent] = useState(null);
   const activePitEvent = propActivePitEvent !== undefined ? propActivePitEvent : internalPitEvent;
-  const setActivePitEvent = (val) => {
+  const setActivePitEvent = useCallback((val) => {
     setInternalPitEvent(val);
     if (onSetPitEvent) {
       queueMicrotask(() => onSetPitEvent(val));
     }
-  };
+  }, [onSetPitEvent]);
+
+  // Wire Weather Mode & Live Forecast rain probability -> actual physics trackDampness (0..100)
+  useEffect(() => {
+    let nextDamp = 0;
+    if (weatherMode === "dry") {
+      nextDamp = 0;
+    } else if (weatherMode === "drizzle") {
+      nextDamp = 38;
+    } else if (weatherMode === "wet") {
+      nextDamp = 78;
+    } else {
+      const chance = Number(weather?.rain_chance || 0);
+      nextDamp = chance >= 70 ? 64 : chance >= 40 ? 36 : chance >= 20 ? 12 : 0;
+    }
+    setTrackDampness(nextDamp);
+  }, [weatherMode, weather?.rain_chance]);
+
+  // Cooldown timer for MOM 350kW Push-to-Pass Override (prevents permanent lockout)
+  useEffect(() => {
+    if (!momBoostActive && momCooldown <= 0) return undefined;
+    const burstTimer = momBoostActive ? setTimeout(() => setMomBoostActive(false), 1500) : null;
+    const coolTimer = momCooldown > 0 ? setTimeout(() => setMomCooldown((c) => Math.max(0, c - 1)), 1000) : null;
+    return () => {
+      if (burstTimer) clearTimeout(burstTimer);
+      if (coolTimer) clearTimeout(coolTimer);
+    };
+  }, [momBoostActive, momCooldown]);
 
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [lapHistory, setLapHistory] = useState(() => generateRaceWeekendData("australia", 58).lapHistory);
@@ -827,7 +570,7 @@ function TimingTower({
       }, 8000);
       return () => clearTimeout(timer);
     }
-  }, [activePitEvent]);
+  }, [activePitEvent, setActivePitEvent]);
 
   // Switch to Grand Prix's unique starting grid ONLY on Lap 1 or before start
   useEffect(() => {
@@ -836,12 +579,12 @@ function TimingTower({
     setTelemetrySource("sim");
     setOpenF1Dataset(null);
     setDataSourceStatus("");
-    if (currentLap <= 1) {
+    if (effectiveLap <= 1) {
       const newGrid = buildTimingTowerGridForCircuit(activeCircuitId, 1);
       setDrivers(newGrid);
       setSelectedDriverIdx(0);
     }
-  }, [activeCircuitId, maxLaps]);
+  }, [activeCircuitId, maxLaps, effectiveLap]);
 
   // Real-time Session Flag Status: "GREEN", "SC", "VSC", "RED"
   const [sessionFlag, setSessionFlag] = useState(controlledFlag || "GREEN");
@@ -857,65 +600,84 @@ function TimingTower({
     return drivers.filter((d) => isDriverBelongingToTeam(d, safePlayerTeam));
   }, [drivers, playerTeam]);
 
+  // Realistic Interactive Overtake Duel Simulator (declared before external trigger effect)
+  const handleTriggerDuelOvertake = useCallback(() => {
+    const targetIdx = selectedDriverIdx > 0 ? selectedDriverIdx - 1 : 0;
+    const attackerIdx = targetIdx + 1;
+    const currentList = drivers || [];
+    if (currentList.length < 2) return;
+
+    const carAhead = currentList[targetIdx];
+    const carBehind = currentList[attackerIdx];
+    if (!carAhead || !carBehind) return;
+
+    setDrivers((prevDrivers) => {
+      if (prevDrivers.length < 2) return prevDrivers;
+      const updated = [...prevDrivers];
+      updated[targetIdx] = { ...prevDrivers[attackerIdx], pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
+      updated[attackerIdx] = { ...prevDrivers[targetIdx], pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
+
+      let accum = 0;
+      return updated.map((d, i) => {
+        const isLead = i === 0;
+        const step = +(0.55 + (i % 3) * 0.22).toFixed(3);
+        if (!isLead) accum += step;
+        return {
+          ...d,
+          pos: i + 1,
+          gap: isLead ? "LEADER" : (effectiveLap <= 1 ? "—" : `+${accum.toFixed(3)}s`),
+          interval: isLead ? "—" : (effectiveLap <= 1 ? "—" : `+${step.toFixed(3)}s`),
+        };
+      });
+    });
+
+    setSelectedDriverIdx(targetIdx);
+    const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
+    setActiveOvertake({
+      winnerCode: carBehind.code,
+      winnerNum: carBehind.num,
+      winnerTeam: carBehind.team,
+      loserCode: carAhead.code,
+      loserNum: carAhead.num,
+      loserTeam: carAhead.team,
+      toPos: targetIdx + 1,
+      fromPos: attackerIdx + 1,
+      lap: effectiveLap,
+      reason: boostReason,
+      timestamp: Date.now(),
+    });
+    playF1OvertakeChime(isSoundMuted);
+    setOvertakeEvent(`OVERTAKE CONFIRMED: P${targetIdx + 1} #${carBehind.num} ${carBehind.code} passes #${carAhead.num} ${carAhead.code} ${boostReason}!`);
+
+    setTimeout(() => {
+      setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
+    }, 4000);
+  }, [selectedDriverIdx, drivers, effectiveLap, momBoostActive, isSoundMuted, setOvertakeEvent]);
+
   // Listen to external overtake triggers from LiveBroadcastGantry
   useEffect(() => {
-    if (triggerOvertakeSignal) {
+    if (triggerOvertakeSignal > 0) {
       handleTriggerDuelOvertake();
     }
-  }, [triggerOvertakeSignal]);
+  }, [triggerOvertakeSignal, handleTriggerDuelOvertake]);
 
   // ── Session Restart Handler (triggered by Cockpit Restart/Switch Menu) ──
   useEffect(() => {
     if (restartSignal > 0) {
       setCurrentLap(1);
-      const newGrid = buildTimingTowerGridForCircuit(activeCircuitId, 1).map((d, i) => ({
-        ...d,
-        pos: i + 1,
-        tireAge: 0,
-        wear: 4,
-        pits: 0,
-        pitState: "RACING",
-        gap: i === 0 ? "LEADER" : "—",
-        gapSec: 0,
-        interval: "—",
-        s1: "—",
-        s2: "—",
-        s3: "—",
-        s1Type: "empty",
-        s2Type: "empty",
-        s3Type: "empty",
-        bestLap: "NO TIME",
-        lastLap: "—",
-        posDelta: "0",
-        arrow: "none",
-      }));
-      setDrivers(newGrid);
+      setDrivers(resetGridEntries(buildTimingTowerGridForCircuit(activeCircuitId, 1), { includeSectorReset: true }));
       setSelectedDriverIdx(0);
       setSessionFlag("GREEN");
-      setOvertakeEvent(`🏁 RACE RESET TO LAP 1: Starting grid reset for ${selectedCircuit?.grand_prix_name || "Grand Prix"}. Fresh tires fitted!`);
+      setOvertakeEvent(`🏁 RACE RESET TO LAP 1: Starting grid reset for ${gpName}. Fresh tires fitted!`);
       setRadioMsg("Green flag, race start! Warmup tires cleanly into Turn 1.");
     }
-  }, [restartSignal, activeCircuitId]);
+  }, [restartSignal, activeCircuitId, gpName, setOvertakeEvent]);
 
   // ── Tactical Pit Stop Execution Triggered from PitWallStrategyDeck ──
-  const handleExecutePitStop = ({ driverCode, targetCompound, reentry }) => {
-    // Authentic Pit Crew Stopwatch RNG
-    const rng = Math.random();
-    let stationarySec = 2.4;
-    let crewRating = "🟢 CLEAN 2.4s STOP";
-    if (rng < 0.15) {
-      stationarySec = +(2.0 + Math.random() * 0.25).toFixed(1);
-      crewRating = `⚡ ${stationarySec}s WORLD RECORD STOP!`;
-    } else if (rng < 0.85) {
-      stationarySec = +(2.3 + Math.random() * 0.35).toFixed(1);
-      crewRating = `🟢 ${stationarySec}s TEXTBOOK STOP`;
-    } else if (rng < 0.95) {
-      stationarySec = +(3.1 + Math.random() * 0.4).toFixed(1);
-      crewRating = `⚠️ ${stationarySec}s RIGHT-REAR HESITATION`;
-    } else {
-      stationarySec = +(4.6 + Math.random() * 0.9).toFixed(1);
-      crewRating = `🔴 ${stationarySec}s CROSS-THREADED NUT!`;
-    }
+  const handleExecutePitStop = ({ driverCode, targetCompound }) => {
+    const crew = computePitCrewExecution(drivers.find((d) => d.code === driverCode)?.num || 1, effectiveLap);
+    const stationarySec = crew.sec;
+    const crewRating = crew.label;
     const trackTransitLoss = sessionFlag === "SC" ? 11.2 : sessionFlag === "VSC" ? 13.0 : (selectedCircuit?.pit_loss_green ? selectedCircuit.pit_loss_green - 2.5 : 19.8);
     const actualPitLoss = +(trackTransitLoss + parseFloat(stationarySec)).toFixed(1);
     const pitStopDurationStr = `${stationarySec}s stationary (${actualPitLoss}s pit loss) · ${crewRating}`;
@@ -1016,6 +778,18 @@ function TimingTower({
     });
   };
 
+  const pitLossGreen = selectedCircuit?.pit_loss_green || 21.5;
+  const driverPlansRef = useRef(driverPlans);
+  const plannedStrategiesRef = useRef(plannedStrategies);
+  const onCompletePlanStopRef = useRef(onCompletePlanStop);
+  const isSoundMutedRef = useRef(isSoundMuted);
+  useEffect(() => {
+    driverPlansRef.current = driverPlans;
+    plannedStrategiesRef.current = plannedStrategies;
+    onCompletePlanStopRef.current = onCompletePlanStop;
+    isSoundMutedRef.current = isSoundMuted;
+  }, [driverPlans, plannedStrategies, onCompletePlanStop, isSoundMuted]);
+
   // Dynamic Lap Progression: replays real OpenF1 FIA data in Historical mode, or steps clean physics simulation
   useEffect(() => {
     if (controlledLap && controlledLap !== currentLap) {
@@ -1049,19 +823,19 @@ function TimingTower({
           lap: controlledLap,
           maxLaps,
           poleSec,
-          pitLossGreen: selectedCircuit?.pit_loss_green || 21.5,
+          pitLossGreen,
           sessionFlag,
           trackDampness,
           userRole,
           playerTeam,
-          driverPlans,
-          plannedStrategies,
+          driverPlans: driverPlansRef.current,
+          plannedStrategies: plannedStrategiesRef.current,
           isDriverInTeam: isDriverBelongingToTeam,
         });
 
         queueMicrotask(() => {
           tick.completedPlanNotifications?.forEach((n) => {
-            onCompletePlanStop?.(n.code, n.stopNum);
+            onCompletePlanStopRef.current?.(n.code, n.stopNum);
           });
 
           if (tick.pittedInfo) {
@@ -1070,11 +844,11 @@ function TimingTower({
             setOvertakeEvent(
               `📦 LIVE PIT STOP: LAP ${p.lap}: #${p.num} ${p.code} (${p.team}) BOXES · FITS ${p.compoundName} [${p.stopDuration}] · REJOINS P${p.reEntryPos}${p.aheadNotice}!`
             );
-            playF1OvertakeChime(isSoundMuted);
+            playF1OvertakeChime(isSoundMutedRef.current);
           } else if (tick.overtakeInfo) {
             const ov = tick.overtakeInfo;
             setActiveOvertake({ ...ov, timestamp: Date.now() });
-            playF1OvertakeChime(isSoundMuted);
+            playF1OvertakeChime(isSoundMutedRef.current);
             setOvertakeEvent(`LIVE OVERTAKE: LAP ${ov.lap}: ${ov.winnerCode} passes ${ov.loserCode} for P${ov.toPos} (${ov.reason})`);
           }
 
@@ -1086,13 +860,13 @@ function TimingTower({
         return tick.drivers;
       });
     }
-  }, [controlledLap, activeCircuitId, userRole, playerTeam, sessionFlag, trackDampness, plannedStrategies, telemetrySource, openF1Dataset]);
+  }, [controlledLap, currentLap, activeCircuitId, pitLossGreen, maxLaps, userRole, playerTeam, sessionFlag, trackDampness, telemetrySource, openF1Dataset, setActivePitEvent, setOvertakeEvent]);
 
   useEffect(() => {
     if (controlledFlag && controlledFlag !== sessionFlag) {
       setSessionFlag(controlledFlag);
     }
-  }, [controlledFlag]);
+  }, [controlledFlag, sessionFlag]);
   // Pit Wall Operational View: "tower" (Matrix Timing Grid) by default, "lapMatrix" (StatsF1 Tour-par-tour), or "map" (3D Satellite Tracker)
   const [activePitWallTab, setActivePitWallTab] = useState("tower");
   useEffect(() => {
@@ -1102,6 +876,10 @@ function TimingTower({
   const [tableDensity, setTableDensity] = useState("broadcast");
   // Selected driver reference
   const currentDriver = drivers[selectedDriverIdx] || drivers[0];
+
+  const planSummary = useMemo(() => {
+    return buildStrategyPlanSummary({ maxLaps, currentDriver });
+  }, [maxLaps, currentDriver]);
 
   // MOM 350kW Boost Trigger
   const handleTriggerMom = () => {
@@ -1122,60 +900,6 @@ function TimingTower({
       trackDampness,
     });
   }, [drivers, effectiveLap, maxLaps, trackDampness]);
-
-  // Realistic Interactive Overtake Duel Simulator
-  const handleTriggerDuelOvertake = () => {
-    const targetIdx = selectedDriverIdx > 0 ? selectedDriverIdx - 1 : 0;
-    const attackerIdx = targetIdx + 1;
-    const currentList = drivers || [];
-    if (currentList.length < 2) return;
-
-    const carAhead = currentList[targetIdx];
-    const carBehind = currentList[attackerIdx];
-    if (!carAhead || !carBehind) return;
-
-    setDrivers((prevDrivers) => {
-      if (prevDrivers.length < 2) return prevDrivers;
-      const updated = [...prevDrivers];
-      updated[targetIdx] = { ...prevDrivers[attackerIdx], pos: targetIdx + 1, posDelta: "+1", arrow: "up", overtaken: true };
-      updated[attackerIdx] = { ...prevDrivers[targetIdx], pos: attackerIdx + 1, posDelta: "-1", arrow: "down" };
-
-      let accum = 0;
-      return updated.map((d, i) => {
-        const isLead = i === 0;
-        const step = +(0.55 + (i % 3) * 0.22).toFixed(3);
-        if (!isLead) accum += step;
-        return {
-          ...d,
-          pos: i + 1,
-          gap: isLead ? "LEADER" : (effectiveLap <= 1 ? "—" : `+${accum.toFixed(3)}s`),
-          interval: isLead ? "—" : (effectiveLap <= 1 ? "—" : `+${step.toFixed(3)}s`),
-        };
-      });
-    });
-
-    setSelectedDriverIdx(targetIdx);
-    const boostReason = momBoostActive ? "with 350kW MOM Overdrive" : "down the Main Straight DRS";
-    setActiveOvertake({
-      winnerCode: carBehind.code,
-      winnerNum: carBehind.num,
-      winnerTeam: carBehind.team,
-      loserCode: carAhead.code,
-      loserNum: carAhead.num,
-      loserTeam: carAhead.team,
-      toPos: targetIdx + 1,
-      fromPos: attackerIdx + 1,
-      lap: currentLap,
-      reason: boostReason,
-      timestamp: Date.now(),
-    });
-    playF1OvertakeChime(isSoundMuted);
-    setOvertakeEvent(`OVERTAKE CONFIRMED: P${targetIdx + 1} #${carBehind.num} ${carBehind.code} passes #${carAhead.num} ${carAhead.code} ${boostReason}!`);
-
-    setTimeout(() => {
-      setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
-    }, 4000);
-  };
 
   // Active Aero toggle
   const handleToggleAero = (mode) => {
@@ -1288,14 +1012,18 @@ function TimingTower({
         }}
       >
         {/* ── ZONE 1: ILLUMINATED DUAL-VIEW COCKPIT SWITCHER ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+        <div role="tablist" aria-label="Pit wall operational views" style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
           <button
+            type="button"
+            role="tab"
+            aria-selected={activePitWallTab === "tower"}
             onClick={() => setActivePitWallTab("tower")}
             style={{
               background: activePitWallTab === "tower"
                 ? "linear-gradient(135deg, rgba(232, 0, 45, 0.35) 0%, rgba(255, 60, 90, 0.2) 100%)"
                 : "rgba(255, 255, 255, 0.04)",
               border: activePitWallTab === "tower" ? "1px solid var(--neon-red)" : "1px solid rgba(255, 255, 255, 0.1)",
+              borderBottom: activePitWallTab === "tower" ? "2px solid #ffffff" : "2px solid transparent",
               color: activePitWallTab === "tower" ? "#ffffff" : "var(--text-secondary)",
               padding: "4px 12px",
               borderRadius: "5px",
@@ -1310,17 +1038,21 @@ function TimingTower({
               transition: "all 0.15s ease",
             }}
           >
-            <span>📊</span>
+            <span aria-hidden="true">📊</span>
             <span>TIMING MATRIX</span>
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={activePitWallTab === "lapMatrix"}
             onClick={() => setActivePitWallTab("lapMatrix")}
             style={{
               background: activePitWallTab === "lapMatrix"
                 ? "linear-gradient(135deg, rgba(23, 106, 199, 0.4) 0%, rgba(0, 210, 190, 0.25) 100%)"
                 : "rgba(255, 255, 255, 0.04)",
               border: activePitWallTab === "lapMatrix" ? "1px solid #176ac7" : "1px solid rgba(255, 255, 255, 0.1)",
+              borderBottom: activePitWallTab === "lapMatrix" ? "2px solid #ffffff" : "2px solid transparent",
               color: activePitWallTab === "lapMatrix" ? "#ffffff" : "var(--text-secondary)",
               padding: "4px 12px",
               borderRadius: "5px",
@@ -1335,7 +1067,7 @@ function TimingTower({
               transition: "all 0.15s ease",
             }}
           >
-            <span>📈</span>
+            <span aria-hidden="true">📈</span>
             <span>STATSF1 LAP CHART</span>
             <span
               style={{
@@ -1353,12 +1085,16 @@ function TimingTower({
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={activePitWallTab === "map"}
             onClick={() => setActivePitWallTab("map")}
             style={{
               background: activePitWallTab === "map"
                 ? "linear-gradient(135deg, rgba(0, 210, 190, 0.35) 0%, rgba(0, 144, 255, 0.22) 100%)"
                 : "rgba(255, 255, 255, 0.04)",
               border: activePitWallTab === "map" ? "1px solid var(--neon-cyan)" : "1px solid rgba(255, 255, 255, 0.1)",
+              borderBottom: activePitWallTab === "map" ? "2px solid #ffffff" : "2px solid transparent",
               color: activePitWallTab === "map" ? "#ffffff" : "var(--text-secondary)",
               padding: "4px 12px",
               borderRadius: "5px",
@@ -1373,7 +1109,7 @@ function TimingTower({
               transition: "all 0.15s ease",
             }}
           >
-            <span>🗺️</span>
+            <span aria-hidden="true">🗺️</span>
             <span>3D SATELLITE RADAR</span>
             <span
               style={{
@@ -1394,8 +1130,10 @@ function TimingTower({
         {/* ── ZONE 2: RACE CONTROL STATUS & LAP PROGRESS ── */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           {/* FIA Flag Buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: "2px", background: "rgba(0,0,0,0.45)", padding: "2px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div role="group" aria-label="FIA track flag status" style={{ display: "flex", alignItems: "center", gap: "2px", background: "rgba(0,0,0,0.45)", padding: "2px", borderRadius: "5px", border: "1px solid rgba(255,255,255,0.08)" }}>
             <button
+              type="button"
+              aria-pressed={sessionFlag === "GREEN"}
               onClick={() => setSessionFlag("GREEN")}
               style={{
                 background: sessionFlag === "GREEN" ? "rgba(0,204,68,0.28)" : "transparent",
@@ -1418,6 +1156,8 @@ function TimingTower({
             </button>
 
             <button
+              type="button"
+              aria-pressed={sessionFlag === "SC"}
               onClick={() => setSessionFlag("SC")}
               style={{
                 background: sessionFlag === "SC" ? "rgba(255,221,0,0.28)" : "transparent",
@@ -1440,6 +1180,8 @@ function TimingTower({
             </button>
 
             <button
+              type="button"
+              aria-pressed={sessionFlag === "VSC"}
               onClick={() => setSessionFlag("VSC")}
               style={{
                 background: sessionFlag === "VSC" ? "rgba(255,140,0,0.28)" : "transparent",
@@ -1462,7 +1204,9 @@ function TimingTower({
             </button>
 
             <button
+              type="button"
               onClick={() => setIsFiaModalOpen(true)}
+              aria-label="Open FIA Race Control Bulletin modal"
               style={{
                 background: "rgba(0, 210, 190, 0.12)",
                 border: "1px solid rgba(0, 210, 190, 0.4)",
@@ -1479,7 +1223,8 @@ function TimingTower({
               }}
               title="Open FIA Race Control Bulletin"
             >
-              <span>📋 FIA</span>
+              <span aria-hidden="true">📋</span>
+              <span>FIA</span>
               <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--neon-cyan)" }} />
             </button>
           </div>
@@ -1487,10 +1232,10 @@ function TimingTower({
           {/* Lap Progress */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.64rem", color: "var(--text-secondary)" }}>
-              LAP {currentLap}/{maxLaps} <span style={{ color: "var(--neon-green)", fontWeight: "700" }}>({Math.round((currentLap / maxLaps) * 100)}%)</span>
+              LAP {effectiveLap}/{maxLaps} <span style={{ color: "var(--neon-green)", fontWeight: "700" }}>({Math.round((effectiveLap / maxLaps) * 100)}%)</span>
             </span>
             <div style={{ width: "70px", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
-              <div style={{ width: `${(currentLap / maxLaps) * 100}%`, height: "100%", background: "linear-gradient(90deg, var(--neon-green), var(--neon-cyan))", borderRadius: "2px", boxShadow: "0 0 6px var(--neon-green)" }} />
+              <div style={{ width: `${(effectiveLap / maxLaps) * 100}%`, height: "100%", background: "linear-gradient(90deg, var(--neon-green), var(--neon-cyan))", borderRadius: "2px", boxShadow: "0 0 6px var(--neon-green)" }} />
             </div>
           </div>
         </div>
@@ -1545,7 +1290,7 @@ function TimingTower({
               DAMP: <strong style={{ color: trackDampness > 60 ? "#00a0de" : trackDampness > 25 ? "#39b54a" : "#ffffff" }}>{trackDampness}%</strong>
             </span>
             {/* Quick Weather Mode Selectors */}
-            <div style={{ display: "flex", gap: "2px", marginLeft: "2px" }}>
+            <div role="group" aria-label="Track weather condition simulation" style={{ display: "flex", gap: "2px", marginLeft: "2px" }}>
               {[
                 { id: "auto", label: "AUTO" },
                 { id: "dry", label: "DRY" },
@@ -1554,10 +1299,12 @@ function TimingTower({
               ].map((m) => (
                 <button
                   key={m.id}
+                  type="button"
+                  aria-pressed={weatherMode === m.id}
                   onClick={() => setWeatherMode(m.id)}
                   style={{
-                    all: "unset",
                     cursor: "pointer",
+                    border: "none",
                     padding: "1px 4px",
                     borderRadius: "3px",
                     fontSize: "0.55rem",
@@ -1576,9 +1323,10 @@ function TimingTower({
 
           {/* Active Aero Status Switcher */}
           <button
+            type="button"
+            aria-pressed={activeAeroMode === "X-MODE"}
             onClick={() => handleToggleAero(activeAeroMode === "Z-MODE" ? "X-MODE" : "Z-MODE")}
             style={{
-              all: "unset",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -1595,7 +1343,8 @@ function TimingTower({
             }}
             title="Click to toggle Active Aero between Z-Mode (Corner Downforce) and X-Mode (Straight Low-Drag)"
           >
-            <span>🌀 2026 AERO:</span>
+            <span aria-hidden="true">🌀</span>
+            <span>2026 AERO:</span>
             <span style={{ color: "#ffffff", fontWeight: "900" }}>{activeAeroMode}</span>
           </button>
         </div>
@@ -1665,6 +1414,8 @@ function TimingTower({
             </span>
             {overtakeEvent && (
               <button
+                type="button"
+                aria-label="Dismiss race control alert"
                 onClick={() => setOvertakeEvent(null)}
                 style={{ all: "unset", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", padding: "0 4px", fontWeight: "900" }}
                 title="Dismiss alert"
@@ -1677,455 +1428,59 @@ function TimingTower({
       )}
 
       {activePitWallTab === "map" ? (
-        <LiveRaceMapTracker
-          selectedCircuit={selectedCircuit}
-          drivers={drivers}
-          currentLap={currentLap}
-          maxLaps={maxLaps}
-          sessionFlag={sessionFlag}
-          isAutoSimulating={isAutoSimulating}
-          simSpeed={simSpeed}
-          onToggleAutoSim={onToggleAutoSim}
-          onChangeSimSpeed={onChangeSimSpeed}
-          onAdvanceLap={onAdvanceLap}
-          userRole={userRole}
-          playerTeam={playerTeam}
-        />
+        <ComponentErrorBoundary name="3D Satellite Radar">
+          <LiveRaceMapTracker
+            selectedCircuit={selectedCircuit}
+            drivers={drivers}
+            currentLap={effectiveLap}
+            maxLaps={maxLaps}
+            sessionFlag={sessionFlag}
+            isAutoSimulating={isAutoSimulating}
+            simSpeed={simSpeed}
+            onToggleAutoSim={onToggleAutoSim}
+            onChangeSimSpeed={onChangeSimSpeed}
+            onAdvanceLap={onAdvanceLap}
+            userRole={userRole}
+            playerTeam={playerTeam}
+          />
+        </ComponentErrorBoundary>
       ) : activePitWallTab === "lapMatrix" ? (
-        <StatsF1LapMatrix
-          drivers={drivers}
-          currentLap={currentLap}
-          maxLaps={maxLaps}
-          circuitName={selectedCircuit?.grand_prix_name || gpConfig?.name || "Singapore Grand Prix"}
-          circuitId={activeCircuitId}
-          lapHistory={lapHistory}
-          selectedDriverCode={currentDriver.code}
-          onSelectDriver={(d) => {
-            const idx = drivers.findIndex((x) => x.code === d.code);
-            if (idx >= 0) setSelectedDriverIdx(idx);
-          }}
-        />
+        <ComponentErrorBoundary name="StatsF1 Lap Chart">
+          <StatsF1LapMatrix
+            drivers={drivers}
+            currentLap={effectiveLap}
+            maxLaps={maxLaps}
+            circuitName={selectedCircuit?.grand_prix_name || gpConfig?.name || "Singapore Grand Prix"}
+            circuitId={activeCircuitId}
+            lapHistory={lapHistory}
+            selectedDriverCode={currentDriver.code}
+            onSelectDriver={(d) => {
+              const idx = drivers.findIndex((x) => x.code === d.code);
+              if (idx >= 0) setSelectedDriverIdx(idx);
+            }}
+          />
+        </ComponentErrorBoundary>
       ) : (
         <>
-          {/* ════════ FRONT / UPPER COCKPIT: 2-COLUMN LAYOUT (LEFT MAP + TIMING TOWER) ════════ */}
+          {/* ════════ FRONT / UPPER COCKPIT: 2-COLUMN LAYOUT (LEFT SIDEBAR + TIMING TOWER) ════════ */}
           <div className="timing-workspace" style={{ display: "grid", gridTemplateColumns: "302px minmax(0, 1fr)", gap: "12px", alignItems: "start", width: "100%" }}>
 
-        {/* ──── COLUMN 1: EXPANDED LEFT PANEL (Circuit Radar, SVG Map, Sectors & Speed Trap) ──── */}
-        <div className="timing-sidebar" style={{ display: "flex", flexDirection: "column", gap: "10px", minWidth: 0 }}>
-          {/* Circuit Geometry & Sector Radar Telemetry */}
-          <div
-            style={{
-              background: "rgba(16, 18, 28, 0.95)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "8px",
-              padding: "12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-            }}
-          >
-            {/* Header: Track Name & Live Tag */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.72rem", color: "var(--text-secondary)", letterSpacing: "0.08em" }}>
-                CIRCUIT RADAR & SECTOR SPEEDS
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.64rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--neon-green)", animation: "pulseFlag 1.5s infinite" }} />
-                GPS LIVE
-              </span>
-            </div>
-
-            {/* Dedicated Sector Speed Badges Bar */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: "5px",
-                background: "rgba(0, 0, 0, 0.4)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                borderRadius: "6px",
-                padding: "6px 5px",
-              }}
-            >
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
-                  SEC 1
-                </div>
-                <div style={{ fontSize: "0.72rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#00d2be" }}>
-                  304 <span style={{ fontSize: "0.54rem" }}>KM/H</span>
-                </div>
-              </div>
-
-              <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
-                  SEC 2
-                </div>
-                <div style={{ fontSize: "0.72rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#00cc44" }}>
-                  295 <span style={{ fontSize: "0.54rem" }}>KM/H</span>
-                </div>
-              </div>
-
-              <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
-                  SEC 3
-                </div>
-                <div style={{ fontSize: "0.72rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#ff4444" }}>
-                  337 <span style={{ fontSize: "0.54rem" }}>KM/H</span>
-                </div>
-              </div>
-
-              <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
-                  TRAP
-                </div>
-                <div style={{ fontSize: "0.72rem", fontFamily: "'Orbitron', monospace", fontWeight: "800", color: "#bf7fff" }}>
-                  337 <span style={{ fontSize: "0.54rem" }}>KM/H</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Aerospace Holographic Circuit Radar with Live Concentric Rings & Rotating Sweep */}
-            <div
-              style={{
-                width: "100%",
-                height: "215px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-                background: "radial-gradient(circle at center, rgba(0, 210, 190, 0.05) 0%, rgba(5, 7, 13, 0.85) 100%)",
-                borderRadius: "8px",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                overflow: "hidden",
-                boxShadow: "inset 0 0 20px rgba(0,0,0,0.8)",
-              }}
-            >
-              {/* Corner Targeting Bracket Overlays */}
-              <div style={{ position: "absolute", top: 4, left: 6, fontSize: "0.55rem", color: "rgba(0, 210, 190, 0.7)", fontFamily: "'Orbitron', monospace" }}>┌ GPS TRACKER</div>
-              <div style={{ position: "absolute", top: 4, right: 6, fontSize: "0.55rem", color: "rgba(255, 255, 255, 0.4)", fontFamily: "'Orbitron', monospace" }}>GRID 2026 ┐</div>
-              <div style={{ position: "absolute", bottom: 4, left: 6, fontSize: "0.55rem", color: "rgba(255, 255, 255, 0.4)", fontFamily: "'Orbitron', monospace" }}>└ FIA SEC-1/2/3</div>
-              <div style={{ position: "absolute", bottom: 4, right: 6, fontSize: "0.55rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace" }}>60 FPS ┘</div>
-
-              <svg viewBox="0 0 500 500" style={{ width: "95%", height: "95%" }}>
-                <defs>
-                  <linearGradient id="pitTrackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00d2be" />
-                    <stop offset="35%" stopColor="#00e676" />
-                    <stop offset="70%" stopColor="#ff4444" />
-                    <stop offset="100%" stopColor="#bf7fff" />
-                  </linearGradient>
-                  {/* Radar Sweep Cone Gradient */}
-                  <linearGradient id="sweepConeGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(0, 210, 190, 0)" />
-                    <stop offset="70%" stopColor="rgba(0, 210, 190, 0.08)" />
-                    <stop offset="100%" stopColor="rgba(0, 210, 190, 0.28)" />
-                  </linearGradient>
-                </defs>
-
-                {/* Tactical Radar Crosshairs */}
-                <line x1="40" y1="250" x2="460" y2="250" stroke="rgba(0, 210, 190, 0.12)" strokeDasharray="3 4" strokeWidth="1" />
-                <line x1="250" y1="40" x2="250" y2="460" stroke="rgba(0, 210, 190, 0.12)" strokeDasharray="3 4" strokeWidth="1" />
-
-                {/* Concentric Tactical Range Rings */}
-                <circle cx="250" cy="250" r="75" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
-                <circle cx="250" cy="250" r="145" fill="none" stroke="rgba(0, 210, 190, 0.08)" strokeDasharray="4 6" strokeWidth="1" />
-                <circle cx="250" cy="250" r="215" fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="1" />
-
-                {/* Animated Rotating Radar Sweep Cone */}
-                <g style={{ transformOrigin: "250px 250px", animation: "radarSweep 5.5s linear infinite" }}>
-                  <path d="M 250 250 L 460 200 A 215 215 0 0 1 465 250 Z" fill="url(#sweepConeGrad)" />
-                  <line x1="250" y1="250" x2="465" y2="250" stroke="rgba(0, 210, 190, 0.6)" strokeWidth="1.5" />
-                </g>
-
-                {/* Glowing Authentic Vector Track Ribbon */}
-                <path
-                  d={activeTrackPath}
-                  fill="none"
-                  stroke="rgba(255, 255, 255, 0.12)"
-                  strokeWidth="28"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d={activeTrackPath}
-                  fill="none"
-                  stroke="url(#pitTrackGrad)"
-                  strokeWidth="15"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ filter: "drop-shadow(0 0 12px rgba(0, 210, 190, 0.7))" }}
-                />
-
-                {/* Start / Finish Checkered Gate Line */}
-                <circle cx="250" cy="250" r="2" fill="transparent" />
-
-                {/* Live Leading Cars traveling along track geometry */}
-                {/* P1 Norris (McLaren Papaya) */}
-                <circle r="13" fill="#ff8700" style={{ filter: "drop-shadow(0 0 10px #ff8700)" }}>
-                  <animateMotion dur="8.8s" repeatCount="indefinite" path={activeTrackPath} />
-                </circle>
-                {/* P2 Verstappen (Red Bull Navy) */}
-                <circle r="12" fill="#3671e8" style={{ filter: "drop-shadow(0 0 10px #3671e8)" }}>
-                  <animateMotion dur="9.0s" repeatCount="indefinite" path={activeTrackPath} begin="-0.74s" />
-                </circle>
-                {/* P3 Russell (Mercedes Teal) */}
-                <circle r="11" fill="#00d2be" style={{ filter: "drop-shadow(0 0 10px #00d2be)" }}>
-                  <animateMotion dur="9.2s" repeatCount="indefinite" path={activeTrackPath} begin="-1.8s" />
-                </circle>
-                {/* P4 Leclerc (Ferrari Rosso Corsa) */}
-                <circle r="11" fill="#ff3b30" style={{ filter: "drop-shadow(0 0 10px #ff3b30)" }}>
-                  <animateMotion dur="9.3s" repeatCount="indefinite" path={activeTrackPath} begin="-2.7s" />
-                </circle>
-                {/* P5 Hamilton (Ferrari) */}
-                <circle r="10" fill="#e8002d" style={{ filter: "drop-shadow(0 0 8px #e8002d)" }}>
-                  <animateMotion dur="9.5s" repeatCount="indefinite" path={activeTrackPath} begin="-3.8s" />
-                </circle>
-                {/* P6 Piastri (McLaren) */}
-                <circle r="10" fill="#ffaa00" style={{ filter: "drop-shadow(0 0 8px #ffaa00)" }}>
-                  <animateMotion dur="9.6s" repeatCount="indefinite" path={activeTrackPath} begin="-4.6s" />
-                </circle>
-              </svg>
-            </div>
-
-            {/* Tactical Live Lead Battle Head-to-Head HUD Card */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, rgba(255, 135, 0, 0.12) 0%, rgba(54, 113, 232, 0.12) 100%)",
-                border: "1px solid rgba(255, 255, 255, 0.14)",
-                borderRadius: "8px",
-                padding: "9px 12px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-              }}
-            >
-              {/* Battle Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", fontWeight: "900", color: "#ffffff", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: "5px" }}>
-                  <span>⚔️</span>
-                  <span>LEAD BATTLE: P1 vs P2</span>
-                </span>
-                <span style={{ fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--neon-green)", background: "rgba(0,204,68,0.2)", border: "1px solid rgba(0,204,68,0.4)", padding: "1px 5px", borderRadius: "3px", fontWeight: "800", animation: "pulseFlag 1.5s infinite" }}>
-                  DRS ACTIVE
-                </span>
-              </div>
-
-              {/* Drivers & Delta Interval */}
-              {(() => {
-                const p1 = drivers[0] || { code: "NOR", pos: 1 };
-                const p2 = drivers[1] || { code: "VER", pos: 2 };
-                const isPreRace = effectiveLap <= 1;
-                const gapText = isPreRace ? "START GRID" : (p2.interval && p2.interval !== "—" ? p2.interval : "+0.850s");
-                return (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ width: "3px", height: "14px", background: "#ff8700", borderRadius: "2px" }} />
-                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "800", color: "#ffffff" }}>
-                        {p1.code} <span style={{ fontSize: "0.62rem", color: "#ff8700" }}>P1</span>
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.82rem", fontWeight: "900", color: "var(--neon-cyan)", letterSpacing: "0.04em" }}>
-                        {gapText}
-                      </span>
-                      <span style={{ fontSize: "0.56rem", color: isPreRace ? "var(--text-dim)" : "var(--neon-green)", fontFamily: "'Orbitron', monospace" }}>
-                        {isPreRace ? "AWAITING LIGHTS OUT" : "LIVE TIME DELTA"}
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.76rem", fontWeight: "800", color: "#ffffff" }}>
-                        <span style={{ fontSize: "0.62rem", color: "#3671e8" }}>P2</span> {p2.code}
-                      </span>
-                      <span style={{ width: "3px", height: "14px", background: "#3671e8", borderRadius: "2px" }} />
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* High-tech Head-to-Head Visual Gap Bar */}
-              <div style={{ width: "100%", height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden", position: "relative" }}>
-                <div
-                  style={{
-                    width: `${awsOvertakeModel.probabilityPct || 50}%`,
-                    height: "100%",
-                    background: "linear-gradient(90deg, #ff8700 0%, #3671e8 100%)",
-                    borderRadius: "3px",
-                    boxShadow: "0 0 8px rgba(0, 210, 190, 0.4)",
-                    transition: "width 0.3s ease",
-                  }}
-                />
-              </div>
-
-              {/* Threat Advisory */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
-                <span>DRS CATCH PROBABILITY</span>
-                <span style={{ color: (awsOvertakeModel.probabilityPct || 0) >= 70 ? "#00e676" : "#ffaa00", fontWeight: "700" }}>
-                  {awsOvertakeModel.probability}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* ──── 2026 ACTIVE AERO & MOM BOOST DEMONSTRATOR MODULE ──── */}
-          <ActiveAeroDemonstrator
-            mode={activeAeroMode}
-            onToggleMode={handleToggleAero}
-            momBoostActive={momBoostActive}
-            onTriggerMom={handleTriggerMom}
-            momCooldown={momCooldown}
-            selectedDriver={currentDriver}
-          />
-
-          {/* ──── Unified Telemetry Leaderboard: Live Pace & 2026 Speed Trap ──── */}
-          <div
-            style={{
-              background: "rgba(16, 18, 28, 0.95)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "8px",
-              padding: "12px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-            }}
-          >
-            {/* Header with Segmented Tabs */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <button
-                  onClick={() => setTelemetryTab("speed")}
-                  style={{
-                    background: telemetryTab === "speed" ? "rgba(0, 210, 190, 0.2)" : "rgba(255,255,255,0.04)",
-                    border: telemetryTab === "speed" ? "1px solid var(--neon-cyan)" : "1px solid rgba(255,255,255,0.08)",
-                    color: telemetryTab === "speed" ? "var(--neon-cyan)" : "var(--text-secondary)",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "800",
-                    padding: "3px 7px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  🚀 SPEED TRAP
-                </button>
-                <button
-                  onClick={() => setTelemetryTab("pace")}
-                  style={{
-                    background: telemetryTab === "pace" ? "rgba(0, 210, 190, 0.2)" : "rgba(255,255,255,0.04)",
-                    border: telemetryTab === "pace" ? "1px solid var(--neon-cyan)" : "1px solid rgba(255,255,255,0.08)",
-                    color: telemetryTab === "pace" ? "var(--neon-cyan)" : "var(--text-secondary)",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "800",
-                    padding: "3px 7px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  ⚡ PACE (TOP 4)
-                </button>
-                <button
-                  onClick={() => setTelemetryTab("all")}
-                  style={{
-                    background: telemetryTab === "all" ? "rgba(0, 210, 190, 0.2)" : "rgba(255,255,255,0.04)",
-                    border: telemetryTab === "all" ? "1px solid var(--neon-cyan)" : "1px solid rgba(255,255,255,0.08)",
-                    color: telemetryTab === "all" ? "var(--neon-cyan)" : "var(--text-secondary)",
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: "0.64rem",
-                    fontWeight: "800",
-                    padding: "3px 7px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  ALL
-                </button>
-              </div>
-
-              <span style={{ fontSize: "0.60rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
-                ● 2026 ACTIVE
-              </span>
-            </div>
-
-            {/* Tab 1: Live Pace Tracker */}
-            {(telemetryTab === "pace" || telemetryTab === "all") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: telemetryTab === "all" ? "8px" : 0 }}>
-                {telemetryTab === "all" && (
-                  <div style={{ fontSize: "0.58rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", textTransform: "uppercase" }}>
-                    Live Pace Deltas
-                  </div>
-                )}
-                {[
-                  { pos: 1, num: "#1",  name: "L. Norris",      trend: "▲", pct: "+1.2%", isUp: true, color: "#ff8700" },
-                  { pos: 2, num: "#3",  name: "M. Verstappen",  trend: "▲", pct: "+0.8%", isUp: true, color: "#3671e8" },
-                  { pos: 3, num: "#63", name: "G. Russell",     trend: "▼", pct: "-0.4%", isUp: false, color: "#00d2be" },
-                  { pos: 4, num: "#16", name: "C. Leclerc",     trend: "▲", pct: "+1.6%", isUp: true, color: "#ff3b30" },
-                ].map((d) => (
-                  <div
-                    key={d.pos}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "5px 8px",
-                      background: "rgba(255,255,255,0.03)",
-                      borderLeft: `2px solid ${d.color}`,
-                      borderRadius: "4px",
-                      fontSize: "0.70rem",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ fontFamily: "'Orbitron', monospace", color: "var(--text-secondary)", fontSize: "0.64rem" }}>P{d.pos}</span>
-                      <span style={{ fontFamily: "'Orbitron', monospace", color: "#fff", fontWeight: "700" }}>{d.num}</span>
-                      <span style={{ color: "#e8e8f0", fontWeight: "600" }}>{d.name}</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: d.isUp ? "var(--neon-green)" : "var(--neon-red)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
-                      <span>{d.trend}</span>
-                      <span>{d.pct}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Tab 2: Top Speed Trap */}
-            {(telemetryTab === "speed" || telemetryTab === "all") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px", borderTop: telemetryTab === "all" ? "1px solid rgba(255,255,255,0.06)" : "none", paddingTop: telemetryTab === "all" ? "8px" : 0 }}>
-                {telemetryTab === "all" && (
-                  <div style={{ fontSize: "0.58rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)", textTransform: "uppercase" }}>
-                    Top Speed Trap (KM/H)
-                  </div>
-                )}
-                {[
-                  { pos: 1, name: "S. Pérez",       speed: 337, pct: 100, team: "Cadillac" },
-                  { pos: 2, name: "M. Verstappen",  speed: 336, pct: 98,  team: "Red Bull Racing" },
-                  { pos: 3, name: "L. Norris",      speed: 335, pct: 97,  team: "McLaren" },
-                  { pos: 4, name: "L. Hamilton",    speed: 334, pct: 96,  team: "Ferrari" },
-                  { pos: 5, name: "C. Sainz Jr.",   speed: 331, pct: 93,  team: "Williams" },
-                ].map((st) => {
-                  const teamConf = TEAM_CONFIG[st.team] || { text: "#00d2be" };
-                  return (
-                    <div key={st.pos} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.68rem" }}>
-                      <span style={{ width: "14px", fontFamily: "'Orbitron', monospace", color: "var(--text-secondary)" }}>{st.pos}</span>
-                      <div style={{ width: "3px", height: "11px", borderRadius: "2px", background: teamConf.text || "#fff" }} />
-                      <span style={{ width: "88px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#e8e8f0", fontWeight: "600" }}>{st.name}</span>
-                      <div style={{ flex: 1, height: "4px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden" }}>
-                        <div style={{ width: `${st.pct}%`, height: "100%", background: "linear-gradient(90deg, #00d2be, #e8002d)", borderRadius: "3px" }} />
-                      </div>
-                      <span style={{ fontFamily: "'Orbitron', monospace", color: "#fff", fontWeight: "700", minWidth: "30px", textAlign: "right" }}>
-                        {st.speed}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+        <TimingSidebarTelemetry
+          activeCircuitId={activeCircuitId}
+          activeTrackPath={activeTrackPath}
+          drivers={drivers}
+          effectiveLap={effectiveLap}
+          trackDampness={trackDampness}
+          activeAeroMode={activeAeroMode}
+          onToggleAero={handleToggleAero}
+          momBoostActive={momBoostActive}
+          onTriggerMom={handleTriggerMom}
+          momCooldown={momCooldown}
+          currentDriver={currentDriver}
+          awsOvertakeModel={awsOvertakeModel}
+          telemetryTab={telemetryTab}
+          onChangeTelemetryTab={setTelemetryTab}
+        />
 
         {/* ──── COLUMN 2: 2026 MASTER TIMING TOWER MATRIX (SPACIOUS TABLE) ──── */}
         <div
@@ -2266,6 +1621,9 @@ function TimingTower({
 
               {/* Sound Toggle */}
               <button
+                type="button"
+                aria-label={isSoundMuted ? "Unmute race audio alerts" : "Mute race audio alerts"}
+                aria-pressed={isSoundMuted}
                 onClick={() => setIsSoundMuted(!isSoundMuted)}
                 title={isSoundMuted ? "Unmute F1 broadcast chime" : "Mute broadcast sound"}
                 style={{
@@ -3595,33 +2953,45 @@ function TimingTower({
               <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.72rem", color: "var(--text-secondary)" }}>LAP</span>
               <input
                 type="range"
+                aria-label="Race lap scrubber"
                 min="1"
                 max={maxLaps}
-                value={currentLap}
-                onChange={(e) => setCurrentLap(Number(e.target.value))}
+                value={effectiveLap}
+                onChange={(e) => {
+                  const target = Number(e.target.value);
+                  if (onSetLap) onSetLap(target);
+                  else setCurrentLap(target);
+                }}
                 style={{ width: "130px", cursor: "pointer", accentColor: "var(--neon-red)" }}
               />
               <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.78rem", color: "#fff", fontWeight: "800" }}>
-                {currentLap}/{maxLaps}
+                {effectiveLap}/{maxLaps}
               </span>
-              <button
-                onClick={() => setIsPlaying((p) => !p)}
-                style={{
-                  background: isPlaying ? "var(--neon-red)" : "var(--neon-green)",
-                  color: isPlaying ? "#fff" : "#000",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "4px 12px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.72rem",
-                  fontWeight: "800",
-                  cursor: "pointer",
-                  boxShadow: isPlaying ? "0 0 10px rgba(232,0,45,0.4)" : "0 0 10px rgba(0,204,68,0.4)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {isPlaying ? "⏸ PAUSE" : "▶ PLAY"}
-              </button>
+              {(() => {
+                const running = onToggleAutoSim ? isAutoSimulating : isPlaying;
+                return (
+                  <button
+                    type="button"
+                    aria-pressed={running}
+                    onClick={() => (onToggleAutoSim ? onToggleAutoSim() : setIsPlaying((p) => !p))}
+                    style={{
+                      background: running ? "var(--neon-red)" : "var(--neon-green)",
+                      color: running ? "#fff" : "#000",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: "4px 12px",
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: "0.72rem",
+                      fontWeight: "800",
+                      cursor: "pointer",
+                      boxShadow: running ? "0 0 10px rgba(232,0,45,0.4)" : "0 0 10px rgba(0,204,68,0.4)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {running ? "⏸ PAUSE" : "▶ PLAY"}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -3655,7 +3025,7 @@ function TimingTower({
               </div>
             </div>
             <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.68rem", color: "var(--neon-green)", background: "rgba(0,204,68,0.15)", border: "1px solid rgba(0,204,68,0.35)", padding: "3px 8px", borderRadius: "4px", fontWeight: "700" }}>
-              WINDOW OPEN: L35
+              WINDOW OPEN: L{planSummary.planAStopLap}
             </span>
           </div>
 
@@ -3672,13 +3042,13 @@ function TimingTower({
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "6px", flexWrap: "wrap" }}>
-                <TireBadgePill compound="M" label="Med (L1–34)" />
+                <TireBadgePill compound="M" label={planSummary.planALabel1} />
                 <span style={{ color: "var(--neon-cyan)", fontSize: "0.70rem" }}>➔</span>
-                <TireBadgePill compound="H" label="Hard (L35–58)" />
+                <TireBadgePill compound="H" label={planSummary.planALabel2} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.62rem", color: "var(--text-dim)", marginTop: "5px" }}>
-                <span>Pit Loss: ~19.8s</span>
-                <span style={{ color: "var(--neon-cyan)", fontWeight: "700" }}>Target In-Lap: L35</span>
+                <span>Pit Loss: ~{pitLossGreen}s</span>
+                <span style={{ color: "var(--neon-cyan)", fontWeight: "700" }}>Target In-Lap: L{planSummary.planAStopLap}</span>
               </div>
             </div>
 
@@ -3693,14 +3063,14 @@ function TimingTower({
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "6px", flexWrap: "wrap" }}>
-                <TireBadgePill compound="S" label="Soft (L1–18)" />
+                <TireBadgePill compound="S" label={planSummary.planBLabel1} />
                 <span style={{ color: "#ffaa00", fontSize: "0.66rem" }}>➔</span>
-                <TireBadgePill compound="M" label="Med (L19–38)" />
+                <TireBadgePill compound="M" label={planSummary.planBLabel2} />
                 <span style={{ color: "#ffaa00", fontSize: "0.66rem" }}>➔</span>
-                <TireBadgePill compound="S" label="Soft (L39–58)" />
+                <TireBadgePill compound="S" label={planSummary.planBLabel3} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.62rem", color: "var(--text-dim)", marginTop: "5px" }}>
-                <span>Pit Loss: ~39.6s</span>
+                <span>Pit Loss: ~{(pitLossGreen * 1.9).toFixed(1)}s</span>
                 <span style={{ color: "#ffaa00", fontWeight: "700" }}>Req. +1.4s Delta</span>
               </div>
             </div>
@@ -3766,8 +3136,8 @@ function TimingTower({
 
             <div style={{ background: "rgba(255,255,255,0.03)", padding: "6px", borderRadius: "4px", textAlign: "center" }}>
               <div style={{ fontSize: "0.58rem", color: "var(--text-dim)", fontFamily: "'Orbitron', monospace" }}>EST REMAINING</div>
-              <div style={{ fontSize: "0.85rem", color: currentDriver.tireAge > 20 ? "var(--neon-red)" : currentDriver.tireAge > 15 ? "#ffaa00" : "var(--neon-green)", fontWeight: "800", fontFamily: "'Orbitron', monospace", marginTop: "2px" }}>
-                {Math.max(0, 35 - currentDriver.tireAge)} LAPS
+              <div style={{ fontSize: "0.85rem", color: planSummary.estRemainingLaps <= 4 ? "var(--neon-red)" : planSummary.estRemainingLaps <= 10 ? "#ffaa00" : "var(--neon-green)", fontWeight: "800", fontFamily: "'Orbitron', monospace", marginTop: "2px" }}>
+                {planSummary.estRemainingLaps} LAPS
               </div>
             </div>
 
@@ -4083,6 +3453,7 @@ function TimingTower({
             <div style={{ display: "flex", flex: 1, minWidth: 0, gap: "4px" }}>
               <input
                 type="text"
+                aria-label="Custom team radio message"
                 value={customRadioInput}
                 onChange={(e) => setCustomRadioInput(e.target.value)}
                 placeholder="Transmit to driver..."
@@ -4102,7 +3473,6 @@ function TimingTower({
                   color: "#fff",
                   fontSize: "0.68rem",
                   fontFamily: "'Inter', sans-serif",
-                  outline: "none",
                 }}
               />
               <button

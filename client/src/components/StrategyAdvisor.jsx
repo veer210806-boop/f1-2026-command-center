@@ -4,7 +4,7 @@
 // LEFT: Stint Architect, Dynamic Lap Sliders & Tactical Pit Orders
 // RIGHT: Live Re-Entry Radar, Traffic Projection & Tire Garage
 // ============================================================
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { getDriverFaceUrl, DRIVER_PHOTOS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
@@ -17,60 +17,6 @@ const getCompoundColor = (comp) => {
   if (comp === "I") return "#39B54A";
   if (comp === "W") return "#00A0DE";
   return "#FFD700";
-};
-
-// Pirelli 2026 Compound Specifications
-const TIRE_SPECS = {
-  S: {
-    letter: "S",
-    name: "Soft",
-    color: "#FF1801",
-    paceDelta: "-1.1s",
-    optimalLaps: "1 - 15 laps",
-    cliffLap: 18,
-    wearPerLap: 5.2,
-    desc: "Peak qualifying pace. High degradation cliff after 15 laps.",
-  },
-  M: {
-    letter: "M",
-    name: "Medium",
-    color: "#FFD700",
-    paceDelta: "0.0s (Baseline)",
-    optimalLaps: "16 - 28 laps",
-    cliffLap: 32,
-    wearPerLap: 3.1,
-    desc: "Primary race tire. Balanced speed and endurance.",
-  },
-  H: {
-    letter: "H",
-    name: "Hard",
-    color: "#FFFFFF",
-    paceDelta: "+0.8s",
-    optimalLaps: "28 - 46 laps",
-    cliffLap: 48,
-    wearPerLap: 1.9,
-    desc: "Maximum endurance up to 45+ laps.",
-  },
-  I: {
-    letter: "I",
-    name: "Intermediate",
-    color: "#39B54A",
-    paceDelta: "+4.2s (Dry) / Fast (Wet)",
-    optimalLaps: "Damp conditions (25-60% wet)",
-    cliffLap: 25,
-    wearPerLap: 3.8,
-    desc: "Grooved compound for wet tracks.",
-  },
-  W: {
-    letter: "W",
-    name: "Full Wet",
-    color: "#00A0DE",
-    paceDelta: "+8.5s (Dry) / Safe (Wet)",
-    optimalLaps: "Heavy standing water",
-    cliffLap: 20,
-    wearPerLap: 4.5,
-    desc: "Deep tread clears 85L/sec for extreme storm safety.",
-  },
 };
 
 // Available Weekend Tire Rack
@@ -114,7 +60,6 @@ export default function StrategyAdvisor({
   selectedCircuit,
   drivers = [],
   playerTeam = "Ferrari",
-  userRole = "team",
   currentLap = 1,
   maxLaps = 58,
   activeFlag = "GREEN",
@@ -122,14 +67,9 @@ export default function StrategyAdvisor({
   plannedStrategies = [],
   driverPlans = {},
   onUpdateDriverPlan,
-  onCompletePlanStop,
   onAddStrategy,
   onDeleteStrategy,
-  onApplyPreset,
   onGoToTiming,
-  activePitEvent,
-  onSetPitEvent,
-  overtakeEvent,
 }) {
   const totalLaps = selectedCircuit?.laps || maxLaps || 58;
   const circuitName = selectedCircuit?.grand_prix_name || "Australian Grand Prix";
@@ -177,20 +117,18 @@ export default function StrategyAdvisor({
   }, [drivers, playerTeam, currentTeamObj]);
 
   // Active selected driver tab
-  const [activeDriverCode, setActiveDriverCode] = useState(() => teamDrivers[0]?.code || "VER");
-
-  useEffect(() => {
-    if (teamDrivers.length > 0 && !teamDrivers.some((d) => d.code === activeDriverCode)) {
-      setActiveDriverCode(teamDrivers[0].code);
-    }
-  }, [teamDrivers, activeDriverCode]);
+  const [selectedCodeState, setActiveDriverCode] = useState(() => teamDrivers[0]?.code || "VER");
+  const activeDriverCode = teamDrivers.some((d) => d.code === selectedCodeState)
+    ? selectedCodeState
+    : (teamDrivers[0]?.code || "VER");
 
   const activeDriver = useMemo(() => {
     return teamDrivers.find((d) => d.code === activeDriverCode) || teamDrivers[0] || drivers[0];
   }, [teamDrivers, activeDriverCode, drivers]);
 
   // Current driver's plan from App.jsx props
-  const currentPlan = driverPlans[activeDriverCode] || {
+  const driverPlanEntry = driverPlans[activeDriverCode];
+  const currentPlan = useMemo(() => driverPlanEntry || {
     stopsCount: 1,
     stop1Lap: 24,
     stop1SetId: "H1",
@@ -199,7 +137,7 @@ export default function StrategyAdvisor({
     stop2SetId: "S1",
     stop2Completed: false,
     pushMode: "balanced",
-  };
+  }, [driverPlanEntry]);
 
   const updatePlanField = (field, value) => {
     if (onUpdateDriverPlan) {

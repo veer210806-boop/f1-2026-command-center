@@ -4,10 +4,8 @@
 // Interactive 11-Constructor Showroom Selection with full 2026 liveries and driver duos.
 // ============================================================
 import React, { useState } from "react";
-import { TEAM_CARS, TEAM_LOGOS, DRIVER_PHOTOS, getDriverFaceUrl } from "../data/f1MediaAssets2026";
-import { TEAM_PERFORMANCE_2026 } from "../data/teamPerformance2026";
+import { TEAM_CARS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
-export { CONSTRUCTORS_2026 };
 
 export default function StrategyGameGatewayModal({
   isOpen = true,
@@ -244,7 +242,6 @@ export default function StrategyGameGatewayModal({
             >
               {CONSTRUCTORS_2026.map((team) => {
                 const isChosen = team.id === selectedTeamId;
-                const logo = TEAM_LOGOS[team.id];
                 return (
                   <div
                     key={team.id}

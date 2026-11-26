@@ -5,7 +5,6 @@
 // Multi-Circuit Support, Interactive Driver Highlighting, and Trajectory Lines.
 // ============================================================
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { DRIVER_IOC_MAP } from "./TimingTower";
 import {
   generateRaceWeekendData,
   DRIVER_META,
@@ -23,10 +22,11 @@ export default function StatsF1LapMatrix({
   onSelectDriver,
   selectedDriverCode,
 }) {
-  const [highlightedDriver, setHighlightedDriver] = useState(selectedDriverCode || null);
+  const [customHighlightedDriver, setHighlightedDriver] = useState(null);
   const [viewMode, setViewMode] = useState("matrix"); // "matrix" | "chart"
   const [selectedCell, setSelectedCell] = useState(null);
   const tableContainerRef = useRef(null);
+  const highlightedDriver = customHighlightedDriver || selectedDriverCode || null;
 
   // Auto-scroll to the latest lap when currentLap updates
   useEffect(() => {
@@ -34,13 +34,6 @@ export default function StatsF1LapMatrix({
       tableContainerRef.current.scrollLeft = tableContainerRef.current.scrollWidth;
     }
   }, [currentLap]);
-
-  // Sync external selected driver
-  useEffect(() => {
-    if (selectedDriverCode) {
-      setHighlightedDriver(selectedDriverCode);
-    }
-  }, [selectedDriverCode]);
 
   // Circuit configuration metadata (pole time, pole driver, laps)
   const circuitConfig = useMemo(() => {

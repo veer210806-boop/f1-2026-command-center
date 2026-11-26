@@ -113,12 +113,6 @@ export default function LiveRaceMapTracker({
 
   const [localPlaying, setLocalPlaying] = useState(() => isAutoSimulating);
   const [localSimSpeed, setLocalSimSpeed] = useState(() => externalSimSpeed || 1);
-  useEffect(() => {
-    setLocalPlaying(isAutoSimulating);
-  }, [isAutoSimulating]);
-  useEffect(() => {
-    if (externalSimSpeed) setLocalSimSpeed(externalSimSpeed);
-  }, [externalSimSpeed]);
 
   const isPlaying = onToggleAutoSim ? isAutoSimulating : localPlaying;
   const simSpeed = onChangeSimSpeed && externalSimSpeed ? externalSimSpeed : localSimSpeed;
@@ -149,14 +143,11 @@ export default function LiveRaceMapTracker({
     return () => clearInterval(timer);
   }, []);
 
-  const carSimStateRef = useRef([]);
-  const [leaderboardCars, setLeaderboardCars] = useState(() => buildInitialLeaderboard(drivers));
-
+  const leaderboardCars = useMemo(() => buildInitialLeaderboard(drivers), [drivers]);
+  const carSimStateRef = useRef(leaderboardCars);
   useEffect(() => {
-    const updated = buildInitialLeaderboard(drivers);
-    carSimStateRef.current = updated;
-    setLeaderboardCars(updated);
-  }, [drivers]);
+    carSimStateRef.current = leaderboardCars;
+  }, [leaderboardCars]);
 
   // Automatically highlight player's lead car (or race leader when in Admin mode)
   const highlightedCar = useMemo(() => {
@@ -173,13 +164,16 @@ export default function LiveRaceMapTracker({
   const hiddenPathRef = useRef(null);
   const trackLutRef = useRef([]);
   const isPlayingRef = useRef(isPlaying);
-  isPlayingRef.current = isPlaying;
   const simSpeedRef = useRef(simSpeed);
-  simSpeedRef.current = simSpeed;
   const highlightedNumRef = useRef(highlightedDriverNum);
-  highlightedNumRef.current = highlightedDriverNum;
   const sessionFlagRef = useRef(sessionFlag);
-  sessionFlagRef.current = sessionFlag;
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    simSpeedRef.current = simSpeed;
+    highlightedNumRef.current = highlightedDriverNum;
+    sessionFlagRef.current = sessionFlag;
+  }, [isPlaying, simSpeed, highlightedDriverNum, sessionFlag]);
 
   const speedDisplayRef = useRef(null);
   const gearDisplayRef = useRef(null);

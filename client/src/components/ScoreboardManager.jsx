@@ -36,7 +36,6 @@ export default function ScoreboardManager({
     leaderDriver,
     leaderConstructor,
     userTeamStanding,
-    userTeamDrivers,
   } = standings;
 
   const currentGpName = selectedCircuit?.grand_prix_name || "Australian Grand Prix";
