@@ -7,21 +7,11 @@
 // ============================================================
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { TEAM_COLORS_MAP } from "../data/constructors2026";
 
-const TEAM_COLORS = {
-  McLaren: "#ff8700",
-  "Red Bull Racing": "#3671e8",
-  Mercedes: "#00d2be",
-  Ferrari: "#ff3b30",
-  Williams: "#00a0de",
-  "Aston Martin": "#229971",
-  Cadillac: "#ffc72c",
-  Audi: "#e50027",
-  Alpine: "#0090ff",
-  Haas: "#b6babd",
-  "Racing Bulls": "#6692ff",
-  RB: "#6692ff",
-};
+const TEAM_COLORS = Object.fromEntries(
+  Object.entries(TEAM_COLORS_MAP).map(([team, palette]) => [team, palette.radar || palette.primary])
+);
 
 const CITY_CIRCUITS = new Set([
   "australia",

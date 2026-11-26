@@ -11,22 +11,7 @@ import {
   DRIVER_META,
   getGrandPrixConfig,
 } from "../data/raceWeekendGrids2026";
-
-// Team colors matching authentic 2026 liveries
-const TEAM_COLORS = {
-  "McLaren":         { primary: "#ff8700", secondary: "#47c7fc", text: "#000000" },
-  "Red Bull Racing": { primary: "#3671e8", secondary: "#cc1e4a", text: "#ffffff" },
-  "Mercedes":        { primary: "#00d2be", secondary: "#ffffff", text: "#000000" },
-  "Ferrari":         { primary: "#e8002d", secondary: "#fff200", text: "#ffffff" },
-  "Williams":        { primary: "#00a0de", secondary: "#041e42", text: "#ffffff" },
-  "Aston Martin":    { primary: "#229971", secondary: "#cedc00", text: "#ffffff" },
-  "Alpine":          { primary: "#0090ff", secondary: "#fd4bc7", text: "#ffffff" },
-  "Haas":            { primary: "#b6babd", secondary: "#da291c", text: "#000000" },
-  "Racing Bulls":    { primary: "#6692ff", secondary: "#ffffff", text: "#ffffff" },
-  "RB":              { primary: "#6692ff", secondary: "#ffffff", text: "#ffffff" },
-  "Audi":            { primary: "#e50027", secondary: "#000000", text: "#ffffff" },
-  "Cadillac":        { primary: "#ffc72c", secondary: "#000000", text: "#000000" },
-};
+import { TEAM_COLORS_MAP as TEAM_COLORS } from "../data/constructors2026";
 
 export default function StatsF1LapMatrix({
   drivers = [],

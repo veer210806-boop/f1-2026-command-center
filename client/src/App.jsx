@@ -28,6 +28,7 @@ import FinalRaceClassificationModal from "./components/FinalRaceClassificationMo
 import { buildTimingTowerGridForCircuit } from "./data/raceWeekendGrids2026";
 import { f1Audio } from "./utils/f1AudioEngine";
 import { getTeamLogo } from "./data/f1MediaAssets2026";
+import { fetchCircuitLiveWeather } from "./utils/openF1Service";
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -306,11 +307,63 @@ function FiaClock() {
   );
 }
 
+function parseHashLocation() {
+  if (typeof window === "undefined") return { tab: "timing", circuit: null };
+  const rawHash = window.location.hash.replace(/^#\/?/, "");
+  const [pathPart, queryPart] = rawHash.split("?");
+  const validTab = TABS.some((t) => t.id === pathPart) ? pathPart : null;
+  const params = new URLSearchParams(queryPart || "");
+  return { tab: validTab, circuit: params.get("circuit") };
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState("timing");
+  const [activeTab, setActiveTab] = useState(() => parseHashLocation().tab || "timing");
   const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [circuits, setCircuits] = useState(SEASON_2026_ROUNDS);
-  const [selectedCircuit, setSelectedCircuit] = useState(SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT);
+  const [selectedCircuit, setSelectedCircuit] = useState(() => {
+    const initialId = parseHashLocation().circuit;
+    return SEASON_2026_ROUNDS.find((c) => c.circuit_id === initialId) || SEASON_2026_ROUNDS[0] || DEFAULT_CIRCUIT;
+  });
+
+  // Sync URL hash cleanly for shareable views and browser Back/Forward without extra router complexity
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const cid = selectedCircuit?.circuit_id || "australia";
+    const targetHash = `#/${activeTab}?circuit=${encodeURIComponent(cid)}`;
+    if (window.location.hash !== targetHash) {
+      window.history.replaceState(null, "", targetHash);
+    }
+  }, [activeTab, selectedCircuit?.circuit_id]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const parsed = parseHashLocation();
+      if (parsed.tab) setActiveTab(parsed.tab);
+      if (parsed.circuit) {
+        const match = circuits.find((c) => c.circuit_id === parsed.circuit);
+        if (match) setSelectedCircuit(match);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [circuits]);
+
+  // Fetch live GPS meteorological telemetry for active circuit via Open-Meteo (silent fallback to season defaults)
+  useEffect(() => {
+    const cid = selectedCircuit?.circuit_id;
+    if (!cid) return;
+    let cancelled = false;
+    fetchCircuitLiveWeather(cid)
+      .then((liveWeather) => {
+        if (!cancelled && liveWeather) {
+          setSelectedCircuit((prev) =>
+            prev && prev.circuit_id === cid ? { ...prev, weather: { ...prev.weather, ...liveWeather } } : prev
+          );
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedCircuit?.circuit_id]);
 
   useEffect(() => {
     axios.get(`${API}/circuits`)
@@ -995,6 +1048,8 @@ export default function App() {
             return (
               <button
                 key={tab.id}
+                type="button"
+                aria-current={isActive ? "page" : undefined}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   all: "unset",
@@ -1007,6 +1062,7 @@ export default function App() {
                   letterSpacing: "0.02em",
                   color: isActive ? "#ffffff" : "var(--text-secondary)",
                   background: isActive ? "linear-gradient(135deg, var(--neon-red) 0%, #b3001e 100%)" : "transparent",
+                  borderBottom: isActive ? "2px solid #ffffff" : "2px solid transparent",
                   boxShadow: isActive ? "0 0 12px rgba(232,0,45,0.45)" : "none",
                   transition: "all 0.15s ease",
                   display: "inline-flex",

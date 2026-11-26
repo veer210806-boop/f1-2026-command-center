@@ -14,6 +14,8 @@ import { getTeammateRadio } from "../data/teamRadioArchive";
 import TeamRadioModal from "./TeamRadioModal";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { f1Audio } from "../utils/f1AudioEngine";
+import { fetchOpenF1TeammateTelemetry } from "../utils/openF1Service";
+import { downloadCsvFile } from "../utils/exportUtils";
 
 export const ALL_TEAMMATE_PAIRS = [
   { d1: "VER", d2: "HAD", team: "Red Bull Racing", color: "#1E41FF", color2: "#FFD700", d1Num: 3,  d2Num: 6 },
@@ -188,6 +190,10 @@ function TelemetryViewer({ selectedCircuit }) {
   const [activeRadioFilter, setActiveRadioFilter] = useState("ALL");
   const [isRadioModalOpen, setIsRadioModalOpen] = useState(false);
   const [playingRadioId, setPlayingRadioId] = useState(null);
+  const [telemetryMode, setTelemetryMode] = useState("model"); // "model" | "openf1"
+  const [openF1Data, setOpenF1Data] = useState(null);
+  const [isLoadingOpenF1, setIsLoadingOpenF1] = useState(false);
+  const [telemetryNotice, setTelemetryNotice] = useState("");
 
   // Get active circuit profile & official SVG layout
   const activeProfile = useMemo(() => {
@@ -197,6 +203,29 @@ function TelemetryViewer({ selectedCircuit }) {
   const maxTrackDistance = activeProfile.length_m;
   const activeCircuitId = selectedCircuit?.circuit_id || "australia";
   const activeTrackSvgPath = OFFICIAL_CIRCUIT_PATHS[activeCircuitId] || OFFICIAL_CIRCUIT_PATHS.australia || OFFICIAL_CIRCUIT_PATHS.belgium;
+
+  // Fetch real OpenF1 teammate lap telemetry when switched to Real Data mode
+  useEffect(() => {
+    if (telemetryMode !== "openf1") return;
+    let cancelled = false;
+    setIsLoadingOpenF1(true);
+    setTelemetryNotice("Fetching fastest race lap telemetry from OpenF1 API...");
+    fetchOpenF1TeammateTelemetry(activeCircuitId, selectedPair.d1, selectedPair.d2, 2024)
+      .then((res) => {
+        if (cancelled) return;
+        setOpenF1Data(res);
+        setIsLoadingOpenF1(false);
+        setTelemetryNotice(`OpenF1 ${res.sessionName}: ${res.d1Code} (${res.d1LapTime}) vs ${res.d2Code} (${res.d2LapTime})`);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setIsLoadingOpenF1(false);
+        setTelemetryMode("model");
+        setOpenF1Data(null);
+        setTelemetryNotice(`OpenF1 offline/unavailable (${err?.message || "fallback"}) — using 2026 physics profile.`);
+      });
+    return () => { cancelled = true; };
+  }, [telemetryMode, activeCircuitId, selectedPair.d1, selectedPair.d2]);
 
   // Automated Real-Time Lap Scrubber Player (10Hz playback)
   useEffect(() => {
@@ -217,7 +246,7 @@ function TelemetryViewer({ selectedCircuit }) {
   const d2Rating = d2Profile.telemetry_ratings?.pace || 92;
   const ratingDelta = (d1Rating - d2Rating) * 0.5;
 
-  const telemetryData = useMemo(() => {
+  const modelTelemetryData = useMemo(() => {
     let cumulativeDeltaSec = 0;
     let prevDistance = 0;
 
@@ -260,6 +289,10 @@ function TelemetryViewer({ selectedCircuit }) {
       };
     });
   }, [activeProfile, selectedPair, ratingDelta]);
+
+  const telemetryData = telemetryMode === "openf1" && openF1Data?.points?.length > 0
+    ? openF1Data.points
+    : modelTelemetryData;
 
   // Closest telemetry point to current scrubber
   const currentPoint = useMemo(() => {
@@ -345,9 +378,81 @@ function TelemetryViewer({ selectedCircuit }) {
             </span>
           </div>
 
-          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace" }}>
-            📍 {selectedCircuit?.grand_prix_name || "Australian GP"} · {(maxTrackDistance / 1000).toFixed(3)} km
+          <div role="toolbar" aria-label="Telemetry data source and export" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div role="group" aria-label="Telemetry Source" style={{ display: "inline-flex", background: "rgba(0,0,0,0.45)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.12)", gap: "2px" }}>
+              <button
+                type="button"
+                aria-pressed={telemetryMode === "model"}
+                onClick={() => {
+                  setTelemetryMode("model");
+                  setTelemetryNotice("Switched to 2026 Corner Physics Profile");
+                }}
+                style={{
+                  background: telemetryMode === "model" ? "rgba(0, 210, 190, 0.22)" : "transparent",
+                  border: telemetryMode === "model" ? "1px solid var(--neon-cyan)" : "1px solid transparent",
+                  color: telemetryMode === "model" ? "#ffffff" : "var(--text-dim)",
+                  borderRadius: "4px",
+                  padding: "3px 8px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.62rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+              >
+                ⚙️ 2026 MODEL
+              </button>
+              <button
+                type="button"
+                aria-pressed={telemetryMode === "openf1"}
+                onClick={() => setTelemetryMode("openf1")}
+                style={{
+                  background: telemetryMode === "openf1" ? "rgba(0, 230, 118, 0.22)" : "transparent",
+                  border: telemetryMode === "openf1" ? "1px solid var(--neon-green)" : "1px solid transparent",
+                  color: telemetryMode === "openf1" ? "#ffffff" : "var(--text-dim)",
+                  borderRadius: "4px",
+                  padding: "3px 8px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.62rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+                title="Fetch real FIA 300Hz lap telemetry from OpenF1 API (2024 season)"
+              >
+                {isLoadingOpenF1 ? "⏳ LOADING OPENF1..." : "📡 REAL OPENF1 (2024)"}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const headers = ["Distance_m", "Section", "Type", `${selectedPair.d1}_Speed_kmh`, `${selectedPair.d2}_Speed_kmh`, "SpeedDelta", "TimeDelta_s", `${selectedPair.d1}_Throttle`, `${selectedPair.d2}_Throttle`, `${selectedPair.d1}_Brake`, `${selectedPair.d2}_Brake`];
+                const rows = telemetryData.map((p) => [p.distance, p.label, p.type, p.d1_speed, p.d2_speed, p.delta, p.time_delta, p.d1_throttle, p.d2_throttle, p.d1_brake, p.d2_brake]);
+                downloadCsvFile(`telemetry_${activeCircuitId}_${selectedPair.d1}_${selectedPair.d2}`, headers, rows);
+                setTelemetryNotice(`Exported ${rows.length} telemetry samples to CSV`);
+              }}
+              style={{
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.16)",
+                color: "#ffffff",
+                borderRadius: "4px",
+                padding: "4px 9px",
+                fontFamily: "'Orbitron', monospace",
+                fontSize: "0.62rem",
+                fontWeight: "800",
+                cursor: "pointer",
+              }}
+              title="Download telemetry comparison trace as CSV"
+            >
+              ⬇ EXPORT CSV
+            </button>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontFamily: "'Orbitron', monospace" }}>
+              📍 {selectedCircuit?.grand_prix_name || "Australian GP"} · {(maxTrackDistance / 1000).toFixed(3)} km
+            </div>
           </div>
+          {telemetryNotice && (
+            <p role="status" style={{ width: "100%", margin: "4px 0 0 0", fontSize: "0.68rem", color: "var(--neon-cyan)", fontFamily: "'JetBrains Mono', monospace" }}>
+              {telemetryNotice}
+            </p>
+          )}
         </div>
 
         {/* Clean, Modern Horizontal Scrollable Team Pills */}
@@ -389,8 +494,9 @@ function TelemetryViewer({ selectedCircuit }) {
                 {logoUrl && (
                   <img
                     src={logoUrl}
-                    alt={pair.team}
+                    alt=""
                     style={{ height: "16px", width: "auto", objectFit: "contain", opacity: isSelected ? 1 : 0.6 }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                 )}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
@@ -801,7 +907,10 @@ function TelemetryViewer({ selectedCircuit }) {
         >
           {activeProfile.corners.map((c) => {
             const isTarget = Math.abs(scrubPos - c.distance_m) < 80;
-            const ptData = telemetryData.find(p => p.distance === c.distance_m);
+            const ptData = telemetryData.reduce(
+              (best, p) => (Math.abs(p.distance - c.distance_m) < Math.abs(best.distance - c.distance_m) ? p : best),
+              telemetryData[0]
+            );
             const winner = ptData && ptData.d1_speed >= ptData.d2_speed ? selectedPair.d1 : selectedPair.d2;
             const winColor = ptData && ptData.d1_speed >= ptData.d2_speed ? d1Color : d2Color;
             const delta = ptData ? Math.abs(ptData.delta) : 0;

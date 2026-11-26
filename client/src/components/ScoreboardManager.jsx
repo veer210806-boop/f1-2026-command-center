@@ -9,6 +9,7 @@ import { computeChampionshipStandings } from "../utils/scoreboardEngine";
 import { getDriverFaceUrl, getTeamLogo, DRIVER_PHOTOS } from "../data/f1MediaAssets2026";
 import { CONSTRUCTORS_2026 } from "../data/constructors2026";
 import { f1Audio } from "../utils/f1AudioEngine";
+import { downloadCsvFile } from "../utils/exportUtils";
 
 export default function ScoreboardManager({
   seasonData,
@@ -20,6 +21,7 @@ export default function ScoreboardManager({
 }) {
   const [activeView, setActiveView] = useState("drivers"); // "drivers" | "constructors" | "matrix"
   const [matrixFilter, setMatrixFilter] = useState("drivers"); // "drivers" | "constructors"
+  const [exportStatus, setExportStatus] = useState("");
 
   // Compute standings live from seasonData
   const standings = useMemo(() => {
@@ -152,7 +154,41 @@ export default function ScoreboardManager({
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <div role="toolbar" aria-label="Championship actions" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => {
+              const isCon = activeView === "constructors";
+              const headers = isCon
+                ? ["Pos", "Team", "PowerUnit", "Points", "Wins", "Podiums"]
+                : ["Pos", "Code", "Driver", "Team", "Points", "Wins", "Podiums", "FastestLaps"];
+              const rows = isCon
+                ? constructorStandings.map((c, idx) => [idx + 1, c.name, c.powerUnit || "", c.points, c.wins || 0, c.podiums || 0])
+                : driverStandings.map((d, idx) => [idx + 1, d.code, d.name, d.team, d.points, d.wins || 0, d.podiums || 0, d.fastestLaps || 0]);
+              downloadCsvFile(`gp_2026_${isCon ? "constructors" : "drivers"}_standings`, headers, rows);
+              setExportStatus(`Exported ${rows.length} ${isCon ? "constructor" : "driver"} standings rows`);
+            }}
+            style={{
+              background: "rgba(0, 210, 190, 0.14)",
+              border: "1px solid rgba(0, 210, 190, 0.45)",
+              color: "var(--neon-cyan)",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "0.70rem",
+              fontWeight: "800",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            title="Download championship standings as CSV"
+          >
+            <span>⬇ EXPORT CSV</span>
+          </button>
+          <p role="status" className="sr-only" style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)" }}>
+            {exportStatus}
+          </p>
           {isCurrentRoundRecorded && onRevertRoundPoints && (
             <button
               onClick={() => {

@@ -101,7 +101,7 @@ export default function StrategyGameGatewayModal({
               lineHeight: 1.15,
             }}
           >
-            MISSION CONTROL & <span style={{ color: "var(--neon-red)", textShadow: "0 0 16px rgba(232,0,45,0.6)" }}>STRATEGY SIMULATOR</span>
+            PIT WALL ANALYTICS & <span style={{ color: "var(--neon-red)", textShadow: "0 0 16px rgba(232,0,45,0.6)" }}>TELEMETRY DESK</span>
           </h1>
 
           <p
@@ -114,7 +114,7 @@ export default function StrategyGameGatewayModal({
               fontWeight: "600",
             }}
           >
-            Select your operational clearance. Command your chosen constructor to victory through tactical pit windows, or oversee race control as the governing FIA Administrator.
+            Select your engineering workspace scope. Monitor constructor pit windows and race telemetry, or inspect full-grid FIA timing & OpenF1 historical data.
           </p>
         </div>
 
@@ -143,10 +143,10 @@ export default function StrategyGameGatewayModal({
                 </div>
                 <div>
                   <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.95rem", fontWeight: "900", color: "#ffffff" }}>
-                    TEAM STRATEGY PRINCIPAL
+                    CONSTRUCTOR STRATEGY DESK
                   </div>
                   <div style={{ fontSize: "0.72rem", color: "var(--neon-cyan)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
-                    SINGLE-TEAM COMMAND (GAME MODE)
+                    SINGLE-TEAM ENGINEERING FOCUS
                   </div>
                 </div>
               </div>
@@ -193,10 +193,10 @@ export default function StrategyGameGatewayModal({
                 </div>
                 <div>
                   <div style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.95rem", fontWeight: "900", color: "#ffffff" }}>
-                    FIA RACE ADMINISTRATOR
+                    FIA RACE CONTROL TELEMETRY
                   </div>
                   <div style={{ fontSize: "0.72rem", color: "var(--neon-green)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
-                    GLOBAL GOD-MODE CLEARANCE
+                    FULL 22-CAR ENGINEERING VIEW
                   </div>
                 </div>
               </div>

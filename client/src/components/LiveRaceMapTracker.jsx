@@ -8,25 +8,10 @@
 import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { OFFICIAL_CIRCUIT_PATHS } from "../data/officialCircuitSvgs";
 import { getCircuitWeather } from "../data/calendar2026";
-import { isDriverBelongingToTeam } from "../data/constructors2026";
+import { isDriverBelongingToTeam, TEAM_COLORS_MAP as TEAM_COLORS } from "../data/constructors2026";
 import { calculateAutoFuelPrediction } from "../utils/fuelPredictionEngine";
 
 const CircuitSpatialRadar = lazy(() => import("./CircuitSpatialRadar"));
-
-const TEAM_COLORS = {
-  "McLaren":         { primary: "#ff8700" },
-  "Red Bull Racing": { primary: "#3671e8" },
-  "Mercedes":        { primary: "#00d2be" },
-  "Ferrari":         { primary: "#ff3b30" },
-  "Williams":        { primary: "#00a0de" },
-  "Aston Martin":    { primary: "#229971" },
-  "Cadillac":        { primary: "#ffc72c" },
-  "Audi":            { primary: "#e50027" },
-  "Alpine":          { primary: "#0090ff" },
-  "Haas":            { primary: "#b6babd" },
-  "Racing Bulls":    { primary: "#6692ff" },
-  "RB":              { primary: "#6692ff" },
-};
 
 const NIGHT_CIRCUITS = ["las_vegas", "singapore", "bahrain", "qatar", "abu_dhabi", "saudi_arabia"];
 const LUT_SIZE = 1400;

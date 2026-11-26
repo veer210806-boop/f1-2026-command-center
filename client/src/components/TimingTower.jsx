@@ -22,6 +22,14 @@ import {
   getGrandPrixConfig,
 } from "../data/raceWeekendGrids2026";
 import { isDriverBelongingToTeam } from "../data/constructors2026";
+import {
+  simulateLapTick,
+  computeCatchAndProbability,
+  buildLiveTireCurve,
+  buildPaceComparisonSeries,
+} from "../utils/raceSimEngine";
+import { fetchOpenF1RaceReplay } from "../utils/openF1Service";
+import { downloadCsvFile } from "../utils/exportUtils";
 
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -777,6 +785,39 @@ function TimingTower({
 
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [lapHistory, setLapHistory] = useState(() => generateRaceWeekendData("australia", 58).lapHistory);
+  const [telemetrySource, setTelemetrySource] = useState("sim"); // "sim" | "openf1"
+  const [openF1Dataset, setOpenF1Dataset] = useState(null);
+  const [isOpenF1Loading, setIsOpenF1Loading] = useState(false);
+  const [dataSourceStatus, setDataSourceStatus] = useState("");
+
+  // Toggle between 2026 Physics Simulation and Real FIA 2024 Historical OpenF1 Replay
+  const handleSelectTelemetrySource = async (mode) => {
+    if (mode === "sim") {
+      setTelemetrySource("sim");
+      setDataSourceStatus("2026 Physics Engine active");
+      setDrivers(buildTimingTowerGridForCircuit(activeCircuitId, 1));
+      return;
+    }
+    setTelemetrySource("openf1");
+    setIsOpenF1Loading(true);
+    setDataSourceStatus(`Fetching real 2024 FIA telemetry for ${gpName}...`);
+    try {
+      const dataset = await fetchOpenF1RaceReplay(activeCircuitId, 2024);
+      setOpenF1Dataset(dataset);
+      setIsOpenF1Loading(false);
+      const frame = dataset.framesByLap[Math.min(effectiveLap, dataset.maxLaps)] || dataset.framesByLap[1];
+      if (frame && frame.length > 0) {
+        setDrivers(frame);
+      }
+      setDataSourceStatus(`OpenF1 Real Replay (${dataset.sessionName} · ${dataset.maxLaps} laps loaded)`);
+      setOvertakeEvent(`📡 REAL FIA DATA LOADED: Replaying authentic 2024 ${dataset.sessionName} via OpenF1 API!`);
+    } catch (err) {
+      setIsOpenF1Loading(false);
+      setTelemetrySource("sim");
+      setOpenF1Dataset(null);
+      setDataSourceStatus(`OpenF1 unavailable (${err?.message || "network"}) — reverted to 2026 Physics Engine.`);
+    }
+  };
 
   // Auto-dismiss pit stop broadcast popup after 8 seconds
   useEffect(() => {
@@ -792,6 +833,9 @@ function TimingTower({
   useEffect(() => {
     const raceWeekend = generateRaceWeekendData(activeCircuitId, maxLaps);
     setLapHistory(raceWeekend.lapHistory);
+    setTelemetrySource("sim");
+    setOpenF1Dataset(null);
+    setDataSourceStatus("");
     if (currentLap <= 1) {
       const newGrid = buildTimingTowerGridForCircuit(activeCircuitId, 1);
       setDrivers(newGrid);
@@ -972,365 +1016,77 @@ function TimingTower({
     });
   };
 
-  // Dynamic Lap Progression, Dynamic Degradation & AI Autonomous Pit Simulation
+  // Dynamic Lap Progression: replays real OpenF1 FIA data in Historical mode, or steps clean physics simulation
   useEffect(() => {
     if (controlledLap && controlledLap !== currentLap) {
       setCurrentLap(controlledLap);
 
+      // Historical OpenF1 replay mode
+      if (telemetrySource === "openf1" && openF1Dataset?.framesByLap) {
+        const clampedLap = Math.min(Math.max(1, controlledLap), openF1Dataset.maxLaps || maxLaps);
+        const frame = openF1Dataset.framesByLap[clampedLap] || openF1Dataset.framesByLap[1];
+        if (frame && frame.length > 0) {
+          setDrivers(frame);
+          return;
+        }
+      }
+
       setDrivers((prevDrivers) => {
-        // If controlledLap is 1, maintain or reset to clean pre-race grid without fake gaps/sectors/laptimes
         if (!prevDrivers || prevDrivers.length < 2 || controlledLap <= 1) {
           return buildTimingTowerGridForCircuit(activeCircuitId, 1);
         }
 
-        const parseGapSec = (gapStr) => {
-          if (!gapStr || gapStr === "LEADER" || gapStr === "—") return 0;
-          const num = parseFloat(String(gapStr).replace("+", "").replace("s", ""));
-          return isNaN(num) ? 0 : num;
-        };
-
-        let pittedDriverCode = null;
-        let pitStopReason = "";
-        let pitDurationStr = "";
-
-        // Circuit benchmark pace for dynamic realistic sector calculations
         const circuitCfg = getGrandPrixConfig(activeCircuitId);
-        let poleSec = 76.732;
-        if (circuitCfg && circuitCfg.poleTime && circuitCfg.poleTime.includes(":")) {
+        let poleSec = 78.5;
+        if (circuitCfg?.poleTime && circuitCfg.poleTime.includes(":")) {
           const [pm, ps] = circuitCfg.poleTime.split(":");
           const parsed = parseFloat(pm) * 60 + parseFloat(ps);
           if (!isNaN(parsed) && parsed > 0) poleSec = parsed;
         }
-        const raceBaseSec = poleSec + 9.5;
-        const s1Base = raceBaseSec * 0.318;
-        const s2Base = raceBaseSec * 0.428;
-        const s3Base = raceBaseSec * 0.254;
 
-        // Check if incoming drivers still have Lap-1 zeroed gaps so we initialize clean F1 grid spacing instead of P1->P22 shuffle
-        const needsGridGapInit = prevDrivers.every((pd) => !pd.gapSec || pd.gapSec === 0);
-
-        // 1. Dynamic Tire Degradation, Tactical Push Modes & Sector Timings
-        let updated = prevDrivers.map((d, dIdx) => {
-          const isPlayerDriver =
-            userRole === "team" &&
-            d.team &&
-            (d.team.toLowerCase().includes(playerTeam.toLowerCase()) ||
-              playerTeam.toLowerCase().includes(d.team.toLowerCase()) ||
-              (playerTeam.toLowerCase().includes("red") && d.team.toLowerCase().includes("red")) ||
-              (playerTeam.toLowerCase().includes("audi") && d.team.toLowerCase().includes("sauber")) ||
-              (playerTeam.toLowerCase().includes("sauber") && d.team.toLowerCase().includes("audi")));
-
-          const initialStaggeredGap = +(dIdx * 0.48).toFixed(3);
-          let currentGapSec = needsGridGapInit
-            ? initialStaggeredGap
-            : d.gapSec !== undefined
-              ? d.gapSec
-              : parseGapSec(d.gap);
-          const aheadStaggeredGap = dIdx > 0
-            ? (needsGridGapInit ? +((dIdx - 1) * 0.48).toFixed(3) : (prevDrivers[dIdx - 1]?.gapSec || 0))
-            : 0;
-          const gapToAhead = dIdx > 0 ? currentGapSec - aheadStaggeredGap : 999;
-
-          // Driver Push Mode (Tactical Engine Delta)
-          const plan = driverPlans?.[d.code];
-          let pushMode = plan?.pushMode || "balanced";
-
-          // AI Opponent Push Dynamics (realistic moderate deltas)
-          if (!isPlayerDriver) {
-            if (gapToAhead > 0.15 && gapToAhead < 0.85 && (d.wear || 20) < 60 && controlledLap >= 3) {
-              pushMode = "attack";
-            } else if ((d.wear || 20) > 68) {
-              pushMode = "conserve";
-            } else {
-              pushMode = "balanced";
-            }
-          }
-
-          const pushWearMult = pushMode === "attack" ? 1.45 : pushMode === "conserve" ? 0.7 : 1.0;
-          const pushPaceDelta = pushMode === "attack" ? -0.18 : pushMode === "conserve" ? +0.18 : 0.0;
-
-          // Compound base wear rate & wet penalty
-          const baseWearRate = d.tire === "S" ? 4.5 : d.tire === "M" ? 2.8 : d.tire === "H" ? 1.8 : 3.0;
-          const wetPenalty = (trackDampness > 30 && (d.tire === "S" || d.tire === "M" || d.tire === "H")) ? 6.5 : 0;
-          const appliedWear = (baseWearRate * pushWearMult) + wetPenalty;
-          const newWear = Math.min(100, Math.round((d.wear || 20) + appliedWear));
-          const newTireAge = (d.tireAge || 0) + 1;
-
-          let aiPitted = false;
-          let aiNewTire = d.tire;
-          let currentPitState = d.pitState === "IN PIT" ? "RACING" : (d.pitState || "RACING");
-          let currentPits = d.pits || 0;
-
-          // Realistic Pit Crew Stationary Stopwatch RNG
-          const getPitCrewTime = () => {
-            const rng = Math.random();
-            if (rng < 0.15) {
-              const sec = +(2.0 + Math.random() * 0.25).toFixed(1);
-              return { sec, label: `⚡ ${sec}s WORLD RECORD STOP` };
-            } else if (rng < 0.85) {
-              const sec = +(2.3 + Math.random() * 0.35).toFixed(1);
-              return { sec, label: `🟢 ${sec}s CLEAN STOP` };
-            } else if (rng < 0.95) {
-              const sec = +(3.1 + Math.random() * 0.4).toFixed(1);
-              return { sec, label: `⚠️ ${sec}s RIGHT-REAR HESITATION` };
-            } else {
-              const sec = +(4.6 + Math.random() * 0.9).toFixed(1);
-              return { sec, label: `🔴 ${sec}s STUCK WHEEL NUT!` };
-            }
-          };
-
-          // Check if this driver has a planned strategy directive for this exact lap!
-          const plannedStop = plannedStrategies?.find((s) => s.driverCode === d.code && s.lap === controlledLap && !s.applied);
-
-          if (plannedStop) {
-            aiPitted = true;
-            currentPits += 1;
-            currentPitState = "IN PIT";
-            aiNewTire = plannedStop.targetCompound;
-            const crew = getPitCrewTime();
-            const trackTransitLoss = sessionFlag === "SC" ? 11.2 : (selectedCircuit?.pit_loss_green || 19.8);
-            const totalPitLoss = +(trackTransitLoss + crew.sec).toFixed(1);
-            currentGapSec += totalPitLoss;
-            queueMicrotask(() => onCompletePlanStop?.(d.code, plannedStop.stopNum || 1));
-            pittedDriverCode = d.code;
-            pitStopReason = "Planned Strategy Call";
-            pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
-          } else if (!isPlayerDriver && (newWear > 74 || (sessionFlag === "SC" && newTireAge > 14 && Math.random() > 0.45))) {
-            aiPitted = true;
-            currentPits += 1;
-            currentPitState = "IN PIT";
-            aiNewTire = trackDampness > 30 ? "I" : d.tire === "M" ? "H" : "M";
-            const crew = getPitCrewTime();
-            const trackTransitLoss = sessionFlag === "SC" ? 11.2 : (selectedCircuit?.pit_loss_green || 19.8);
-            const totalPitLoss = +(trackTransitLoss + crew.sec).toFixed(1);
-            currentGapSec += totalPitLoss;
-            pittedDriverCode = d.code;
-            pitStopReason = sessionFlag === "SC" ? "Free SC Pit Stop" : "Tire Degradation Cliff";
-            pitDurationStr = `${crew.label} (${totalPitLoss}s pit loss)`;
-          } else {
-            // Authentic F1 Race Physics & Tire Modeling:
-            const compPaceDelta = d.tire === "S" ? -0.22 : d.tire === "H" ? +0.20 : 0.0;
-            const linearWearLoss = Math.max(0, (newWear - 25) * 0.007);
-            const cliffPenalty = newWear > 70 ? +((newWear - 70) * 0.085) : 0;
-            const freshTireBoost = currentPits > 0 && newTireAge <= 2 ? -0.35 : 0.0;
-            const drsBonus = controlledLap >= 3 && gapToAhead > 0 && gapToAhead < 0.9 ? -0.15 : 0.0;
-            const variance = Math.random() * 0.06 - 0.03;
-
-            const totalLapDelta = pushPaceDelta + compPaceDelta + linearWearLoss + cliffPenalty + freshTireBoost + drsBonus + variance;
-            currentGapSec = +(Math.max(0, currentGapSec + totalLapDelta)).toFixed(3);
-          }
-
-          // Dynamic Sector Times & Lap Pace for controlledLap >= 2
-          // Includes automatic progressive fuel mass burn advantage (~0.028s/lap lighter chassis)
-          const compPace = d.tire === "S" ? -0.42 : d.tire === "H" ? +0.35 : 0.0;
-          const tierPace = ["NOR", "VER", "RUS", "LEC", "HAM", "PIA"].includes(d.code) ? -0.25 : ["ALO", "SAI", "ALB", "ANT", "HAD"].includes(d.code) ? -0.05 : 0.25;
-          const wearPace = Math.max(0, (newWear - 25) * 0.007);
-          const autoFuelMassGain = -Math.min(1.65, Math.max(0, controlledLap - 1) * 0.028);
-          const drvPaceDelta = tierPace + compPace + pushPaceDelta + wearPace + autoFuelMassGain;
-
-          const seed = (d.num || dIdx + 1) * 7 + controlledLap * 13;
-          const v1 = ((Math.sin(seed) * 1000) % 1) * 0.12 - 0.06;
-          const v2 = ((Math.cos(seed) * 1000) % 1) * 0.14 - 0.07;
-          const v3 = ((Math.sin(seed * 2) * 1000) % 1) * 0.10 - 0.05;
-
-          const s1Num = +(s1Base + drvPaceDelta * 0.32 + v1).toFixed(3);
-          const s2Num = +(s2Base + drvPaceDelta * 0.43 + v2).toFixed(3);
-          const pitS3Add = aiPitted ? 18.4 : 0;
-          const s3Num = +(s3Base + drvPaceDelta * 0.25 + v3 + pitS3Add).toFixed(3);
-
-          const s1Val = s1Num.toFixed(3);
-          const s2Val = s2Num.toFixed(3);
-          const s3Val = s3Num.toFixed(3);
-
-          const lapTotalSec = +(s1Num + s2Num + s3Num).toFixed(3);
-          const m = Math.floor(lapTotalSec / 60);
-          const s = (lapTotalSec % 60).toFixed(3);
-          const lapTimeStr = `${m}:${s.padStart(6, "0")}`;
-
-          // Personal best lap check
-          let prevBestSec = Infinity;
-          if (d.bestLap && d.bestLap !== "NO TIME" && d.bestLap !== "—" && d.bestLap.includes(":")) {
-            const [bm, bs] = d.bestLap.split(":");
-            prevBestSec = parseFloat(bm) * 60 + parseFloat(bs);
-          }
-          let driverBestLap = d.bestLap || "NO TIME";
-          let isPersonalBest = false;
-          if (!aiPitted && lapTotalSec < prevBestSec) {
-            driverBestLap = lapTimeStr;
-            isPersonalBest = true;
-          } else if (!d.bestLap || d.bestLap === "NO TIME" || d.bestLap === "—") {
-            driverBestLap = lapTimeStr;
-            isPersonalBest = true;
-          }
-
-          return {
-            ...d,
-            wear: aiPitted ? 4 : newWear,
-            tireAge: aiPitted ? 0 : newTireAge,
-            tire: aiNewTire,
-            pits: currentPits,
-            pitState: currentPitState,
-            gapSec: currentGapSec,
-            pushMode,
-            s1: s1Val,
-            s2: s2Val,
-            s3: s3Val,
-            s1Num,
-            s2Num,
-            s3Num,
-            lastLap: lapTimeStr,
-            bestLap: driverBestLap,
-            isPersonalBest,
-            aiPitted,
-          };
+        const tick = simulateLapTick({
+          prevDrivers,
+          lap: controlledLap,
+          maxLaps,
+          poleSec,
+          pitLossGreen: selectedCircuit?.pit_loss_green || 21.5,
+          sessionFlag,
+          trackDampness,
+          userRole,
+          playerTeam,
+          driverPlans,
+          plannedStrategies,
+          isDriverInTeam: isDriverBelongingToTeam,
         });
 
-        // Compute session-fastest sector indicators across all drivers
-        let minS1 = Infinity, minS2 = Infinity, minS3 = Infinity;
-        updated.forEach((d) => {
-          if (!d.aiPitted) {
-            if (d.s1Num && d.s1Num < minS1) minS1 = d.s1Num;
-            if (d.s2Num && d.s2Num < minS2) minS2 = d.s2Num;
-            if (d.s3Num && d.s3Num < minS3) minS3 = d.s3Num;
-          }
-        });
+        queueMicrotask(() => {
+          tick.completedPlanNotifications?.forEach((n) => {
+            onCompletePlanStop?.(n.code, n.stopNum);
+          });
 
-        updated = updated.map((d) => ({
-          ...d,
-          s1Type: d.s1Num === minS1 ? "purple" : d.isPersonalBest ? "green" : "yellow",
-          s2Type: d.s2Num === minS2 ? "purple" : d.isPersonalBest ? "green" : "yellow",
-          s3Type: d.s3Num === minS3 ? "purple" : d.isPersonalBest ? "green" : "yellow",
-        }));
-
-        // 2. Sort by gapSec strictly so positions represent real physics
-        updated.sort((a, b) => a.gapSec - b.gapSec);
-
-        // 3. Handle Pit Stop Event if someone pitted this lap (unmissable gold banner & sound)
-        if (pittedDriverCode) {
-          const pittedDriver = updated.find((d) => d.code === pittedDriverCode);
-          const reEntryPos = updated.findIndex((d) => d.code === pittedDriverCode) + 1;
-          const carAhead = reEntryPos > 1 ? updated[reEntryPos - 2] : null;
-          const aheadNotice = carAhead ? ` behind ${carAhead.code} (#${carAhead.num})` : " in clean air";
-          const compName = pittedDriver.tire === "S" ? "Soft" : pittedDriver.tire === "M" ? "Medium" : pittedDriver.tire === "I" ? "Intermediate" : "Hard";
-
-          const pitData = {
-            lap: controlledLap,
-            num: pittedDriver.num,
-            code: pittedDriver.code,
-            name: pittedDriver.name,
-            team: pittedDriver.team,
-            tire: pittedDriver.tire,
-            compoundName: compName,
-            stopDuration: pitDurationStr,
-            reEntryPos,
-            reason: pitStopReason,
-          };
-          setActivePitEvent(pitData);
-          const pitMsg = `📦 LIVE PIT STOP: LAP ${controlledLap}: #${pittedDriver.num} ${pittedDriver.code} (${pittedDriver.team}) BOXES · FITS ${compName} [${pitDurationStr}] · REJOINS P${reEntryPos}${aheadNotice}!`;
-          setOvertakeEvent(pitMsg);
-          playF1OvertakeChime(isSoundMuted);
-        } else {
-          // 4. Overtake Duel Simulation (field-wide: lead, podium, and midfield fights!)
-          let duelIdx = -1;
-          for (let i = 0; i < updated.length - 1; i++) {
-            const ahead = updated[i];
-            const behind = updated[i + 1];
-            if (ahead.pitState !== "IN PIT" && behind.pitState !== "IN PIT") {
-              const gapBetween = behind.gapSec - ahead.gapSec;
-              const wearAdvantage = (ahead.wear || 30) - (behind.wear || 30);
-              if (gapBetween < 1.2 && (wearAdvantage > 12 || (gapBetween < 0.65 && Math.random() > 0.4))) {
-                duelIdx = i;
-                break;
-              }
-            }
-          }
-
-          // Fallback duel battle across the field if no close wear delta
-          if (duelIdx === -1 && Math.random() > 0.35) {
-            const candidateIdx = (controlledLap % 6);
-            if (candidateIdx < updated.length - 1 && updated[candidateIdx].pitState !== "IN PIT") {
-              duelIdx = candidateIdx;
-            }
-          }
-
-          if (duelIdx >= 0) {
-            const carAhead = updated[duelIdx];
-            const carBehind = updated[duelIdx + 1];
-
-            // Genuine overtake: swap gapSec so the overtake stays permanent in the matrix!
-            const baseGap = carAhead.gapSec;
-            carBehind.gapSec = +(baseGap - 0.12).toFixed(3);
-            carAhead.gapSec = +(baseGap + 0.38).toFixed(3);
-
-            updated[duelIdx] = { ...carBehind, overtaken: true, posDelta: "+1", arrow: "up" };
-            updated[duelIdx + 1] = { ...carAhead, posDelta: "-1", arrow: "down" };
-
-            // Re-sort so order reflects the new gapSec
-            updated.sort((a, b) => a.gapSec - b.gapSec);
-
-            const duelReasons = [
-              "into Turn 1 DRS Zone",
-              "via Slipstream on Back Straight",
-              "with 350kW MGU-K Boost Cutback",
-              "outbraking at the Hairpin",
-              "due to Fresh Tire Grip Advantage",
-            ];
-            let reason = duelReasons[controlledLap % duelReasons.length];
-            if (carBehind.tireAge <= 2 && (carAhead.wear || 20) > 55) {
-              reason = "⚡ UNDERCUT SUCCESS: Slices past via Fresh Tire Grip Delta!";
-            } else if (carBehind.pushMode === "attack") {
-              reason = "🔥 ATTACK MODE OVERTAKE: Blasts past with 350kW MGU-K Boost!";
-            } else if ((carAhead.wear || 20) > 72) {
-              reason = "capitalizing on opponent's severe tire degradation cliff";
-            }
-
-            const newBehindPos = updated.findIndex((d) => d.code === carBehind.code) + 1;
-            const newAheadPos = updated.findIndex((d) => d.code === carAhead.code) + 1;
-
-            setActiveOvertake({
-              winnerCode: carBehind.code,
-              winnerNum: carBehind.num,
-              winnerTeam: carBehind.team,
-              loserCode: carAhead.code,
-              loserNum: carAhead.num,
-              loserTeam: carAhead.team,
-              toPos: newBehindPos,
-              fromPos: newAheadPos,
-              lap: controlledLap,
-              reason,
-              timestamp: Date.now(),
-            });
+          if (tick.pittedInfo) {
+            const p = tick.pittedInfo;
+            setActivePitEvent(p);
+            setOvertakeEvent(
+              `📦 LIVE PIT STOP: LAP ${p.lap}: #${p.num} ${p.code} (${p.team}) BOXES · FITS ${p.compoundName} [${p.stopDuration}] · REJOINS P${p.reEntryPos}${p.aheadNotice}!`
+            );
             playF1OvertakeChime(isSoundMuted);
-            setOvertakeEvent(`LIVE OVERTAKE: LAP ${controlledLap}: ${carBehind.code} passes ${carAhead.code} for P${newBehindPos} (${reason})`);
+          } else if (tick.overtakeInfo) {
+            const ov = tick.overtakeInfo;
+            setActiveOvertake({ ...ov, timestamp: Date.now() });
+            playF1OvertakeChime(isSoundMuted);
+            setOvertakeEvent(`LIVE OVERTAKE: LAP ${ov.lap}: ${ov.winnerCode} passes ${ov.loserCode} for P${ov.toPos} (${ov.reason})`);
           }
-        }
 
-        const leaderGapSec = updated[0].gapSec;
-        const reordered = updated.map((d, i) => {
-          const isLead = i === 0;
-          const relativeGap = +(d.gapSec - leaderGapSec).toFixed(3);
-          const prevAhead = i > 0 ? updated[i - 1] : null;
-          const intervalVal = isLead
-            ? "—"
-            : (controlledLap <= 1 ? "—" : `+${(d.gapSec - (prevAhead?.gapSec || 0)).toFixed(3)}s`);
-
-          return {
-            ...d,
-            pos: i + 1,
-            gapSec: d.gapSec,
-            gap: isLead ? "LEADER" : (controlledLap <= 1 ? "—" : `+${relativeGap.toFixed(3)}s`),
-            interval: intervalVal,
-          };
+          setTimeout(() => {
+            setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3500 ? null : curr));
+          }, 4000);
         });
 
-        setTimeout(() => {
-          setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3500 ? null : curr));
-        }, 4000);
-
-        return reordered;
+        return tick.drivers;
       });
     }
-  }, [controlledLap, activeCircuitId, userRole, playerTeam, sessionFlag, trackDampness, plannedStrategies]);
+  }, [controlledLap, activeCircuitId, userRole, playerTeam, sessionFlag, trackDampness, plannedStrategies, telemetrySource, openF1Dataset]);
 
   useEffect(() => {
     if (controlledFlag && controlledFlag !== sessionFlag) {
@@ -1356,49 +1112,16 @@ function TimingTower({
     setOvertakeEvent(`⚡ MOM 350kW BOOST: #${currentDriver.num} ${currentDriver.code} deployed full electrical override!`);
   };
 
-  // Authentic AWS-Style Predictive Overtake Model
+  // Physics-Driven Catch Curve & Overtake Probability Analytics
   const awsOvertakeModel = useMemo(() => {
-    const leader = drivers[0] || { code: "VER", num: "3", wear: 4, team: "Red Bull Racing" };
-    const chaser = drivers[1] || { code: "NOR", num: "1", wear: 16, team: "McLaren" };
-
-    // Wear delta calculation (Chaser wear delta compared to leader / target)
-    const chaserWear = chaser.wear !== undefined ? chaser.wear : 16;
-    const leaderWear = leader.wear !== undefined ? leader.wear : 4;
-    const rawDelta = (chaserWear === leaderWear || currentLap <= 2) ? -12 : (leaderWear - chaserWear);
-    const wearDeltaSign = rawDelta > 0 ? `+${rawDelta}%` : `${rawDelta}%`;
-    const tireDelta = `${chaser.code} (${wearDeltaSign} WEAR DELTA)`;
-
-    // Catch curve estimate: Estimated intercept lap (default LAP 14, 3 LAPS on early laps)
-    const interceptDistanceLaps = 3;
-    const estInterceptLap = currentLap <= 11 ? 14 : Math.min(maxLaps || 58, currentLap + interceptDistanceLaps);
-    const catchCurve = `EST. INTERCEPT: LAP ${estInterceptLap} (${interceptDistanceLaps} LAPS)`;
-
-    // Overtake Probability Index: 74% [HIGH PROBABILITY]
-    const probPercentage = 74;
-    const probability = `${probPercentage}% [HIGH PROBABILITY]`;
-
-    return {
-      leader,
-      chaser,
-      catchCurve,
-      probability,
-      tireDelta,
-    };
-  }, [drivers, currentLap, maxLaps]);
-
-  // Inject Delta Gap handler (compresses interval into DRS attack threshold 0.420s)
-  const handleInjectDeltaGap = () => {
-    setDrivers((prevDrivers) => {
-      if (prevDrivers.length < 2) return prevDrivers;
-      return prevDrivers.map((d, i) => {
-        if (i === 0) return { ...d, gap: "LEADER", interval: "—" };
-        if (i === 1) return { ...d, gap: "+0.420s", interval: "+0.420s" };
-        return d;
-      });
+    return computeCatchAndProbability({
+      leader: drivers[0],
+      chaser: drivers[1],
+      currentLap: effectiveLap,
+      maxLaps,
+      trackDampness,
     });
-    setRadioMsg("[AWS DELTA INJECT] Delta gap compressed to +0.420s. DRS detection confirmed.");
-    setOvertakeEvent("[AWS DELTA INJECT] P2 within 0.420s attack window · High Probability Intercept");
-  };
+  }, [drivers, effectiveLap, maxLaps, trackDampness]);
 
   // Realistic Interactive Overtake Duel Simulator
   const handleTriggerDuelOvertake = () => {
@@ -1460,268 +1183,17 @@ function TimingTower({
     setRadioMsg(`[ACTIVE AERO] Mode switched to ${mode}. Flap actuator angle updated.`);
   };
 
-  // Dynamic Telemetry Chart Data for Selected Driver
-  const tireWearData = useMemo(() => [
-    { lap: "L20", wear: 55, target: 50 },
-    { lap: "L24", wear: 48, target: 44 },
-    { lap: "L28", wear: 42, target: 38 },
-    { lap: "L31", wear: 34, target: 30 },
-    { lap: "L34", wear: 26, target: 24 },
-    { lap: "L38", wear: 18, target: 16 },
-  ], []);
+  // Dynamic Remaining Stint Degradation Projection & Pace Delta Series (computed from live driver state)
+  const tireWearData = useMemo(() => {
+    return buildLiveTireCurve(currentDriver, effectiveLap, maxLaps);
+  }, [currentDriver, effectiveLap, maxLaps]);
 
-  // Segmented Sidebar Telemetry Leaderboard Tab: "speed" (default), "pace", "all"
   const [telemetryTab, setTelemetryTab] = useState("speed");
   const [customRadioInput, setCustomRadioInput] = useState("");
 
   const deltaComparisonData = useMemo(() => {
-    const isLeader = currentDriver.code === "NOR";
-
-    if (isLeader) {
-      // Norris (Leader) vs Verstappen (P2 Rival)
-      return [
-        { lap: "L30", Leader: 1.289, Selected: 1.292, leaderTime: "1:28.900", selectedTime: "1:29.210", delta: "-0.310s" },
-        { lap: "L31", Leader: 1.287, Selected: 1.289, leaderTime: "1:28.710", selectedTime: "1:28.980", delta: "-0.270s" },
-        { lap: "L32", Leader: 1.286, Selected: 1.288, leaderTime: "1:28.620", selectedTime: "1:28.850", delta: "-0.230s" },
-        { lap: "L33", Leader: 1.284, Selected: 1.286, leaderTime: "1:28.412", selectedTime: "1:28.640", delta: "-0.228s" },
-        { lap: "L34", Leader: 1.285, Selected: 1.287, leaderTime: "1:28.520", selectedTime: "1:28.730", delta: "-0.210s" },
-      ];
-    }
-
-    // Selected driver vs P1 Leader
-    const rawDelta = parseFloat(currentDriver.delta || "0.4");
-    const offset = isNaN(rawDelta) ? 0.35 : Math.abs(rawDelta);
-
-    return [
-      {
-        lap: "L30",
-        Leader: 1.289,
-        Selected: +(1.289 + offset * 0.01).toFixed(3),
-        leaderTime: "1:28.900",
-        selectedTime: `1:${(28.90 + offset).toFixed(3)}`,
-        delta: `+${offset.toFixed(3)}s`,
-      },
-      {
-        lap: "L31",
-        Leader: 1.287,
-        Selected: +(1.287 + (offset + 0.04) * 0.01).toFixed(3),
-        leaderTime: "1:28.710",
-        selectedTime: `1:${(28.71 + offset + 0.04).toFixed(3)}`,
-        delta: `+${(offset + 0.04).toFixed(3)}s`,
-      },
-      {
-        lap: "L32",
-        Leader: 1.286,
-        Selected: +(1.286 + (offset + 0.02) * 0.01).toFixed(3),
-        leaderTime: "1:28.620",
-        selectedTime: `1:${(28.62 + offset + 0.02).toFixed(3)}`,
-        delta: `+${(offset + 0.02).toFixed(3)}s`,
-      },
-      {
-        lap: "L33",
-        Leader: 1.284,
-        Selected: +(1.284 + (offset - 0.03) * 0.01).toFixed(3),
-        leaderTime: "1:28.412",
-        selectedTime: `1:${(28.41 + offset - 0.03).toFixed(3)}`,
-        delta: `+${(offset - 0.03).toFixed(3)}s`,
-      },
-      {
-        lap: "L34",
-        Leader: 1.285,
-        Selected: +(1.285 + offset * 0.01).toFixed(3),
-        leaderTime: "1:28.520",
-        selectedTime: `1:${(28.52 + offset).toFixed(3)}`,
-        delta: `+${offset.toFixed(3)}s`,
-      },
-    ];
-  }, [currentDriver.code, currentDriver.delta]);
-
-  // Live simulation tick: Overtaking engine, Weather transitions & Pit Stops
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      // 1. Weather and Dampness Evolution
-      setTrackDampness((prevDamp) => {
-        if (weatherMode === "wet") return Math.min(95, prevDamp + 10);
-        if (weatherMode === "drizzle") return prevDamp < 45 ? Math.min(45, prevDamp + 5) : Math.max(40, prevDamp - 2);
-        if (weatherMode === "dry") return Math.max(0, prevDamp - 8);
-        return prevDamp;
-      });
-
-      // MOM cooldown handler
-      setMomCooldown((cd) => (cd > 0 ? cd - 1 : 0));
-      if (momBoostActive) {
-        setMomBoostActive(false);
-      }
-
-      setCurrentLap((prevLap) => {
-        const nextLap = prevLap >= maxLaps ? 1 : prevLap + 1;
-
-        // Auto weather evolution
-        if (weatherMode === "auto") {
-          if (nextLap >= 38 && nextLap <= 44) {
-            setTrackDampness((d) => Math.min(85, d + 12));
-          } else if (nextLap > 44) {
-            setTrackDampness((d) => Math.max(10, d - 6));
-          }
-        }
-
-        setDrivers((prevDrivers) => {
-          let updated = prevDrivers.map((d) => {
-            const isSelected = d.code === currentDriver.code;
-            const hasMom = isSelected && momBoostActive;
-            const isSlick = d.tire === "S" || d.tire === "Medium" || d.tire === "M" || d.tire === "H" || d.tire === "Hard" || d.tire === "Soft";
-            const isWetTire = d.tire === "I" || d.tire === "W";
-
-            // Slicks on wet track penalty: high wear + pace drop
-            const wetWearPenalty = (trackDampness > 30 && isSlick) ? 3 : (trackDampness < 20 && isWetTire) ? 3 : 1;
-            const newWear = Math.min(100, (d.wear || 20) + wetWearPenalty);
-            const newTireAge = (d.tireAge || 10) + 1;
-            const newSoc = hasMom
-              ? Math.max(10, d.soc - 12)
-              : Math.max(15, Math.min(100, d.soc + (Math.random() > 0.45 ? -3 : 2)));
-
-            let pState = d.pitState || "RACING";
-            let pTimer = d.pitTimer || 0;
-            let currentTire = d.tire;
-            let pitsCount = d.pits || 1;
-
-            // Pit stop lifecycle
-            if (pState === "IN PIT") {
-              pTimer = Math.max(0, +(pTimer - 0.8).toFixed(1));
-              if (pTimer <= 0) {
-                pState = "OUT LAP";
-                pitsCount += 1;
-                if (trackDampness > 60) currentTire = "W";
-                else if (trackDampness > 25) currentTire = "I";
-                else currentTire = d.tire === "M" ? "H" : "M";
-              }
-            } else if (pState === "OUT LAP") {
-              pState = "RACING";
-            } else if (pState === "RACING") {
-              // Trigger pit if wear > 74% or wrong compound in rain
-              if (newWear > 74 || (trackDampness > 35 && isSlick && Math.random() > 0.6)) {
-                pState = "IN PIT";
-                pTimer = 2.4;
-              }
-            }
-
-            const momDisplay = hasMom ? "MOM 350kW" : isSelected ? activeAeroMode : (d.mom || "Z-MODE");
-
-            return {
-              ...d,
-              wear: pState === "OUT LAP" ? 8 : newWear,
-              tireAge: pState === "OUT LAP" ? 0 : newTireAge,
-              tire: currentTire,
-              pits: pitsCount,
-              pitState: pState,
-              pitTimer: pTimer,
-              soc: newSoc,
-              mom: momDisplay,
-              overtaken: false,
-              trackPct: (d.trackPct + 0.02) % 1,
-            };
-          });
-
-          // 2. Dynamic Overtaking Engine
-          let overtakeOccurred = false;
-          let newAlert = null;
-
-          for (let i = 0; i < updated.length - 1; i++) {
-            const carAhead = updated[i];
-            const carBehind = updated[i + 1];
-
-            if (carAhead.pitState === "IN PIT" && carBehind.pitState !== "IN PIT") {
-              updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", arrow: "up", overtaken: true };
-              updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "down" };
-              overtakeOccurred = true;
-              newAlert = `P${i + 1} ADVANCE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} as they Box!`;
-              setActiveOvertake({
-                winnerCode: carBehind.code,
-                winnerNum: carBehind.num,
-                winnerTeam: carBehind.team,
-                loserCode: carAhead.code,
-                loserNum: carAhead.num,
-                loserTeam: carAhead.team,
-                toPos: i + 1,
-                fromPos: i + 2,
-                lap: nextLap,
-                reason: "Pit Lane Delta Advantage",
-                timestamp: Date.now(),
-              });
-              playF1OvertakeChime(isSoundMuted);
-              break;
-            }
-
-            if (carAhead.pitState === "RACING" && carBehind.pitState === "RACING") {
-              const aheadSlickPenalty = (trackDampness > 30 && (carAhead.tire === "S" || carAhead.tire === "M" || carAhead.tire === "H")) ? 3.5 : 0;
-              const behindSlickPenalty = (trackDampness > 30 && (carBehind.tire === "S" || carBehind.tire === "M" || carBehind.tire === "H")) ? 3.5 : 0;
-
-              const aheadScore = (100 - carAhead.wear) * 0.4 + (carAhead.soc * 0.2) - aheadSlickPenalty;
-              const behindMomBonus = (carBehind.code === currentDriver.code && momBoostActive) ? 18 : 0;
-              const behindScore = (100 - carBehind.wear) * 0.4 + (carBehind.soc * 0.2) + behindMomBonus - behindSlickPenalty;
-
-              if (behindScore > aheadScore + 10 && Math.random() > 0.45) {
-                updated[i] = { ...carBehind, pos: i + 1, posDelta: "+1", arrow: "up", overtaken: true };
-                updated[i + 1] = { ...carAhead, pos: i + 2, posDelta: "-1", arrow: "down" };
-                overtakeOccurred = true;
-                const boostStr = behindMomBonus > 0 ? " with MOM 350kW Boost" : "";
-                newAlert = `P${i + 1} OVERTAKE: ${carBehind.code} (#${carBehind.num}) passes ${carAhead.code} into Turn 4${boostStr}!`;
-
-                setActiveOvertake({
-                  winnerCode: carBehind.code,
-                  winnerNum: carBehind.num,
-                  winnerTeam: carBehind.team,
-                  loserCode: carAhead.code,
-                  loserNum: carAhead.num,
-                  loserTeam: carAhead.team,
-                  toPos: i + 1,
-                  fromPos: i + 2,
-                  lap: nextLap,
-                  reason: `Turn 4 ${boostStr || "DRS Pass"}`,
-                  timestamp: Date.now(),
-                });
-                playF1OvertakeChime(isSoundMuted);
-                break;
-              }
-            }
-          }
-
-          if (overtakeOccurred && newAlert) {
-            setOvertakeEvent(newAlert);
-            setTimeout(() => {
-              setActiveOvertake((curr) => (curr && Date.now() - curr.timestamp >= 3800 ? null : curr));
-            }, 4000);
-          }
-
-          // 3. Dynamic intervals
-          let accumulatedGap = 0;
-          return updated.map((d, idx) => {
-            if (idx === 0) {
-              return {
-                ...d,
-                pos: 1,
-                gap: "LEADER",
-                interval: "—",
-              };
-            }
-            const gapStep = +(0.8 + (idx * 0.12) + (d.pitState === "IN PIT" ? 18.0 : 0)).toFixed(3);
-            accumulatedGap += gapStep;
-            return {
-              ...d,
-              pos: idx + 1,
-              gap: `+${accumulatedGap.toFixed(3)}s`,
-              interval: `+${gapStep.toFixed(3)}s`,
-            };
-          });
-        });
-
-        return nextLap;
-      });
-    }, 2400);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, maxLaps, weatherMode, trackDampness, momBoostActive, activeAeroMode, currentDriver.code]);
+    return buildPaceComparisonSeries(drivers, currentDriver, effectiveLap);
+  }, [drivers, currentDriver, effectiveLap]);
 
   // Quick Tactical Radio Dispatch Helper
   const handleSendRadio = (cmd) => {
@@ -2478,19 +1950,22 @@ function TimingTower({
               <div style={{ width: "100%", height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden", position: "relative" }}>
                 <div
                   style={{
-                    width: "74%",
+                    width: `${awsOvertakeModel.probabilityPct || 50}%`,
                     height: "100%",
                     background: "linear-gradient(90deg, #ff8700 0%, #3671e8 100%)",
                     borderRadius: "3px",
                     boxShadow: "0 0 8px rgba(0, 210, 190, 0.4)",
+                    transition: "width 0.3s ease",
                   }}
                 />
               </div>
 
               {/* Threat Advisory */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.60rem", fontFamily: "'Orbitron', monospace", color: "var(--text-dim)" }}>
-                <span>ZONE: SECTOR 2 DRS</span>
-                <span style={{ color: "#ffaa00", fontWeight: "700" }}>OVERTAKE RISK: HIGH</span>
+                <span>DRS CATCH PROBABILITY</span>
+                <span style={{ color: (awsOvertakeModel.probabilityPct || 0) >= 70 ? "#00e676" : "#ffaa00", fontWeight: "700" }}>
+                  {awsOvertakeModel.probability}
+                </span>
               </div>
             </div>
           </div>
@@ -2695,7 +2170,74 @@ function TimingTower({
             </div>
 
             {/* Action & Density Mode Switcher Controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+            <div role="toolbar" aria-label="Timing tower controls and data source" style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+              {/* Data Source Switcher: Physics Model vs Real FIA OpenF1 Replay */}
+              <div role="group" aria-label="Telemetry Source Mode" style={{ display: "inline-flex", background: "rgba(0,0,0,0.45)", padding: "2px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.1)", gap: "2px" }}>
+                <button
+                  type="button"
+                  aria-pressed={telemetrySource === "sim"}
+                  onClick={() => handleSelectTelemetrySource("sim")}
+                  style={{
+                    background: telemetrySource === "sim" ? "rgba(0, 210, 190, 0.24)" : "transparent",
+                    border: telemetrySource === "sim" ? "1px solid var(--neon-cyan)" : "1px solid transparent",
+                    color: telemetrySource === "sim" ? "#ffffff" : "var(--text-dim)",
+                    borderRadius: "3px",
+                    padding: "2px 6px",
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: "0.58rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                  }}
+                  title="Run deterministic 2026 physics race engine"
+                >
+                  ⚙️ 2026 SIM
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={telemetrySource === "openf1"}
+                  onClick={() => handleSelectTelemetrySource("openf1")}
+                  style={{
+                    background: telemetrySource === "openf1" ? "rgba(0, 230, 118, 0.24)" : "transparent",
+                    border: telemetrySource === "openf1" ? "1px solid var(--neon-green)" : "1px solid transparent",
+                    color: telemetrySource === "openf1" ? "#ffffff" : "var(--text-dim)",
+                    borderRadius: "3px",
+                    padding: "2px 6px",
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: "0.58rem",
+                    fontWeight: "800",
+                    cursor: "pointer",
+                  }}
+                  title="Load actual historical FIA lap data from OpenF1 API (2024 season)"
+                >
+                  {isOpenF1Loading ? "⏳ LOADING..." : "📡 FIA 2024"}
+                </button>
+              </div>
+
+              {/* CSV Export Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  const headers = ["Pos", "No", "Code", "Driver", "Team", "Tire", "StintLaps", "WearPct", "Gap", "Interval", "S1", "S2", "S3", "BestLap", "Pits"];
+                  const rows = drivers.map((d) => [d.pos, d.num, d.code, d.name, d.team, d.tire, d.tireAge || 0, d.wear || 0, d.gap, d.interval, d.s1, d.s2, d.s3, d.bestLap, d.pits || 0]);
+                  downloadCsvFile(`timing_${activeCircuitId}_lap${effectiveLap}`, headers, rows);
+                  setDataSourceStatus(`Exported Lap ${effectiveLap} timing CSV (${rows.length} cars)`);
+                }}
+                style={{
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: "1px solid rgba(255, 255, 255, 0.16)",
+                  color: "#ffffff",
+                  borderRadius: "4px",
+                  padding: "3px 7px",
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: "0.60rem",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                }}
+                title="Export live timing matrix to RFC-4180 CSV"
+              >
+                ⬇ CSV
+              </button>
+
               {/* Shortcut to Strategy Command Room */}
               {onGoToStrategy && (
                 <button
@@ -2827,77 +2369,32 @@ function TimingTower({
               boxShadow: "0 2px 14px rgba(0, 0, 0, 0.55), inset 0 0 16px rgba(255, 153, 0, 0.05)",
             }}
           >
-            {/* Left: AWS Branding & Simulator Action Buttons */}
+            {/* Left: Real-Time Analytics Engine Indicator & Status */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               <div
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "5px",
-                  background: "rgba(255, 153, 0, 0.15)",
-                  border: "1px solid #ff9900",
+                  background: telemetrySource === "openf1" ? "rgba(0, 230, 118, 0.14)" : "rgba(255, 153, 0, 0.15)",
+                  border: telemetrySource === "openf1" ? "1px solid var(--neon-green)" : "1px solid #ff9900",
                   padding: "2px 7px",
                   borderRadius: "3px",
                 }}
               >
-                <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "0.62rem", fontWeight: "900", color: "#ff9900", letterSpacing: "0.08em" }}>
-                  AWS
+                <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "0.62rem", fontWeight: "900", color: telemetrySource === "openf1" ? "var(--neon-green)" : "#ff9900", letterSpacing: "0.08em" }}>
+                  {telemetrySource === "openf1" ? "OPENF1 LIVE REPLAY" : "RACE PHYSICS"}
                 </span>
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.58rem", fontWeight: "800", color: "#ffffff" }}>
-                  F1 INSIGHTS
+                  TELEMETRY ANALYTICS
                 </span>
               </div>
 
-              {/* [ OVERTAKE OPPORTUNITY SIMULATOR ] Button */}
-              <button
-                onClick={handleTriggerDuelOvertake}
-                title="AWS Overtake Opportunity Simulator: Trigger predictive intercept pass"
-                style={{
-                  background: "linear-gradient(135deg, rgba(255, 153, 0, 0.28) 0%, rgba(235, 94, 0, 0.18) 100%)",
-                  border: "1px solid #ff9900",
-                  color: "#ffffff",
-                  borderRadius: "4px",
-                  padding: "4px 10px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.62rem",
-                  fontWeight: "900",
-                  letterSpacing: "0.05em",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  boxShadow: "0 0 10px rgba(255, 153, 0, 0.35)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span style={{ color: "#ff9900" }}>▶</span>
-                <span>[ OVERTAKE OPPORTUNITY SIMULATOR ]</span>
-              </button>
-
-              {/* [ INJECT DELTA GAP ] Button */}
-              <button
-                onClick={handleInjectDeltaGap}
-                title="Compress delta gap into DRS threshold (0.420s) to simulate immediate battle conditions"
-                style={{
-                  background: "rgba(0, 240, 255, 0.12)",
-                  border: "1px solid var(--neon-cyan)",
-                  color: "var(--neon-cyan)",
-                  borderRadius: "4px",
-                  padding: "4px 9px",
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: "0.60rem",
-                  fontWeight: "800",
-                  letterSpacing: "0.04em",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  boxShadow: "0 0 8px rgba(0, 240, 255, 0.2)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span>[ INJECT DELTA GAP ]</span>
-              </button>
+              {dataSourceStatus && (
+                <p role="status" style={{ margin: 0, fontSize: "0.62rem", fontFamily: "'JetBrains Mono', monospace", color: "var(--neon-cyan)" }}>
+                  {dataSourceStatus}
+                </p>
+              )}
             </div>
 
             {/* Right: Live Predictive Metrics - Next to the buttons */}
@@ -4212,9 +3709,9 @@ function TimingTower({
           {/* Tyre Degradation Curve Recharts Graph */}
           <div style={{ background: "rgba(0,0,0,0.3)", padding: "8px 10px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.05)" }}>
             <div style={{ fontSize: "0.68rem", color: "var(--text-dim)", marginBottom: "4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>TYRE DEGRADATION PROFILE & WEAR RATE</span>
-              <span style={{ color: currentDriver.wear > 60 ? "var(--neon-red)" : "var(--neon-cyan)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
-                Current Wear: {currentDriver.wear}% {currentDriver.wear > 60 ? "(CLIFF)" : "(OPTIMAL)"}
+              <span>PROJECTED STINT GRIP CURVE</span>
+              <span style={{ color: (currentDriver.wear || 0) > 65 ? "var(--neon-red)" : "var(--neon-cyan)", fontFamily: "'Orbitron', monospace", fontWeight: "700" }}>
+                Grip: {Math.max(0, 100 - (currentDriver.wear || 0))}% {(currentDriver.wear || 0) > 65 ? "(CLIFF)" : "(OPTIMAL)"}
               </span>
             </div>
             <ResponsiveContainer width="100%" height={85}>
@@ -4226,21 +3723,21 @@ function TimingTower({
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="lap" stroke="#666" tick={{ fontSize: 9 }} />
-                <YAxis domain={[0, 60]} stroke="#666" tick={{ fontSize: 9 }} />
+                <YAxis domain={[0, 100]} stroke="#666" tick={{ fontSize: 9 }} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
                         <div style={{ background: "#0c0e18", border: "1px solid var(--neon-cyan)", padding: "4px 8px", borderRadius: "4px", fontSize: "0.66rem", fontFamily: "'Orbitron', monospace", boxShadow: "0 4px 12px rgba(0,0,0,0.8)" }}>
                           <div style={{ color: "var(--neon-cyan)" }}>{label}</div>
-                          <div>Wear: <strong style={{ color: "#ffffff" }}>{payload[0].value}%</strong></div>
+                          <div>Est. Grip: <strong style={{ color: "#ffffff" }}>{payload[0].value}%</strong></div>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <ReferenceLine y={25} stroke="#ff3b30" strokeDasharray="3 3" label={{ value: "CLIFF (25%)", fill: "#ff3b30", fontSize: 8, position: "insideTopRight" }} />
+                <ReferenceLine y={28} stroke="#ff3b30" strokeDasharray="3 3" label={{ value: "CLIFF", fill: "#ff3b30", fontSize: 8, position: "insideTopRight" }} />
                 <Area type="monotone" dataKey="wear" stroke="#00d2be" strokeWidth={2.2} fillOpacity={1} fill="url(#wearGrad)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -4297,19 +3794,38 @@ function TimingTower({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.74rem", color: "var(--text-secondary)", letterSpacing: "0.08em" }}>
-              {currentDriver.code === "NOR" ? "PACE DELTA: NOR (P1) vs VER (P2)" : `PACE DELTA: ${currentDriver.code} vs P1 (NOR)`}
-            </span>
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.72rem", color: currentDriver.code === "NOR" ? "var(--neon-green)" : currentDriver.delta.startsWith("+") ? "var(--neon-green)" : "var(--neon-red)", fontWeight: "700" }}>
-              {currentDriver.code === "NOR" ? "Δ -0.210s (PULLING AWAY)" : `Δ ${currentDriver.delta}s`}
-            </span>
+            {(() => {
+              const p1Car = drivers[0] || { code: "VER", num: 3 };
+              const p2Car = drivers[1] || { code: "NOR", num: 1 };
+              const isSelectedP1 = currentDriver.code === p1Car.code;
+              const deltaText = String(currentDriver.gap && currentDriver.gap !== "LEADER" ? currentDriver.gap : (currentDriver.interval || "—"));
+              return (
+                <>
+                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.74rem", color: "var(--text-secondary)", letterSpacing: "0.08em" }}>
+                    {isSelectedP1 ? `PACE DELTA: ${p1Car.code} (P1) vs ${p2Car.code} (P2)` : `PACE DELTA: ${currentDriver.code} vs P1 (${p1Car.code})`}
+                  </span>
+                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: "0.72rem", color: isSelectedP1 ? "var(--neon-green)" : deltaText.startsWith("-") ? "var(--neon-green)" : "var(--neon-cyan)", fontWeight: "700" }}>
+                    {isSelectedP1 ? `LEAD (${p2Car.interval || "—"} AHEAD)` : `Δ ${deltaText}`}
+                  </span>
+                </>
+              );
+            })()}
           </div>
 
           <div style={{ display: "flex", gap: "10px", fontSize: "0.64rem", fontFamily: "'Orbitron', monospace" }}>
-            <span style={{ color: "#ff8700" }}>— {currentDriver.code === "NOR" ? "NOR (#1 LEADER)" : "P1 LEADER (NOR)"}</span>
-            <span style={{ color: currentDriver.code === "NOR" ? "#3671e8" : "var(--neon-cyan)" }}>
-              — {currentDriver.code === "NOR" ? "VER (#3 P2 RIVAL)" : `${currentDriver.code} (#${currentDriver.num})`}
-            </span>
+            {(() => {
+              const p1Car = drivers[0] || { code: "VER", num: 3 };
+              const p2Car = drivers[1] || { code: "NOR", num: 1 };
+              const isSelectedP1 = currentDriver.code === p1Car.code;
+              return (
+                <>
+                  <span style={{ color: "#ff8700" }}>— P1 LEADER ({p1Car.code})</span>
+                  <span style={{ color: "var(--neon-cyan)" }}>
+                    — {isSelectedP1 ? `${p2Car.code} (#${p2Car.num} P2)` : `${currentDriver.code} (#${currentDriver.num})`}
+                  </span>
+                </>
+              );
+            })()}
           </div>
 
           <ResponsiveContainer width="100%" height={120}>
@@ -4320,12 +3836,15 @@ function TimingTower({
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const p1Car = drivers[0] || { code: "VER" };
+                    const p2Car = drivers[1] || { code: "NOR" };
+                    const isSelectedP1 = currentDriver.code === p1Car.code;
                     return (
                       <div style={{ background: "#0c0d16", border: "1px solid rgba(255,255,255,0.15)", padding: "5px 9px", borderRadius: "5px", fontSize: "0.66rem", fontFamily: "'Orbitron', monospace", boxShadow: "0 4px 14px rgba(0,0,0,0.85)" }}>
                         <div style={{ color: "var(--neon-cyan)", fontWeight: "800", marginBottom: "3px" }}>{label}</div>
-                        <div style={{ color: "#ff8700" }}>P1 Leader: {data.leaderTime}</div>
-                        <div style={{ color: currentDriver.code === "NOR" ? "#3671e8" : "var(--neon-green)" }}>
-                          {currentDriver.code === "NOR" ? "VER (P2)" : currentDriver.code}: {data.selectedTime}
+                        <div style={{ color: "#ff8700" }}>P1 ({p1Car.code}): {data.leaderTime}</div>
+                        <div style={{ color: "var(--neon-green)" }}>
+                          {isSelectedP1 ? `${p2Car.code} (P2)` : currentDriver.code}: {data.selectedTime}
                         </div>
                         <div style={{ color: "var(--text-dim)", marginTop: "2px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "2px" }}>
                           Delta: <strong style={{ color: "#fff" }}>{data.delta}</strong>
@@ -4337,7 +3856,7 @@ function TimingTower({
                 }}
               />
               <Line type="monotone" dataKey="Leader" stroke="#ff8700" strokeWidth={2} dot={{ r: 2 }} />
-              <Line type="monotone" dataKey="Selected" stroke={currentDriver.code === "NOR" ? "#3671e8" : "#00d2be"} strokeWidth={2} dot={{ r: 2 }} />
+              <Line type="monotone" dataKey="Selected" stroke="#00d2be" strokeWidth={2} dot={{ r: 2 }} />
             </LineChart>
           </ResponsiveContainer>
 

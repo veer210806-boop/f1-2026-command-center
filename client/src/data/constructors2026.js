@@ -258,3 +258,23 @@ export function isDriverBelongingToTeam(driver, playerTeam) {
   return false;
 }
 
+/**
+ * Single source of truth for 2026 constructor livery hex colors.
+ * Imported across timing views, 3D map, and lap matrices to avoid duplication.
+ */
+export const TEAM_COLORS_MAP = {
+  McLaren:           { primary: "#ff8700", secondary: "#47c7fc", radar: "#ff8700", text: "#000000" },
+  "Red Bull Racing": { primary: "#3671e8", secondary: "#cc1e4a", radar: "#3671e8", text: "#ffffff" },
+  Mercedes:          { primary: "#00d2be", secondary: "#ffffff", radar: "#00d2be", text: "#000000" },
+  Ferrari:           { primary: "#e8002d", secondary: "#fff200", radar: "#ff3b30", text: "#ffffff" },
+  Williams:          { primary: "#00a0de", secondary: "#041e42", radar: "#00a0de", text: "#ffffff" },
+  "Aston Martin":    { primary: "#229971", secondary: "#cedc00", radar: "#229971", text: "#ffffff" },
+  Alpine:            { primary: "#0090ff", secondary: "#fd4bc7", radar: "#0090ff", text: "#ffffff" },
+  Haas:              { primary: "#b6babd", secondary: "#da291c", radar: "#b6babd", text: "#000000" },
+  "Racing Bulls":    { primary: "#6692ff", secondary: "#ffffff", radar: "#6692ff", text: "#ffffff" },
+  RB:                { primary: "#6692ff", secondary: "#ffffff", radar: "#6692ff", text: "#ffffff" },
+  Audi:              { primary: "#e50027", secondary: "#000000", radar: "#e50027", text: "#ffffff" },
+  Cadillac:          { primary: "#ffc72c", secondary: "#000000", radar: "#ffc72c", text: "#000000" },
+};
+
+
